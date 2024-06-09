@@ -63,8 +63,3 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
 }
-git init
-git add .
-git commit -m "my commit"
-git remote add origin https://github.com/V-M-Pioneer-Trading/test_UI.git
-git push origin master
