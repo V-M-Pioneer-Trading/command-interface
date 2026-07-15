@@ -1,0 +1,58 @@
+.lcars-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--lcars-panel-bg);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+  min-height: 0;
+}
+
+.lcars-panel__header {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm);
+  height: 2.75rem;
+  flex-shrink: 0;
+}
+
+.lcars-panel__elbow {
+  width: 3rem;
+  height: 100%;
+  border-top-left-radius: var(--radius-elbow);
+  border-bottom-left-radius: 0;
+  background: var(--accent-color);
+}
+
+.lcars-panel__title {
+  font-size: 1.1rem;
+  color: var(--lcars-bg);
+  background: var(--accent-color);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem 0 0;
+  flex: 1;
+}
+
+.lcars-panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--gap-sm) 0.25rem;
+}
+
+.lcars-accent-orange {
+  --accent-color: var(--lcars-orange);
+}
+.lcars-accent-tan {
+  --accent-color: var(--lcars-tan);
+}
+.lcars-accent-lavender {
+  --accent-color: var(--lcars-lavender);
+}
+.lcars-accent-blue {
+  --accent-color: var(--lcars-blue);
+}
+.lcars-accent-violet {
+  --accent-color: var(--lcars-violet);
+}

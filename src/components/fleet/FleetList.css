@@ -1,0 +1,48 @@
+.lcars-fleet-list__empty {
+  padding: 1rem;
+  color: var(--lcars-text-dim);
+  font-size: 0.85rem;
+}
+
+.lcars-fleet-list__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lcars-fleet-list__row {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  background: #1a1a1a;
+  border: none;
+  border-left: 4px solid transparent;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  color: var(--lcars-text);
+}
+
+.lcars-fleet-list__row:hover {
+  background: #242424;
+}
+
+.lcars-fleet-list__row.is-selected {
+  border-left-color: var(--lcars-orange);
+  background: #2a2116;
+}
+
+.lcars-fleet-list__symbol {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--lcars-tan);
+}
+
+.lcars-fleet-list__waypoint {
+  font-size: 0.75rem;
+  color: var(--lcars-text-dim);
+}

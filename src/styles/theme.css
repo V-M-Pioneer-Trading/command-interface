@@ -1,0 +1,34 @@
+:root {
+  /* LCARS Classic palette (source: lcars-reference-files/assets/lcars-ultra-classic.css, lcars-colors.css) */
+  --lcars-bg: #000000;
+  --lcars-panel-bg: #0a0a0a;
+
+  --lcars-orange: #ff9900;
+  --lcars-tan: #ffbb88;
+  --lcars-peach: #ff9966;
+  --lcars-lavender: #cc88ff;
+  --lcars-violet: #9944ff;
+  --lcars-blue: #7788ff;
+  --lcars-red-alert: #dd4444;
+  --lcars-green: #33cc99;
+  --lcars-yellow: #ffcc33;
+
+  --lcars-text: #f5f6fa;
+  --lcars-text-on-light: #000000;
+  --lcars-text-dim: #9a9aa5;
+
+  --status-docked: var(--lcars-green);
+  --status-in-orbit: var(--lcars-blue);
+  --status-in-transit: var(--lcars-yellow);
+  --status-cooldown: var(--lcars-red-alert);
+
+  --font-display: "Antonio", "Arial Narrow", sans-serif;
+  --font-body: "Antonio", "Arial Narrow", sans-serif;
+
+  --radius-pill: 999px;
+  --radius-elbow: 2.5rem;
+  --radius-panel: 0.75rem;
+
+  --gap-md: 1rem;
+  --gap-sm: 0.5rem;
+}

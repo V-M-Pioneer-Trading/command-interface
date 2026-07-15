@@ -1,0 +1,23 @@
+.lcars-status-pill {
+  display: inline-block;
+  border-radius: var(--radius-pill);
+  padding: 0.15rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--lcars-text-on-light);
+  white-space: nowrap;
+}
+
+.status-docked {
+  background: var(--status-docked);
+}
+.status-in-orbit {
+  background: var(--status-in-orbit);
+}
+.status-in-transit {
+  background: var(--status-in-transit);
+}
+.status-unknown {
+  background: var(--lcars-text-dim);
+}

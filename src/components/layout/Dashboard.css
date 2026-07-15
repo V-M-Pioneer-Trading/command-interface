@@ -1,0 +1,46 @@
+.lcars-dashboard {
+  position: relative;
+  height: 100%;
+  padding: var(--gap-md);
+  display: grid;
+  gap: var(--gap-md);
+  grid-template-areas:
+    "agentbar agentbar agentbar"
+    "fleet map detail"
+    "chat chat chat";
+  grid-template-rows: 3.5rem 1fr 12rem;
+  grid-template-columns: 18rem 1fr 22rem;
+}
+
+.lcars-dashboard__fleet {
+  grid-area: fleet;
+  min-height: 0;
+}
+
+.lcars-dashboard__map {
+  grid-area: map;
+  min-height: 0;
+}
+
+.lcars-dashboard__detail {
+  grid-area: detail;
+  min-height: 0;
+}
+
+.lcars-dashboard__chat {
+  grid-area: chat;
+  min-height: 0;
+}
+
+@media (max-width: 1100px) {
+  .lcars-dashboard {
+    grid-template-areas:
+      "agentbar agentbar"
+      "fleet map"
+      "detail detail"
+      "chat chat";
+    grid-template-columns: 16rem 1fr;
+    grid-template-rows: 3.5rem 20rem 16rem 12rem;
+    overflow-y: auto;
+  }
+}

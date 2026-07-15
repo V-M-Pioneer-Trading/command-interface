@@ -1,0 +1,50 @@
+.lcars-agent-bar {
+  grid-area: agentbar;
+  display: flex;
+  align-items: stretch;
+  height: 3.5rem;
+  background: var(--lcars-panel-bg);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+}
+
+.lcars-agent-bar__elbow {
+  width: 3rem;
+  background: var(--lcars-orange);
+  border-top-left-radius: var(--radius-elbow);
+  border-bottom-left-radius: var(--radius-elbow);
+}
+
+.lcars-agent-bar__content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 1.5rem;
+  background: #1a1a1a;
+}
+
+.lcars-agent-bar__symbol {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: var(--lcars-orange);
+  font-weight: 700;
+}
+
+.lcars-agent-bar__stat {
+  font-size: 0.8rem;
+  color: var(--lcars-text-dim);
+  letter-spacing: 0.05em;
+}
+
+.lcars-agent-bar__stat strong {
+  color: var(--lcars-text);
+  font-size: 0.95rem;
+}
+
+.lcars-agent-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+}

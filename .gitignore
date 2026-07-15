@@ -15,3 +15,7 @@ thumb
 sketch
 
 # End of react
+
+dist/
+.env.local
+.env.*.local
