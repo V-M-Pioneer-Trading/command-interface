@@ -2,7 +2,12 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSelection } from "../../context/SelectionContext";
 import { useAlerts } from "../../context/AlertContext";
-import { useShipsQuery, useCooldownQuery, useCargoQuery } from "../../hooks/queries";
+import {
+  useShipsQuery,
+  useCooldownQuery,
+  useCargoQuery,
+  useSystemWaypointsQuery,
+} from "../../hooks/queries";
 import { fleetService } from "../../api/fleetService";
 import { Panel } from "../common/Panel";
 import { PillButton } from "../common/PillButton";
@@ -20,6 +25,7 @@ export function ShipDetailPanel({ token, contracts }) {
 
   const { data: cooldownResp } = useCooldownQuery(token, selectedShipSymbol);
   const { data: cargo } = useCargoQuery(token, selectedShipSymbol);
+  const { data: waypointData } = useSystemWaypointsQuery(token, ship?.nav?.systemSymbol);
   const cooldown = cooldownResp?.data;
 
   const [surveys, setSurveys] = useState([]);
@@ -110,6 +116,8 @@ export function ShipDetailPanel({ token, contracts }) {
   const hasCooldown = !!cooldown && new Date(cooldown.expiration).getTime() > Date.now();
   const isDocked = status === "DOCKED";
   const isOrbiting = status === "IN_ORBIT";
+  const currentWaypoint = waypointData?.data?.find((w) => w.symbol === ship.nav?.waypointSymbol);
+  const hasMarketplace = !!currentWaypoint?.traits?.some((t) => t.symbol === "MARKETPLACE");
   const anyMutating =
     orbitMutation.isPending ||
     dockMutation.isPending ||
@@ -196,6 +204,8 @@ export function ShipDetailPanel({ token, contracts }) {
       <CargoList
         cargo={cargo}
         docked={isDocked}
+        hasMarketplace={hasMarketplace}
+        currentWaypointSymbol={ship.nav?.waypointSymbol}
         contracts={contracts}
         busy={anyMutating}
         onSell={(symbol, units) => sellMutation.mutate({ symbol, units })}
