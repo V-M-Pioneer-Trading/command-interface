@@ -1,10 +1,11 @@
 .lcars-panel {
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 0;
   background: var(--lcars-panel-bg);
   border-radius: var(--radius-panel);
   overflow: hidden;
-  min-height: 0;
 }
 
 .lcars-panel__header {
