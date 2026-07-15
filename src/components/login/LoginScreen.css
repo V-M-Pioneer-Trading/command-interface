@@ -1,0 +1,56 @@
+.lcars-login {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lcars-login__panel {
+  width: min(90vw, 34rem);
+  background: var(--lcars-panel-bg);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+}
+
+.lcars-login__header {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm);
+  background: var(--lcars-orange);
+  padding: 1rem 1.5rem;
+  border-top-left-radius: var(--radius-elbow);
+}
+
+.lcars-login__header h1 {
+  color: var(--lcars-text-on-light);
+  font-size: 1.3rem;
+}
+
+.lcars-login__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+  padding: 1.5rem;
+}
+
+.lcars-login__form label {
+  color: var(--lcars-tan);
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.lcars-login__form textarea {
+  background: #1a1a1a;
+  color: var(--lcars-text);
+  border: 1px solid var(--lcars-violet);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  resize: vertical;
+  font-family: monospace;
+}
+
+.lcars-login__error {
+  color: var(--lcars-red-alert);
+  font-weight: 700;
+}

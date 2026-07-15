@@ -1,0 +1,88 @@
+.lcars-contracts-panel {
+  position: absolute;
+  top: 4.5rem;
+  right: 1rem;
+  width: 22rem;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: var(--lcars-panel-bg);
+  border: 1px solid var(--lcars-lavender);
+  border-radius: var(--radius-panel);
+  z-index: 500;
+  padding-bottom: 0.5rem;
+}
+
+.lcars-contracts-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--lcars-lavender);
+  padding: 0.5rem 1rem;
+  border-top-left-radius: var(--radius-panel);
+  border-top-right-radius: var(--radius-panel);
+}
+
+.lcars-contracts-panel__header h2 {
+  color: var(--lcars-text-on-light);
+  font-size: 1rem;
+}
+
+.lcars-contracts-panel__close {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--lcars-text-on-light);
+}
+
+.lcars-contracts-panel__empty {
+  padding: 1rem;
+  color: var(--lcars-text-dim);
+  font-size: 0.85rem;
+}
+
+.lcars-contracts-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.lcars-contract-card {
+  background: #1a1a1a;
+  border-radius: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.lcars-contract-card__header {
+  display: flex;
+  justify-content: space-between;
+  color: var(--lcars-orange);
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.lcars-contract-card__payment {
+  color: var(--lcars-tan);
+  margin-bottom: 0.25rem;
+}
+
+.lcars-contract-card__deliveries {
+  list-style: none;
+  margin: 0 0 0.4rem;
+  padding: 0;
+  color: var(--lcars-text-dim);
+}
+
+.lcars-contract-card__actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.lcars-contract-card__done {
+  color: var(--lcars-green);
+  font-weight: 700;
+}

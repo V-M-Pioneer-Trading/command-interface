@@ -1,70 +1,51 @@
-# Getting Started with Create React App
+# Command Interface
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React/Vite frontend for the V&M SpaceTraders mining POC. LCARS-styled (Star
+Trek "Library Computer Access/Retrieval System") dashboard for managing a
+fleet, viewing a single-system map with animated ship movement, and running
+the mining gameplay loop (orbit, dock, navigate, survey, extract, refuel,
+sell, deliver contract cargo).
 
-## Available Scripts
+Talks directly to three sibling backend services — no server of its own:
 
-In the project directory, you can run:
+- **agent-service** (`:8080`) — agent info, ships, contracts
+- **navigation-service** (`:8081`) — waypoints, market, shipyard data
+- **fleet-service** (`:3001`) — ship actions (orbit/dock/navigate/extract/etc.)
 
-### `npm start`
+See the [`meta`](https://github.com/V-M-Pioneer-Trading/meta) repo for the
+docker-compose setup that runs all three together.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Auth model
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+There's no registration/login flow. Paste an existing SpaceTraders bearer
+token on the login screen; it's kept in `sessionStorage` (cleared when the
+tab closes) and forwarded as-is to all three backend services, which forward
+it upstream to the SpaceTraders API. Nothing is persisted server-side.
 
-### `npm test`
+## Running locally
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```
+npm install
+npm run dev
+```
 
-### `npm run build`
+Runs on `http://localhost:3000` (pinned in `vite.config.js` to match the
+backend services' default CORS origin). Copy `.env.example` to `.env.local`
+to point at non-default backend URLs.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Structure
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- `src/api/` — thin fetch clients per backend service, forwarding the bearer
+  token from `AuthContext`
+- `src/hooks/queries.js` — TanStack Query hooks (polling, cache keys)
+- `src/components/common/` — reusable LCARS primitives (Panel, PillButton,
+  StatusPill, AlertBanner)
+- `src/components/{fleet,map,shipDetail,contracts,chat,login,layout}/` —
+  feature panels
+- `src/styles/theme.css` — LCARS Classic color palette as CSS variables
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Design source
 
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+`lcars-reference-files/` holds the original LCARS Ultra kit (three palettes,
+Antonio font, full HTML templates) this UI's look was distilled from — kept
+for reference when extending the design system, not part of the build.

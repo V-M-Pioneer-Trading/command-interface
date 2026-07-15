@@ -1,0 +1,43 @@
+.lcars-pill-button {
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--accent-color, var(--lcars-orange));
+  color: var(--lcars-text-on-light);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.5rem 1.25rem;
+  transition: opacity 0.15s ease;
+}
+
+.lcars-pill-button:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.lcars-pill-button:disabled {
+  background: #3a3a3a;
+  color: var(--lcars-text-dim);
+}
+
+.lcars-pill-button.lcars-accent-orange {
+  --accent-color: var(--lcars-orange);
+}
+.lcars-pill-button.lcars-accent-tan {
+  --accent-color: var(--lcars-tan);
+}
+.lcars-pill-button.lcars-accent-lavender {
+  --accent-color: var(--lcars-lavender);
+}
+.lcars-pill-button.lcars-accent-blue {
+  --accent-color: var(--lcars-blue);
+}
+.lcars-pill-button.lcars-accent-violet {
+  --accent-color: var(--lcars-violet);
+}
+.lcars-pill-button.lcars-accent-red {
+  --accent-color: var(--lcars-red-alert);
+}
+.lcars-pill-button.lcars-accent-green {
+  --accent-color: var(--lcars-green);
+}

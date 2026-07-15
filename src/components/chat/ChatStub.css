@@ -1,0 +1,54 @@
+.lcars-chat-stub__body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 0.4rem;
+  padding: 0 0.25rem;
+}
+
+.lcars-chat-stub__log {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+}
+
+.lcars-chat-stub__placeholder {
+  color: var(--lcars-text-dim);
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+.lcars-chat-stub__message {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.lcars-chat-stub__author {
+  font-weight: 700;
+  min-width: 2.5rem;
+}
+
+.lcars-chat-stub__message--user .lcars-chat-stub__author {
+  color: var(--lcars-blue);
+}
+
+.lcars-chat-stub__message--ai .lcars-chat-stub__author {
+  color: var(--lcars-violet);
+}
+
+.lcars-chat-stub__input-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.lcars-chat-stub__input-row input {
+  flex: 1;
+  background: #1a1a1a;
+  color: var(--lcars-text);
+  border: 1px solid var(--lcars-violet);
+  border-radius: 0.3rem;
+  padding: 0.4rem 0.6rem;
+}
