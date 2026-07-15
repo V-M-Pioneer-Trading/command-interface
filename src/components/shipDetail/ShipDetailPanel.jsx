@@ -68,6 +68,7 @@ export function ShipDetailPanel({ token, contracts }) {
         pushAlert(`Refueled ${units} units`, { severity: "info", timeoutMs: 3000 });
       }
       invalidateShip();
+      queryClient.invalidateQueries({ queryKey: ["agent", token] });
     },
     onError: onActionError,
   });
@@ -83,7 +84,10 @@ export function ShipDetailPanel({ token, contracts }) {
   });
   const sellMutation = useMutation({
     mutationFn: ({ symbol, units }) => fleetService.sell(token, selectedShipSymbol, symbol, units),
-    onSuccess: invalidateShip,
+    onSuccess: () => {
+      invalidateShip();
+      queryClient.invalidateQueries({ queryKey: ["agent", token] });
+    },
     onError: onActionError,
   });
   const deliverMutation = useMutation({
