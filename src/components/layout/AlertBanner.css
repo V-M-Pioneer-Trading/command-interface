@@ -32,6 +32,10 @@
   background: var(--lcars-yellow);
 }
 
+.lcars-alert--info {
+  background: var(--lcars-blue);
+}
+
 .lcars-alert__dismiss {
   background: transparent;
   border: none;

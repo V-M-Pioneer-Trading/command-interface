@@ -52,7 +52,17 @@ export function ShipDetailPanel({ token, contracts }) {
   });
   const refuelMutation = useMutation({
     mutationFn: () => fleetService.refuel(token, selectedShipSymbol),
-    onSuccess: invalidateShip,
+    onSuccess: (res) => {
+      const units = res?.data?.transaction?.units;
+      if (units === 0) {
+        pushAlert("Tank already full (or ship has no fuel tank) — nothing to refuel", {
+          severity: "info",
+        });
+      } else if (units > 0) {
+        pushAlert(`Refueled ${units} units`, { severity: "info", timeoutMs: 3000 });
+      }
+      invalidateShip();
+    },
     onError: onActionError,
   });
   const extractMutation = useMutation({
@@ -143,7 +153,8 @@ export function ShipDetailPanel({ token, contracts }) {
         </PillButton>
         <PillButton
           accent="orange"
-          disabled={!isDocked || anyMutating}
+          disabled={!isDocked || anyMutating || ship.fuel?.capacity === 0}
+          title={ship.fuel?.capacity === 0 ? "This ship has no fuel tank" : undefined}
           onClick={() => refuelMutation.mutate()}
         >
           Refuel
