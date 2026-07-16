@@ -29,6 +29,13 @@
   pointer-events: none;
 }
 
+.lcars-system-map__transit-path {
+  stroke: var(--lcars-blue);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  opacity: 0.6;
+}
+
 .lcars-ship-marker {
   cursor: pointer;
 }

@@ -79,6 +79,18 @@ export function SystemMap({ token, systemSymbol }) {
             {scaledWaypoints.map((w) => (
               <WaypointIcon key={w.symbol} waypoint={w} onClick={setSelectedWaypoint} />
             ))}
+            {scaledShips
+              .filter(({ nav }) => nav?.status === "IN_TRANSIT" && nav.route?.origin && nav.route?.destination)
+              .map(({ ship, nav }) => (
+                <line
+                  key={`path-${ship.symbol}`}
+                  className="lcars-system-map__transit-path"
+                  x1={nav.route.origin.x}
+                  y1={nav.route.origin.y}
+                  x2={nav.route.destination.x}
+                  y2={nav.route.destination.y}
+                />
+              ))}
             {scaledShips.map(({ ship, nav }) => (
               <ShipMarker
                 key={ship.symbol}
