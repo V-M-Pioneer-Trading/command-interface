@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSystemWaypointsQuery, useShipsQuery } from "../../hooks/queries";
 import { useSelection } from "../../context/SelectionContext";
+import { useMapZoomPan } from "../../hooks/useMapZoomPan";
 import { Panel } from "../common/Panel";
 import { WaypointIcon } from "./WaypointIcon";
 import { ShipMarker } from "./ShipMarker";
@@ -15,6 +16,7 @@ export function SystemMap({ token, systemSymbol }) {
   const { data: ships } = useShipsQuery(token);
   const { selectedShipSymbol, setSelectedShipSymbol } = useSelection();
   const [selectedWaypoint, setSelectedWaypoint] = useState(null);
+  const { scale, tx, ty, isDragging, bind, containerRef } = useMapZoomPan({ viewSize: VIEW_SIZE });
 
   const waypoints = waypointData?.data || [];
 
@@ -72,33 +74,37 @@ export function SystemMap({ token, systemSymbol }) {
         {isLoading && <div className="lcars-system-map__loading">Loading system...</div>}
         {!isLoading && waypoints.length > 0 && (
           <svg
+            ref={containerRef}
             viewBox={`0 0 ${VIEW_SIZE} ${VIEW_SIZE}`}
-            className="lcars-system-map__svg"
+            className={`lcars-system-map__svg${isDragging ? " is-dragging" : ""}`}
             onClick={() => setSelectedWaypoint(null)}
+            {...bind}
           >
-            {scaledWaypoints.map((w) => (
-              <WaypointIcon key={w.symbol} waypoint={w} onClick={setSelectedWaypoint} />
-            ))}
-            {scaledShips
-              .filter(({ nav }) => nav?.status === "IN_TRANSIT" && nav.route?.origin && nav.route?.destination)
-              .map(({ ship, nav }) => (
-                <line
-                  key={`path-${ship.symbol}`}
-                  className="lcars-system-map__transit-path"
-                  x1={nav.route.origin.x}
-                  y1={nav.route.origin.y}
-                  x2={nav.route.destination.x}
-                  y2={nav.route.destination.y}
+            <g transform={`translate(${tx},${ty}) scale(${scale})`}>
+              {scaledWaypoints.map((w) => (
+                <WaypointIcon key={w.symbol} waypoint={w} onClick={setSelectedWaypoint} />
+              ))}
+              {scaledShips
+                .filter(({ nav }) => nav?.status === "IN_TRANSIT" && nav.route?.origin && nav.route?.destination)
+                .map(({ ship, nav }) => (
+                  <line
+                    key={`path-${ship.symbol}`}
+                    className="lcars-system-map__transit-path"
+                    x1={nav.route.origin.x}
+                    y1={nav.route.origin.y}
+                    x2={nav.route.destination.x}
+                    y2={nav.route.destination.y}
+                  />
+                ))}
+              {scaledShips.map(({ ship, nav }) => (
+                <ShipMarker
+                  key={ship.symbol}
+                  ship={{ ...ship, nav }}
+                  isSelected={ship.symbol === selectedShipSymbol}
+                  onClick={setSelectedShipSymbol}
                 />
               ))}
-            {scaledShips.map(({ ship, nav }) => (
-              <ShipMarker
-                key={ship.symbol}
-                ship={{ ...ship, nav }}
-                isSelected={ship.symbol === selectedShipSymbol}
-                onClick={setSelectedShipSymbol}
-              />
-            ))}
+            </g>
           </svg>
         )}
         {selectedWaypoint && (
