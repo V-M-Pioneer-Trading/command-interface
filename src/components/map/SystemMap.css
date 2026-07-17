@@ -15,6 +15,11 @@
 .lcars-system-map__svg {
   width: 100%;
   height: 100%;
+  cursor: grab;
+}
+
+.lcars-system-map__svg.is-dragging {
+  cursor: grabbing;
 }
 
 .lcars-waypoint-icon {
@@ -27,6 +32,13 @@
   text-anchor: middle;
   font-family: var(--font-body);
   pointer-events: none;
+}
+
+.lcars-system-map__transit-path {
+  stroke: var(--lcars-blue);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  opacity: 0.6;
 }
 
 .lcars-ship-marker {

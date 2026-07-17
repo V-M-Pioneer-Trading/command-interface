@@ -41,4 +41,22 @@ export const fleetService = {
       token,
       body: { shipSymbol, tradeSymbol, units },
     }),
+  setFlightMode: (token, shipSymbol, flightMode) =>
+    request(base, `/ships/${shipSymbol}/nav`, {
+      method: "PATCH",
+      token,
+      body: { flightMode },
+    }),
+  purchaseCargo: (token, shipSymbol, symbol, units) =>
+    request(base, `/ships/${shipSymbol}/purchase`, {
+      method: "POST",
+      token,
+      body: { symbol, units },
+    }),
+  transferCargo: (token, shipSymbol, tradeSymbol, units, targetShipSymbol) =>
+    request(base, `/ships/${shipSymbol}/transfer`, {
+      method: "POST",
+      token,
+      body: { tradeSymbol, units, shipSymbol: targetShipSymbol },
+    }),
 };

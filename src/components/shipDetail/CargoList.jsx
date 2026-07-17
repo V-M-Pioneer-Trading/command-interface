@@ -7,13 +7,16 @@ export function CargoList({
   hasMarketplace,
   currentWaypointSymbol,
   contracts,
+  otherShipsAtWaypoint,
   onSell,
   onDeliver,
+  onTransfer,
   busy,
 }) {
   const [activeRow, setActiveRow] = useState(null);
   const [units, setUnits] = useState(1);
   const [contractId, setContractId] = useState("");
+  const [targetShip, setTargetShip] = useState("");
 
   const inventory = cargo?.inventory || [];
   const activeContracts = (contracts || []).filter((c) => c.accepted && !c.fulfilled);
@@ -26,9 +29,11 @@ export function CargoList({
     setActiveRow(activeRow?.symbol === symbol && activeRow?.mode === mode ? null : { symbol, mode });
     setUnits(1);
     setContractId("");
+    setTargetShip("");
   };
 
   const canSell = docked && hasMarketplace;
+  const hasOtherShips = (otherShipsAtWaypoint || []).length > 0;
 
   return (
     <ul className="lcars-cargo-list">
@@ -76,6 +81,14 @@ export function CargoList({
               >
                 Deliver
               </PillButton>
+              <PillButton
+                accent="blue"
+                disabled={!hasOtherShips || busy}
+                title={!hasOtherShips ? "No other ship at this waypoint" : undefined}
+                onClick={() => openRow(item.symbol, "transfer")}
+              >
+                Transfer
+              </PillButton>
             </div>
             {activeRow?.symbol === item.symbol && (
               <div className="lcars-cargo-list__expand">
@@ -85,6 +98,16 @@ export function CargoList({
                     {deliverableContracts.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.id.slice(0, 8)}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {activeRow.mode === "transfer" && (
+                  <select value={targetShip} onChange={(e) => setTargetShip(e.target.value)}>
+                    <option value="">Select ship...</option>
+                    {(otherShipsAtWaypoint || []).map((s) => (
+                      <option key={s.symbol} value={s.symbol}>
+                        {s.symbol}
                       </option>
                     ))}
                   </select>
@@ -102,13 +125,16 @@ export function CargoList({
                     busy ||
                     units < 1 ||
                     units > item.units ||
-                    (activeRow.mode === "deliver" && !contractId)
+                    (activeRow.mode === "deliver" && !contractId) ||
+                    (activeRow.mode === "transfer" && !targetShip)
                   }
                   onClick={() => {
                     if (activeRow.mode === "sell") {
                       onSell(item.symbol, units);
-                    } else {
+                    } else if (activeRow.mode === "deliver") {
                       onDeliver(contractId, item.symbol, units);
+                    } else {
+                      onTransfer(targetShip, item.symbol, units);
                     }
                     setActiveRow(null);
                   }}

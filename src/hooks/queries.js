@@ -7,6 +7,7 @@ const SHIPS_POLL_MS = 12_000;
 const AGENT_POLL_MS = 20_000;
 const CONTRACTS_POLL_MS = 30_000;
 const COOLDOWN_POLL_MS = 5_000;
+const MARKET_POLL_MS = 30_000;
 
 export function useAgentQuery(token) {
   return useQuery({
@@ -59,5 +60,14 @@ export function useCargoQuery(token, shipSymbol) {
     queryFn: () => fleetService.getCargo(token, shipSymbol),
     enabled: !!token && !!shipSymbol,
     select: (res) => res?.data ?? null,
+  });
+}
+
+export function useMarketQuery(token, waypointSymbol, { enabled = true } = {}) {
+  return useQuery({
+    queryKey: ["market", token, waypointSymbol],
+    queryFn: () => navigationService.getMarket(token, waypointSymbol),
+    enabled: !!token && !!waypointSymbol && enabled,
+    refetchInterval: MARKET_POLL_MS,
   });
 }

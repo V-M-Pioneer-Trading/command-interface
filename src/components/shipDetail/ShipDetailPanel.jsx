@@ -7,16 +7,22 @@ import {
   useCooldownQuery,
   useCargoQuery,
   useSystemWaypointsQuery,
+  useMarketQuery,
+  useAgentQuery,
 } from "../../hooks/queries";
 import { fleetService } from "../../api/fleetService";
 import { Panel } from "../common/Panel";
 import { PillButton } from "../common/PillButton";
 import { StatusPill } from "../common/StatusPill";
 import { CooldownTimer } from "./CooldownTimer";
+import { TransitTimer } from "./TransitTimer";
 import { CargoList } from "./CargoList";
+import { MarketList } from "./MarketList";
 import { SurveyList } from "./SurveyList";
 import { NavigatePicker } from "./NavigatePicker";
 import "./ShipDetailPanel.css";
+
+const FLIGHT_MODES = ["CRUISE", "BURN", "DRIFT", "STEALTH"];
 
 export function ShipDetailPanel({ token, contracts }) {
   const { selectedShipSymbol } = useSelection();
@@ -26,7 +32,16 @@ export function ShipDetailPanel({ token, contracts }) {
   const { data: cooldownResp } = useCooldownQuery(token, selectedShipSymbol);
   const { data: cargo } = useCargoQuery(token, selectedShipSymbol);
   const { data: waypointData } = useSystemWaypointsQuery(token, ship?.nav?.systemSymbol);
+  const { data: agent } = useAgentQuery(token);
   const cooldown = cooldownResp?.data;
+
+  const status = ship?.nav?.status;
+  const isDocked = status === "DOCKED";
+  const currentWaypoint = waypointData?.data?.find((w) => w.symbol === ship?.nav?.waypointSymbol);
+  const hasMarketplace = !!currentWaypoint?.traits?.some((t) => t.symbol === "MARKETPLACE");
+  const { data: market } = useMarketQuery(token, ship?.nav?.waypointSymbol, {
+    enabled: isDocked && hasMarketplace,
+  });
 
   const [surveys, setSurveys] = useState([]);
   const { pushAlert } = useAlerts();
@@ -107,6 +122,26 @@ export function ShipDetailPanel({ token, contracts }) {
     },
     onError: (err) => pushAlert(err.message || "Survey failed"),
   });
+  const flightModeMutation = useMutation({
+    mutationFn: (flightMode) => fleetService.setFlightMode(token, selectedShipSymbol, flightMode),
+    onSuccess: invalidateShip,
+    onError: onActionError,
+  });
+  const purchaseMutation = useMutation({
+    mutationFn: ({ symbol, units }) =>
+      fleetService.purchaseCargo(token, selectedShipSymbol, symbol, units),
+    onSuccess: () => {
+      invalidateShip();
+      queryClient.invalidateQueries({ queryKey: ["agent", token] });
+    },
+    onError: onActionError,
+  });
+  const transferMutation = useMutation({
+    mutationFn: ({ targetShipSymbol, symbol, units }) =>
+      fleetService.transferCargo(token, selectedShipSymbol, symbol, units, targetShipSymbol),
+    onSuccess: invalidateShip,
+    onError: onActionError,
+  });
 
   if (!selectedShipSymbol || !ship) {
     return (
@@ -116,12 +151,11 @@ export function ShipDetailPanel({ token, contracts }) {
     );
   }
 
-  const status = ship.nav?.status;
   const hasCooldown = !!cooldown && new Date(cooldown.expiration).getTime() > Date.now();
-  const isDocked = status === "DOCKED";
   const isOrbiting = status === "IN_ORBIT";
-  const currentWaypoint = waypointData?.data?.find((w) => w.symbol === ship.nav?.waypointSymbol);
-  const hasMarketplace = !!currentWaypoint?.traits?.some((t) => t.symbol === "MARKETPLACE");
+  const otherShipsAtWaypoint = (ships || []).filter(
+    (s) => s.symbol !== ship.symbol && s.nav?.waypointSymbol === ship.nav?.waypointSymbol
+  );
   const anyMutating =
     orbitMutation.isPending ||
     dockMutation.isPending ||
@@ -131,7 +165,10 @@ export function ShipDetailPanel({ token, contracts }) {
     extractSurveyMutation.isPending ||
     surveyMutation.isPending ||
     sellMutation.isPending ||
-    deliverMutation.isPending;
+    deliverMutation.isPending ||
+    flightModeMutation.isPending ||
+    purchaseMutation.isPending ||
+    transferMutation.isPending;
 
   return (
     <Panel title={ship.symbol} accent="tan" className="lcars-ship-detail">
@@ -139,6 +176,18 @@ export function ShipDetailPanel({ token, contracts }) {
         <StatusPill status={status} />
         <span>{ship.nav?.waypointSymbol}</span>
         <CooldownTimer cooldown={cooldown} />
+        <TransitTimer nav={ship.nav} />
+        <select
+          value={ship.nav?.flightMode || "CRUISE"}
+          disabled={anyMutating}
+          onChange={(e) => flightModeMutation.mutate(e.target.value)}
+        >
+          {FLIGHT_MODES.map((mode) => (
+            <option key={mode} value={mode}>
+              {mode}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="lcars-ship-detail__stats">
@@ -211,12 +260,29 @@ export function ShipDetailPanel({ token, contracts }) {
         hasMarketplace={hasMarketplace}
         currentWaypointSymbol={ship.nav?.waypointSymbol}
         contracts={contracts}
+        otherShipsAtWaypoint={otherShipsAtWaypoint}
         busy={anyMutating}
         onSell={(symbol, units) => sellMutation.mutate({ symbol, units })}
         onDeliver={(contractId, symbol, units) =>
           deliverMutation.mutate({ contractId, symbol, units })
         }
+        onTransfer={(targetShipSymbol, symbol, units) =>
+          transferMutation.mutate({ targetShipSymbol, symbol, units })
+        }
       />
+
+      {isDocked && hasMarketplace && (
+        <>
+          <h3 className="lcars-ship-detail__subheading">Market</h3>
+          <MarketList
+            market={market}
+            docked={isDocked}
+            credits={agent?.credits}
+            busy={anyMutating}
+            onBuy={(symbol, units) => purchaseMutation.mutate({ symbol, units })}
+          />
+        </>
+      )}
     </Panel>
   );
 }

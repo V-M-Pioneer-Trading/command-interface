@@ -14,6 +14,68 @@
   flex-wrap: wrap;
 }
 
+.lcars-ship-detail__status-row select {
+  background: #1a1a1a;
+  color: var(--lcars-text);
+  border: 1px solid var(--lcars-orange);
+  border-radius: 0.3rem;
+  font-size: 0.75rem;
+}
+
+.lcars-market-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.lcars-market-list__empty {
+  padding: 0.5rem;
+  color: var(--lcars-text-dim);
+  font-size: 0.8rem;
+}
+
+.lcars-market-list__row {
+  background: #1a1a1a;
+  border-radius: 0.3rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.lcars-market-list__main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.lcars-market-list__symbol {
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--lcars-tan);
+}
+
+.lcars-market-list__price {
+  font-size: 0.75rem;
+  color: var(--lcars-text-dim);
+}
+
+.lcars-market-list__expand {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.lcars-market-list__expand input {
+  background: #101010;
+  color: var(--lcars-text);
+  border: 1px solid var(--lcars-blue);
+  border-radius: 0.3rem;
+  padding: 0.2rem 0.4rem;
+  width: 4rem;
+}
+
 .lcars-ship-detail__stats {
   display: flex;
   gap: 1rem;
@@ -37,6 +99,12 @@
 
 .lcars-cooldown {
   color: var(--lcars-red-alert);
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.lcars-transit-timer {
+  color: var(--lcars-blue);
   font-weight: 700;
   font-size: 0.75rem;
 }
