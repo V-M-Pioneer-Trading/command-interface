@@ -73,6 +73,12 @@ export function useMapZoomPan({ viewSize }) {
     drag.current.active = false;
   }
 
+  // Capture can be lost without a pointerup reaching us (alt-tab, OS/browser gesture
+  // takeover) — without this, drag.current.active would stay stuck true.
+  function onLostPointerCapture() {
+    drag.current.active = false;
+  }
+
   function onClickCapture(e) {
     if (isDragging) {
       e.stopPropagation();
@@ -86,6 +92,12 @@ export function useMapZoomPan({ viewSize }) {
     ty,
     isDragging,
     containerRef,
-    bind: { onPointerDown, onPointerMove, onPointerUp, onPointerLeave: () => {}, onClickCapture },
+    bind: {
+      onPointerDown,
+      onPointerMove,
+      onPointerUp,
+      onLostPointerCapture,
+      onClickCapture,
+    },
   };
 }
