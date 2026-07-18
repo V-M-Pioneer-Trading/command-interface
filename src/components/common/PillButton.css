@@ -41,3 +41,6 @@
 .lcars-pill-button.lcars-accent-green {
   --accent-color: var(--lcars-green);
 }
+.lcars-pill-button.lcars-accent-yellow {
+  --accent-color: var(--lcars-yellow);
+}

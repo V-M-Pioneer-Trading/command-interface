@@ -2,12 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { agentService } from "../api/agentService";
 import { navigationService } from "../api/navigationService";
 import { fleetService } from "../api/fleetService";
+import { automationService } from "../api/automationService";
 
 const SHIPS_POLL_MS = 12_000;
 const AGENT_POLL_MS = 20_000;
 const CONTRACTS_POLL_MS = 30_000;
 const COOLDOWN_POLL_MS = 5_000;
 const MARKET_POLL_MS = 30_000;
+const AUTOPILOT_STATUS_POLL_MS = 5_000;
+const SHIP_TASK_POLL_MS = 5_000;
 
 export function useAgentQuery(token) {
   return useQuery({
@@ -69,5 +72,30 @@ export function useMarketQuery(token, waypointSymbol, { enabled = true } = {}) {
     queryFn: () => navigationService.getMarket(token, waypointSymbol),
     enabled: !!token && !!waypointSymbol && enabled,
     refetchInterval: MARKET_POLL_MS,
+  });
+}
+
+export function useAutopilotStatusQuery() {
+  return useQuery({
+    queryKey: ["autopilotStatus"],
+    queryFn: () => automationService.getStatus(),
+    refetchInterval: AUTOPILOT_STATUS_POLL_MS,
+  });
+}
+
+// 404 ("no task for this ship yet") resolves to `null` rather than an error —
+// a ship automation-service isn't managing is a normal state for this query,
+// not a failure worth react-query's retry/error-boundary treatment. A real
+// error here fans out per ship in the fleet list, so retries are capped at 1
+// (rather than react-query's default 3x backoff) to avoid a struggling
+// automation-service getting hit by N ships' worth of stacked retries on top
+// of the fixed 5s poll.
+export function useShipTaskQuery(shipSymbol) {
+  return useQuery({
+    queryKey: ["shipTask", shipSymbol],
+    queryFn: () => automationService.getShipTask(shipSymbol),
+    enabled: !!shipSymbol,
+    retry: 1,
+    refetchInterval: SHIP_TASK_POLL_MS,
   });
 }

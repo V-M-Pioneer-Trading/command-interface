@@ -1,11 +1,18 @@
-import { useAgentQuery } from "../../hooks/queries";
+import { useAgentQuery, useAutopilotStatusQuery } from "../../hooks/queries";
 import { useAuth } from "../../context/AuthContext";
 import { PillButton } from "../common/PillButton";
 import "./AgentBar.css";
 
-export function AgentBar({ contractCount, onToggleContracts, contractsOpen }) {
+export function AgentBar({
+  contractCount,
+  onToggleContracts,
+  contractsOpen,
+  onToggleAutopilot,
+  autopilotOpen,
+}) {
   const { token, logout } = useAuth();
   const { data: agent, isLoading } = useAgentQuery(token);
+  const { data: autopilotStatus } = useAutopilotStatusQuery();
 
   return (
     <div className="lcars-agent-bar">
@@ -28,6 +35,13 @@ export function AgentBar({ contractCount, onToggleContracts, contractsOpen }) {
         <PillButton accent="lavender" onClick={onToggleContracts}>
           Contracts{contractCount ? ` (${contractCount})` : ""}
           {contractsOpen ? " ▲" : " ▼"}
+        </PillButton>
+        <PillButton
+          accent={autopilotStatus?.status === "armed" ? "green" : "orange"}
+          onClick={onToggleAutopilot}
+        >
+          Autopilot{autopilotStatus?.status ? ` (${autopilotStatus.status})` : ""}
+          {autopilotOpen ? " ▲" : " ▼"}
         </PillButton>
         <PillButton accent="red" onClick={logout}>
           Disconnect

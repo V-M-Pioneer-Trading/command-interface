@@ -1,0 +1,113 @@
+.lcars-autopilot-panel {
+  position: absolute;
+  top: 4.5rem;
+  right: 1rem;
+  width: 22rem;
+  background: var(--lcars-panel-bg);
+  border: 1px solid var(--lcars-orange);
+  border-radius: var(--radius-panel);
+  z-index: 500;
+  padding-bottom: 0.75rem;
+}
+
+.lcars-autopilot-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--lcars-orange);
+  padding: 0.5rem 1rem;
+  border-top-left-radius: var(--radius-panel);
+  border-top-right-radius: var(--radius-panel);
+}
+
+.lcars-autopilot-panel__header h2 {
+  color: var(--lcars-text-on-light);
+  font-size: 1rem;
+}
+
+.lcars-autopilot-panel__close {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--lcars-text-on-light);
+}
+
+.lcars-autopilot-panel__status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+.lcars-autopilot-panel__status-label {
+  color: var(--lcars-text-dim);
+}
+
+.lcars-autopilot-panel__status-value {
+  font-weight: 700;
+  padding: 0.1rem 0.6rem;
+  border-radius: var(--radius-pill);
+}
+
+.lcars-autopilot-panel__status-value.status-armed {
+  background: var(--lcars-green);
+  color: var(--lcars-text-on-light);
+}
+
+.lcars-autopilot-panel__status-value.status-paused {
+  background: var(--lcars-yellow);
+  color: var(--lcars-text-on-light);
+}
+
+.lcars-autopilot-panel__status-value.status-disarmed,
+.lcars-autopilot-panel__status-value.status-aborted {
+  background: #333;
+  color: var(--lcars-text);
+}
+
+.lcars-autopilot-panel__mode-value {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-pill);
+  color: var(--lcars-text-on-light);
+}
+
+.lcars-autopilot-panel__mode-value.mode-live {
+  background: var(--lcars-red-alert);
+}
+
+.lcars-autopilot-panel__mode-value.mode-shadow {
+  background: var(--lcars-blue);
+}
+
+.lcars-autopilot-panel__arm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0 1rem 0.75rem;
+}
+
+.lcars-autopilot-panel__token-input {
+  background: #1a1a1a;
+  border: 1px solid var(--lcars-text-dim);
+  border-radius: 0.3rem;
+  padding: 0.4rem 0.6rem;
+  color: var(--lcars-text);
+  font-size: 0.8rem;
+}
+
+.lcars-autopilot-panel__mode-select {
+  background: #1a1a1a;
+  border: 1px solid var(--lcars-text-dim);
+  border-radius: 0.3rem;
+  padding: 0.4rem 0.6rem;
+  color: var(--lcars-text);
+  font-size: 0.8rem;
+}
+
+.lcars-autopilot-panel__actions {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0 1rem;
+}

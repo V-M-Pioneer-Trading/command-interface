@@ -9,6 +9,7 @@ import { FleetList } from "../fleet/FleetList";
 import { SystemMap } from "../map/SystemMap";
 import { ShipDetailPanel } from "../shipDetail/ShipDetailPanel";
 import { ContractsPanel } from "../contracts/ContractsPanel";
+import { AutopilotPanel } from "../autopilot/AutopilotPanel";
 import { ChatStub } from "../chat/ChatStub";
 import "./Dashboard.css";
 
@@ -17,6 +18,7 @@ export function Dashboard() {
   const { data: agent } = useAgentQuery(token);
   const { data: contracts } = useContractsQuery(token);
   const [contractsOpen, setContractsOpen] = useState(false);
+  const [autopilotOpen, setAutopilotOpen] = useState(false);
 
   const systemSymbol = systemSymbolFromWaypoint(agent?.headquarters);
   const activeContractCount =
@@ -30,10 +32,13 @@ export function Dashboard() {
           contractCount={activeContractCount}
           contractsOpen={contractsOpen}
           onToggleContracts={() => setContractsOpen((v) => !v)}
+          autopilotOpen={autopilotOpen}
+          onToggleAutopilot={() => setAutopilotOpen((v) => !v)}
         />
         {contractsOpen && (
           <ContractsPanel contracts={contracts} onClose={() => setContractsOpen(false)} />
         )}
+        {autopilotOpen && <AutopilotPanel onClose={() => setAutopilotOpen(false)} />}
         <div className="lcars-dashboard__fleet">
           <FleetList token={token} />
         </div>
