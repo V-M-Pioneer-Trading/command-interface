@@ -59,4 +59,10 @@ export const fleetService = {
       token,
       body: { tradeSymbol, units, shipSymbol: targetShipSymbol },
     }),
+  purchaseShip: (token, shipType, waypointSymbol) =>
+    request(base, "/ships/purchase", {
+      method: "POST",
+      token,
+      body: { shipType, waypointSymbol },
+    }),
 };
