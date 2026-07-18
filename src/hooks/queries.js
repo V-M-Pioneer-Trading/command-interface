@@ -11,6 +11,8 @@ const COOLDOWN_POLL_MS = 5_000;
 const MARKET_POLL_MS = 30_000;
 const AUTOPILOT_STATUS_POLL_MS = 5_000;
 const SHIP_TASK_POLL_MS = 5_000;
+const METRICS_CONTEXT_POLL_MS = 15_000;
+const ANOMALIES_DIGEST_POLL_MS = 15_000;
 
 export function useAgentQuery(token) {
   return useQuery({
@@ -97,5 +99,25 @@ export function useShipTaskQuery(shipSymbol) {
     enabled: !!shipSymbol,
     retry: 1,
     refetchInterval: SHIP_TASK_POLL_MS,
+  });
+}
+
+// `null` means metrics rollups aren't configured on this deployment (the
+// route doesn't exist), not an error — same treatment as useShipTaskQuery's 404.
+export function useMetricsContextQuery({ rollupLimit, eventLimit } = {}) {
+  return useQuery({
+    queryKey: ["metricsContext", rollupLimit, eventLimit],
+    queryFn: () => automationService.getMetricsContext({ rollupLimit, eventLimit }),
+    refetchInterval: METRICS_CONTEXT_POLL_MS,
+  });
+}
+
+// `null` means anomaly detection isn't configured (no webhook set) — same
+// "feature not enabled" treatment as useMetricsContextQuery.
+export function useAnomaliesDigestQuery({ windowMinutes, anomalyLimit, eventLimit } = {}) {
+  return useQuery({
+    queryKey: ["anomaliesDigest", windowMinutes, anomalyLimit, eventLimit],
+    queryFn: () => automationService.getAnomaliesDigest({ windowMinutes, anomalyLimit, eventLimit }),
+    refetchInterval: ANOMALIES_DIGEST_POLL_MS,
   });
 }

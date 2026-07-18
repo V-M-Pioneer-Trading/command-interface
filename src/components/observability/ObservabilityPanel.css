@@ -1,0 +1,63 @@
+.lcars-observability-panel {
+  position: absolute;
+  top: 4.5rem;
+  /* Contracts (right: 1rem, 22rem wide) and Autopilot (right: 24rem, 22rem
+     wide) can both be open at the same time — offset past both. */
+  right: 47rem;
+  width: 28rem;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: var(--lcars-panel-bg);
+  border: 1px solid var(--lcars-blue);
+  border-radius: var(--radius-panel);
+  z-index: 500;
+  padding-bottom: 0.75rem;
+}
+
+.lcars-observability-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--lcars-blue);
+  padding: 0.5rem 1rem;
+  border-top-left-radius: var(--radius-panel);
+  border-top-right-radius: var(--radius-panel);
+  position: sticky;
+  top: 0;
+}
+
+.lcars-observability-panel__header h2 {
+  color: var(--lcars-text-on-light);
+  font-size: 1rem;
+}
+
+.lcars-observability-panel__close {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--lcars-text-on-light);
+}
+
+.lcars-observability-panel__section {
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid #222;
+}
+
+.lcars-observability-panel__section:last-child {
+  border-bottom: none;
+}
+
+.lcars-observability-panel__section h3 {
+  font-size: 0.8rem;
+  color: var(--lcars-blue);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+}
+
+.lcars-observability-panel__loading,
+.lcars-observability-panel__disabled {
+  color: var(--lcars-text-dim);
+  font-size: 0.75rem;
+  padding: 0.5rem 0;
+}

@@ -9,6 +9,8 @@ export function AgentBar({
   contractsOpen,
   onToggleAutopilot,
   autopilotOpen,
+  onToggleObservability,
+  observabilityOpen,
 }) {
   const { token, logout } = useAuth();
   const { data: agent, isLoading } = useAgentQuery(token);
@@ -42,6 +44,10 @@ export function AgentBar({
         >
           Autopilot{autopilotStatus?.status ? ` (${autopilotStatus.status})` : ""}
           {autopilotOpen ? " ▲" : " ▼"}
+        </PillButton>
+        <PillButton accent="blue" onClick={onToggleObservability}>
+          Observability
+          {observabilityOpen ? " ▲" : " ▼"}
         </PillButton>
         <PillButton accent="red" onClick={logout}>
           Disconnect

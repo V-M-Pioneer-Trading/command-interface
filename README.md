@@ -56,15 +56,52 @@ from any status). Every ship in the fleet list also gets a small task badge
 ship automation-service isn't managing (a 404 there is a normal, not-managed
 state, not an error).
 
+Toggled panels can be opened simultaneously (Contracts, Autopilot, and
+Observability, below, all coexist) — each is pinned to a distinct horizontal
+offset (`right: 1rem` / `24rem` / `47rem`) sized to its neighbors' widths so
+they tile left-to-right instead of stacking on top of each other.
+
+## Observability panel (meta#17)
+
+Toggled from the "Observability" button in the agent bar (same pattern as
+Contracts/Autopilot): four sections reading from automation-service's
+aggregate endpoints.
+
+- **Credits / Hour** — a hand-rolled inline SVG line chart (no charting
+  library, matching `SystemMap.jsx`'s existing convention) from
+  `GET /metrics/context`'s rollups. 2px line, an end-dot direct-labeled with
+  its value, hairline recessive gridlines, and a crosshair+tooltip that snaps
+  to the nearest rollup on hover — every value it shows is also listed as
+  plain text below the chart (a single series needs no legend; the section
+  title already names what's plotted), so nothing is hover-only.
+- **Event / Decision Feed** — the same endpoint's recent event-log entries
+  (planner decisions, replans, task transitions), each showing its logged
+  `detail` as plain key=value text — the detail *is* the reason, not
+  decoration.
+- **Anomalies** — from `GET /anomalies/digest`, each anomaly's `detail` shown
+  the same way (the rationale — the threshold/values that made the check
+  fire), plus a delivered/pending webhook-delivery badge.
+- **AI-Action / Notable Events** — the digest's own notable-events list
+  (lifecycle transitions, task failures); once meta#19's AI supervisor exists
+  and starts appending its own event types to the log, they'll show up here
+  automatically with no UI change needed.
+
+All four sections distinguish three states correctly: loading, "not
+configured on this deployment" (metrics rollups and anomaly detection are
+both optional backend features — a 404 from either endpoint means the
+feature isn't enabled, not an error), and loaded.
+
 ## Structure
 
 - `src/api/` — thin fetch clients per backend service; agent/navigation/fleet
   forward the bearer token from `AuthContext`, `automationService.js` doesn't
   (see Auth model above)
 - `src/hooks/queries.js` — TanStack Query hooks (polling, cache keys)
+- `src/utils/eventLog.js` — shared formatting for event/anomaly `detail`
+  blobs and timestamps, used by both the Event Feed and Anomaly Log
 - `src/components/common/` — reusable LCARS primitives (Panel, PillButton,
   StatusPill, AlertBanner)
-- `src/components/{fleet,map,shipDetail,contracts,autopilot,chat,login,layout}/` —
+- `src/components/{fleet,map,shipDetail,contracts,autopilot,observability,chat,login,layout}/` —
   feature panels
 - `src/styles/theme.css` — LCARS Classic color palette as CSS variables
 

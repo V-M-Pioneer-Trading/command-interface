@@ -48,4 +48,29 @@ export const automationService = {
     const body = await res.json();
     return body.task;
   },
+  // Both routes below only exist if the operator configured the relevant
+  // scheduler (metricsRollupIntervalMs / an anomaly webhook) — otherwise
+  // automation-service never registers them and a call 404s. That's a normal
+  // "feature not enabled on this deployment" state here, not an error.
+  getMetricsContext: async ({ rollupLimit, eventLimit } = {}) => {
+    const params = new URLSearchParams();
+    if (rollupLimit) params.set("rollupLimit", rollupLimit);
+    if (eventLimit) params.set("eventLimit", eventLimit);
+    const qs = params.toString();
+    const res = await fetch(`${base}/metrics/context${qs ? `?${qs}` : ""}`);
+    if (res.status === 404) return null;
+    if (!res.ok) throw new ApiError(res.status, await parseErrorMessage(res));
+    return res.json();
+  },
+  getAnomaliesDigest: async ({ windowMinutes, anomalyLimit, eventLimit } = {}) => {
+    const params = new URLSearchParams();
+    if (windowMinutes) params.set("windowMinutes", windowMinutes);
+    if (anomalyLimit) params.set("anomalyLimit", anomalyLimit);
+    if (eventLimit) params.set("eventLimit", eventLimit);
+    const qs = params.toString();
+    const res = await fetch(`${base}/anomalies/digest${qs ? `?${qs}` : ""}`);
+    if (res.status === 404) return null;
+    if (!res.ok) throw new ApiError(res.status, await parseErrorMessage(res));
+    return res.json();
+  },
 };
