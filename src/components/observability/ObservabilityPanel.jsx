@@ -4,7 +4,7 @@ import { EventFeed } from "./EventFeed";
 import { AnomalyLog } from "./AnomalyLog";
 import "./ObservabilityPanel.css";
 
-export function ObservabilityPanel({ onClose }) {
+export function ObservabilityPanel({ onClose, style }) {
   const { data: metricsContext, isLoading: metricsLoading } = useMetricsContextQuery({
     rollupLimit: 20,
     eventLimit: 20,
@@ -16,7 +16,7 @@ export function ObservabilityPanel({ onClose }) {
   });
 
   return (
-    <div className="lcars-observability-panel">
+    <div className="lcars-observability-panel" style={style}>
       <div className="lcars-observability-panel__header">
         <h2>Observability</h2>
         <button type="button" onClick={onClose} className="lcars-observability-panel__close">

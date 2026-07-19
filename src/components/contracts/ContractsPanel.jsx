@@ -48,7 +48,7 @@ function ContractCard({ contract, onAccept, onFulfill, busy }) {
   );
 }
 
-export function ContractsPanel({ contracts, onClose }) {
+export function ContractsPanel({ contracts, onClose, style }) {
   const { token } = useAuth();
   const { pushAlert } = useAlerts();
   const queryClient = useQueryClient();
@@ -72,7 +72,7 @@ export function ContractsPanel({ contracts, onClose }) {
   const busy = acceptMutation.isPending || fulfillMutation.isPending;
 
   return (
-    <div className="lcars-contracts-panel">
+    <div className="lcars-contracts-panel" style={style}>
       <div className="lcars-contracts-panel__header">
         <h2>Contracts</h2>
         <button type="button" onClick={onClose} className="lcars-contracts-panel__close">

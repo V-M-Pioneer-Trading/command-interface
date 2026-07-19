@@ -7,7 +7,7 @@ import { automationService } from "../../api/automationService";
 import { PillButton } from "../common/PillButton";
 import "./AutopilotPanel.css";
 
-export function AutopilotPanel({ onClose }) {
+export function AutopilotPanel({ onClose, style }) {
   const { token: sessionToken } = useAuth();
   const { pushAlert } = useAlerts();
   const queryClient = useQueryClient();
@@ -46,7 +46,7 @@ export function AutopilotPanel({ onClose }) {
   const canAbort = currentStatus === "armed" || currentStatus === "paused";
 
   return (
-    <div className="lcars-autopilot-panel">
+    <div className="lcars-autopilot-panel" style={style}>
       <div className="lcars-autopilot-panel__header">
         <h2>Autopilot</h2>
         <button type="button" onClick={onClose} className="lcars-autopilot-panel__close">

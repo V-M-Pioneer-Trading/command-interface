@@ -1,9 +1,10 @@
 .lcars-observability-panel {
   position: absolute;
   top: 4.5rem;
-  /* Contracts (right: 1rem, 22rem wide) and Autopilot (right: 24rem, 22rem
-     wide) can both be open at the same time — offset past both. */
-  right: 47rem;
+  /* Fallback only — Dashboard.jsx computes and overrides this via inline
+     style whenever another toggle panel could be open at the same time, so
+     they never overlap (see src/utils/togglePanelLayout.js). */
+  right: 1rem;
   width: 28rem;
   max-height: 80vh;
   overflow-y: auto;

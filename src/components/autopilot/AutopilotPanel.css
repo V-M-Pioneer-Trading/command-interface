@@ -1,9 +1,10 @@
 .lcars-autopilot-panel {
   position: absolute;
   top: 4.5rem;
-  /* Contracts (22rem wide, right: 1rem) can be open at the same time —
-     offset past it (1 + 22 + 1 gap) so the two never overlap. */
-  right: 24rem;
+  /* Fallback only — Dashboard.jsx computes and overrides this via inline
+     style whenever another toggle panel could be open at the same time, so
+     the two never overlap (see src/utils/togglePanelLayout.js). */
+  right: 1rem;
   width: 22rem;
   background: var(--lcars-panel-bg);
   border: 1px solid var(--lcars-orange);

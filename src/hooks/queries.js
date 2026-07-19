@@ -13,6 +13,7 @@ const AUTOPILOT_STATUS_POLL_MS = 5_000;
 const SHIP_TASK_POLL_MS = 5_000;
 const METRICS_CONTEXT_POLL_MS = 15_000;
 const ANOMALIES_DIGEST_POLL_MS = 15_000;
+const KNOBS_POLL_MS = 15_000;
 
 export function useAgentQuery(token) {
   return useQuery({
@@ -119,5 +120,13 @@ export function useAnomaliesDigestQuery({ windowMinutes, anomalyLimit, eventLimi
     queryKey: ["anomaliesDigest", windowMinutes, anomalyLimit, eventLimit],
     queryFn: () => automationService.getAnomaliesDigest({ windowMinutes, anomalyLimit, eventLimit }),
     refetchInterval: ANOMALIES_DIGEST_POLL_MS,
+  });
+}
+
+export function useKnobsQuery() {
+  return useQuery({
+    queryKey: ["knobs"],
+    queryFn: () => automationService.getKnobs(),
+    refetchInterval: KNOBS_POLL_MS,
   });
 }

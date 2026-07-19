@@ -73,4 +73,8 @@ export const automationService = {
     if (!res.ok) throw new ApiError(res.status, await parseErrorMessage(res));
     return res.json();
   },
+  // Unlike metrics/anomalies, the knob API always exists — no operator config
+  // gates it, so a call here never 404s for "feature not enabled."
+  getKnobs: async () => (await call("/planner/knobs")).knobs,
+  setKnob: async (name, value) => (await call(`/planner/knobs/${name}`, { method: "PUT", body: { value } })).knob,
 };

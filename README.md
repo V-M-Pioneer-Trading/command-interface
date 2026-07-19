@@ -56,10 +56,13 @@ from any status). Every ship in the fleet list also gets a small task badge
 ship automation-service isn't managing (a 404 there is a normal, not-managed
 state, not an error).
 
-Toggled panels can be opened simultaneously (Contracts, Autopilot, and
-Observability, below, all coexist) — each is pinned to a distinct horizontal
-offset (`right: 1rem` / `24rem` / `47rem`) sized to its neighbors' widths so
-they tile left-to-right instead of stacking on top of each other.
+Toggled panels can be opened simultaneously (Contracts, Autopilot,
+Observability, and Knobs, below, all coexist) — `src/utils/togglePanelLayout.js`
+computes each open panel's `right` offset dynamically from just the panels
+currently open (a panel not open takes no horizontal space), so adding a 5th
+panel type only means adding one entry to that file instead of re-deriving
+hardcoded offsets for every existing panel. Each panel's own CSS `right: 1rem`
+is a fallback only, overridden by an inline `style` prop from `Dashboard.jsx`.
 
 ## Observability panel (meta#17)
 
@@ -91,6 +94,26 @@ configured on this deployment" (metrics rollups and anomaly detection are
 both optional backend features — a 404 from either endpoint means the
 feature isn't enabled, not an error), and loaded.
 
+## Knob Editor (meta#18)
+
+Toggled from the "Knobs" button in the agent bar: lists every planner/anomaly
+knob from `GET /planner/knobs` (name, current value, `[min, max]` bounds,
+default), each editable inline. Bounds are validated client-side before Save
+is even enabled — the same inclusive `[min, max]` check automation-service's
+`KnobRepo.set` enforces server-side — and a rejected out-of-range value shows
+an inline error instead of a round-trip. A successful save invalidates both
+the knobs query and `metricsContext` (whose Event Feed shows the resulting
+`knob_changed` event immediately, without waiting for its own poll).
+
+Polls every 15s (`useKnobsQuery`) so edits from another operator or the future
+AI supervisor (meta#19) show up without a refresh. Each row tracks its own
+"clean" baseline separately from the poll: a row with no in-progress edit
+adopts a new server value the moment it arrives, but a row with unsaved local
+input is left alone even if the server value changes underneath it — a
+concurrent edit is never allowed to silently discard what an operator is
+mid-typing. Saving still always overwrites the current server value
+(last-write-wins), same as before.
+
 ## Structure
 
 - `src/api/` — thin fetch clients per backend service; agent/navigation/fleet
@@ -99,9 +122,11 @@ feature isn't enabled, not an error), and loaded.
 - `src/hooks/queries.js` — TanStack Query hooks (polling, cache keys)
 - `src/utils/eventLog.js` — shared formatting for event/anomaly `detail`
   blobs and timestamps, used by both the Event Feed and Anomaly Log
+- `src/utils/togglePanelLayout.js` — computes each open toggle panel's
+  horizontal offset dynamically (see Autopilot panel, above)
 - `src/components/common/` — reusable LCARS primitives (Panel, PillButton,
   StatusPill, AlertBanner)
-- `src/components/{fleet,map,shipDetail,contracts,autopilot,observability,chat,login,layout}/` —
+- `src/components/{fleet,map,shipDetail,contracts,autopilot,observability,knobs,chat,login,layout}/` —
   feature panels
 - `src/styles/theme.css` — LCARS Classic color palette as CSS variables
 
