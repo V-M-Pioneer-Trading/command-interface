@@ -25,7 +25,7 @@ tab closes) and forwarded as-is to agent/navigation/fleet-service, which
 forward it upstream to the SpaceTraders API. Nothing is persisted server-side.
 
 automation-service's admin API is a separate concern: it's unauthenticated
-except for `POST /autopilot/arm`, which takes the SpaceTraders token in its
+except for `POST /api/automation/v1/autopilot/arm`, which takes the SpaceTraders token in its
 request body (not a bearer header) and holds it in memory server-side for as
 long as autopilot stays armed. The Autopilot panel (meta#16) pre-fills its own
 arm-token field from the same session token for convenience, but it's an
@@ -47,12 +47,12 @@ to point at non-default backend URLs.
 
 Toggled from the "Autopilot" button in the agent bar (same pattern as the
 existing Contracts toggle): shows live status/mode polled from
-`GET /autopilot/status`, an arm form (token + live/shadow mode →
-`POST /autopilot/arm`), and Pause/Abort buttons gated on the current status
+`GET /api/automation/v1/autopilot/status`, an arm form (token + live/shadow mode →
+`POST /api/automation/v1/autopilot/arm`), and Pause/Abort buttons gated on the current status
 (Pause only enabled while armed; Abort while armed or paused; Arm is always
 enabled — automation-service allows re-arming, e.g. to switch live↔shadow,
 from any status). Every ship in the fleet list also gets a small task badge
-(`{taskKind}: {phase}`) from `GET /autopilot/ships/:shipSymbol`, blank for a
+(`{taskKind}: {phase}`) from `GET /api/automation/v1/autopilot/ships/:shipSymbol`, blank for a
 ship automation-service isn't managing (a 404 there is a normal, not-managed
 state, not an error).
 
@@ -97,7 +97,7 @@ feature isn't enabled, not an error), and loaded.
 ## Knob Editor (meta#18)
 
 Toggled from the "Knobs" button in the agent bar: lists every planner/anomaly
-knob from `GET /planner/knobs` (name, current value, `[min, max]` bounds,
+knob from `GET /api/automation/v1/planner/knobs` (name, current value, `[min, max]` bounds,
 default), each editable inline. Bounds are validated client-side before Save
 is even enabled — the same inclusive `[min, max]` check automation-service's
 `KnobRepo.set` enforces server-side — and a rejected out-of-range value shows

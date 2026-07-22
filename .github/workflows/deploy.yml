@@ -13,10 +13,10 @@ jobs:
       contents: read
 
     env:
-      VITE_AGENT_SERVICE_URL: https://spacetraders.radomskyi.com/api/agent
-      VITE_NAVIGATION_SERVICE_URL: https://spacetraders.radomskyi.com
-      VITE_FLEET_SERVICE_URL: https://spacetraders.radomskyi.com/api/fleet
-      VITE_AUTOMATION_SERVICE_URL: https://spacetraders.radomskyi.com
+      VITE_AGENT_SERVICE_URL: https://spacetraders.radomskyi.com/api/agent/v1
+      VITE_NAVIGATION_SERVICE_URL: https://spacetraders.radomskyi.com/api/navigation/v1
+      VITE_FLEET_SERVICE_URL: https://spacetraders.radomskyi.com/api/fleet/v1
+      VITE_AUTOMATION_SERVICE_URL: https://spacetraders.radomskyi.com/api/automation/v1
 
     steps:
       - name: Checkout code
