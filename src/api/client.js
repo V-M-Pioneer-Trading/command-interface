@@ -21,6 +21,11 @@ export async function request(baseUrl, path, { method = "GET", token, body } = {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
+      // Every call from this UI is a user-initiated action — propagated by
+      // fleet/agent/navigation-service all the way to st-gateway's priority
+      // queue so browser traffic stays responsive alongside automation-service's
+      // background autopilot traffic (meta#37).
+      "X-Priority": "interactive",
       ...(body ? { "Content-Type": "application/json" } : {}),
     },
     body: body ? JSON.stringify(body) : undefined,
