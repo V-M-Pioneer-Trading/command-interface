@@ -16,6 +16,7 @@ jobs:
       VITE_AGENT_SERVICE_URL: https://spacetraders.radomskyi.com/api/agent
       VITE_NAVIGATION_SERVICE_URL: https://spacetraders.radomskyi.com
       VITE_FLEET_SERVICE_URL: https://spacetraders.radomskyi.com/api/fleet
+      VITE_AUTOMATION_SERVICE_URL: https://spacetraders.radomskyi.com
 
     steps:
       - name: Checkout code
