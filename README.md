@@ -8,7 +8,7 @@ sell, deliver contract cargo).
 
 Talks directly to four sibling backend services — no server of its own:
 
-- **agent-service** (`:8080`) — agent info, ships, contracts
+- **agent-service** (`:8080`) — agent info, ships, contracts, purchases/sells and transaction history
 - **navigation-service** (`:8081`) — waypoints, market, shipyard data
 - **fleet-service** (`:3001`) — ship actions (orbit/dock/navigate/extract/etc.)
 - **automation-service** (`:3003`) — autopilot lifecycle (arm/pause/abort) and

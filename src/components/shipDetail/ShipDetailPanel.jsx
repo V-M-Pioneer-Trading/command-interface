@@ -11,6 +11,7 @@ import {
   useAgentQuery,
 } from "../../hooks/queries";
 import { fleetService } from "../../api/fleetService";
+import { agentService } from "../../api/agentService";
 import { Panel } from "../common/Panel";
 import { PillButton } from "../common/PillButton";
 import { StatusPill } from "../common/StatusPill";
@@ -98,7 +99,7 @@ export function ShipDetailPanel({ token, contracts }) {
     onError: onActionError,
   });
   const sellMutation = useMutation({
-    mutationFn: ({ symbol, units }) => fleetService.sell(token, selectedShipSymbol, symbol, units),
+    mutationFn: ({ symbol, units }) => agentService.sell(token, selectedShipSymbol, symbol, units),
     onSuccess: () => {
       invalidateShip();
       queryClient.invalidateQueries({ queryKey: ["agent", token] });
@@ -129,7 +130,7 @@ export function ShipDetailPanel({ token, contracts }) {
   });
   const purchaseMutation = useMutation({
     mutationFn: ({ symbol, units }) =>
-      fleetService.purchaseCargo(token, selectedShipSymbol, symbol, units),
+      agentService.purchaseCargo(token, selectedShipSymbol, symbol, units),
     onSuccess: () => {
       invalidateShip();
       queryClient.invalidateQueries({ queryKey: ["agent", token] });
