@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { agentService } from "../../api/agentService";
 import { PillButton } from "../common/PillButton";
+import { SystemStatus } from "../layout/SystemStatus";
 import "./LoginScreen.css";
 
 export function LoginScreen() {
@@ -49,6 +50,9 @@ export function LoginScreen() {
             {checking ? "Verifying..." : "Authenticate"}
           </PillButton>
         </form>
+        <div className="lcars-login__status">
+          <SystemStatus />
+        </div>
       </div>
     </div>
   );

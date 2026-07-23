@@ -54,3 +54,11 @@
   color: var(--lcars-red-alert);
   font-weight: 700;
 }
+
+.lcars-login__status {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  padding: 0 1.5rem 1.25rem;
+}

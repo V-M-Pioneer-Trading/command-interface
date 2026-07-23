@@ -5,4 +5,6 @@ export const config = {
   fleetServiceUrl: import.meta.env.VITE_FLEET_SERVICE_URL || "http://localhost:3001/api/fleet/v1",
   automationServiceUrl:
     import.meta.env.VITE_AUTOMATION_SERVICE_URL || "http://localhost:3003/api/automation/v1",
+  stGatewayUrl: import.meta.env.VITE_ST_GATEWAY_URL || "http://localhost:3002",
+  aiServiceUrl: import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:3004",
 };

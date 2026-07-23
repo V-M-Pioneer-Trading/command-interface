@@ -48,3 +48,9 @@
   gap: 0.5rem;
   padding: 0 1rem;
 }
+
+.lcars-agent-bar__actions .lcars-system-status {
+  margin-right: 0.5rem;
+  padding-right: 0.75rem;
+  border-right: 1px solid var(--lcars-text-dim);
+}

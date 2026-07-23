@@ -3,7 +3,9 @@ import { agentService } from "../api/agentService";
 import { navigationService } from "../api/navigationService";
 import { fleetService } from "../api/fleetService";
 import { automationService } from "../api/automationService";
+import { healthService } from "../api/healthService";
 
+const SYSTEM_HEALTH_POLL_MS = 10_000;
 const SHIPS_POLL_MS = 12_000;
 const AGENT_POLL_MS = 20_000;
 const CONTRACTS_POLL_MS = 30_000;
@@ -14,6 +16,16 @@ const SHIP_TASK_POLL_MS = 5_000;
 const METRICS_CONTEXT_POLL_MS = 15_000;
 const ANOMALIES_DIGEST_POLL_MS = 15_000;
 const KNOBS_POLL_MS = 15_000;
+
+// Unauthenticated — must render before login (LoginScreen) as well as after,
+// so this never gates on a token the way the queries below do.
+export function useSystemHealthQuery() {
+  return useQuery({
+    queryKey: ["systemHealth"],
+    queryFn: () => healthService.checkAll(),
+    refetchInterval: SYSTEM_HEALTH_POLL_MS,
+  });
+}
 
 export function useAgentQuery(token) {
   return useQuery({
