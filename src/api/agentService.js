@@ -14,4 +14,22 @@ export const agentService = {
     request(base, `/contracts/${contractId}/accept`, { method: "POST", token }),
   fulfillContract: (token, contractId) =>
     request(base, `/contracts/${contractId}/fulfill`, { method: "POST", token }),
+  purchaseCargo: (token, shipSymbol, symbol, units) =>
+    request(base, `/ships/${shipSymbol}/purchase`, {
+      method: "POST",
+      token,
+      body: { symbol, units },
+    }),
+  sell: (token, shipSymbol, symbol, units) =>
+    request(base, `/ships/${shipSymbol}/sell`, {
+      method: "POST",
+      token,
+      body: { symbol, units },
+    }),
+  purchaseShip: (token, shipType, waypointSymbol) =>
+    request(base, "/ships/purchase", {
+      method: "POST",
+      token,
+      body: { shipType, waypointSymbol },
+    }),
 };

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { navigationService } from "../../api/navigationService";
-import { fleetService } from "../../api/fleetService";
+import { agentService } from "../../api/agentService";
 import { PillButton } from "../common/PillButton";
 import { useAlerts } from "../../context/AlertContext";
 import { useAgentQuery } from "../../hooks/queries";
@@ -15,7 +15,7 @@ export function WaypointPopover({ token, waypoint, onClose }) {
   const queryClient = useQueryClient();
 
   const purchaseShipMutation = useMutation({
-    mutationFn: (shipType) => fleetService.purchaseShip(token, shipType, waypoint.symbol),
+    mutationFn: (shipType) => agentService.purchaseShip(token, shipType, waypoint.symbol),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ships", token] });
       queryClient.invalidateQueries({ queryKey: ["agent", token] });
