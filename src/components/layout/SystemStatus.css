@@ -1,0 +1,33 @@
+.lcars-system-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lcars-system-status__item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.lcars-system-status__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--lcars-text-dim);
+}
+
+.lcars-system-status__dot--up {
+  background: var(--lcars-green);
+}
+
+.lcars-system-status__dot--down {
+  background: var(--lcars-red-alert);
+}
+
+.lcars-system-status__label {
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--lcars-text-dim);
+}
