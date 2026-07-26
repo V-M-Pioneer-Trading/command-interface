@@ -6,13 +6,13 @@ import { config } from "./config";
 // requires a token) and never forwards Authorization.
 //
 // healthPath is explicit per service rather than derived from `url`: in
-// production all four backend origins share the spacetraders.radomskyi.com
+// production all backend origins share the spacetraders.radomskyi.com
 // domain, routed by CloudFront path pattern, so a bare `/health` on every
 // service would collapse to the same URL. Each backend also answers
 // `/api/<service>/health` (unversioned — no /v1 — but scoped like the rest
-// of its API surface) for exactly this reason. st-gateway and ai-service
-// have no CloudFront origin in production (internal-only), so they keep the
-// bare path — it only ever resolves locally.
+// of its API surface) for exactly this reason. ai-service has no CloudFront
+// origin in production (internal-only), so it keeps the bare path — it
+// only ever resolves locally.
 export const MONITORED_SERVICES = [
   { key: "agent", label: "Agent", url: config.agentServiceUrl, healthPath: "/api/agent/health" },
   {
@@ -28,7 +28,7 @@ export const MONITORED_SERVICES = [
     url: config.automationServiceUrl,
     healthPath: "/api/automation/health",
   },
-  { key: "stGateway", label: "ST Gateway", url: config.stGatewayUrl, healthPath: "/health" },
+  { key: "stGateway", label: "ST Gateway", url: config.stGatewayUrl, healthPath: "/api/st-gateway/health" },
   { key: "ai", label: "AI", url: config.aiServiceUrl, healthPath: "/health" },
 ];
 
