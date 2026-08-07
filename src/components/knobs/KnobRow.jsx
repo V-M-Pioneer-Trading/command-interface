@@ -43,6 +43,7 @@ export function KnobRow({ knob, onSave, busy }) {
           [{knob.min}, {knob.max}] · default {knob.default}
         </span>
       </div>
+      {knob.description && <p className="lcars-knob-row__description">{knob.description}</p>}
       <form className="lcars-knob-row__form" onSubmit={submit}>
         <input
           type="number"

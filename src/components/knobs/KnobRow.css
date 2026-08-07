@@ -64,3 +64,12 @@
   color: var(--lcars-red-alert);
   font-size: 0.65rem;
 }
+
+/* The knob's own description, served by automation-service alongside its
+   bounds — cheaper to read here than to look up what a knob means. */
+.lcars-knob-row__description {
+  color: var(--lcars-text-dim);
+  font-size: 0.7rem;
+  line-height: 1.35;
+  margin: 0.2rem 0 0;
+}
