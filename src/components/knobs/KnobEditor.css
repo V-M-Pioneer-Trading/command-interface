@@ -51,3 +51,24 @@
   flex-direction: column;
   gap: 0.5rem;
 }
+
+/* Knobs are grouped by class — see KnobEditor.jsx for why the distinction
+   is worth surfacing rather than presenting one flat list. */
+.lcars-knob-editor__section {
+  padding-top: 0.25rem;
+}
+
+.lcars-knob-editor__section-title {
+  color: var(--lcars-tan);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0.5rem 0 0 0.75rem;
+}
+
+.lcars-knob-editor__section-caption {
+  color: var(--lcars-text-dim);
+  font-size: 0.7rem;
+  line-height: 1.35;
+  margin: 0.15rem 0.75rem 0;
+}
