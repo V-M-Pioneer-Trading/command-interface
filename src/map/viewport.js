@@ -15,8 +15,12 @@
  */
 
 export const MIN_SCALE = 1;
-export const MAX_SCALE = 8;
-export const ZOOM_STEP = 1.2;
+// A real 93-waypoint system compresses distinct bodies to ~3px apart at
+// fit-to-system, which 8x could not pull past their own icon widths. 32x is
+// what actually resolves the densest real clusters.
+export const MAX_SCALE = 32;
+// Sized so fit-to-system → max is ~13 notches rather than ~19.
+export const ZOOM_STEP = 1.3;
 
 /**
  * Icons grow with zoom, but sub-linearly: at MAX_SCALE (8x) spacing is 8x wider

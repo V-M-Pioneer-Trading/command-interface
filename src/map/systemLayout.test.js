@@ -64,6 +64,42 @@ describe("buildSystemLayout", () => {
     expect(nodes.map((n) => n.symbol).sort()).toEqual(["A", "B"]);
   });
 
+  // Regression: every close pair observed in the real X1-DT69 system was a
+  // collision between two *different* families, because each ring was seeded
+  // independently from hash(parent).
+  it("aims each ring's widest gap at the nearest other body", () => {
+    const pair = [
+      wp("A-P1", "PLANET", 0, 0),
+      wp("A-M1", "MOON", 0, 0, "A-P1"),
+      wp("B-P1", "PLANET", 30, 0),
+      wp("B-M1", "MOON", 30, 0, "B-P1"),
+    ];
+    const { index } = layoutOf(pair);
+    const a = index.get("A-P1");
+    const b = index.get("B-P1");
+    const am = index.get("A-M1");
+    const bm = index.get("B-M1");
+
+    // Each lone moon should sit on the far side of its planet from the other.
+    expect(Math.hypot(am.x - b.x, am.y - b.y)).toBeGreaterThan(Math.hypot(a.x - b.x, a.y - b.y));
+    expect(Math.hypot(bm.x - a.x, bm.y - a.y)).toBeGreaterThan(Math.hypot(a.x - b.x, a.y - b.y));
+    // …and therefore nowhere near each other.
+    expect(Math.hypot(am.x - bm.x, am.y - bm.y)).toBeGreaterThan(Math.hypot(a.x - b.x, a.y - b.y));
+  });
+
+  it("keeps nested orbitals on the far side of their own parent", () => {
+    const nested = [
+      wp("N-P1", "PLANET", 0, 0),
+      wp("N-M1", "MOON", 0, 0, "N-P1"),
+      wp("N-S1", "ORBITAL_STATION", 0, 0, "N-M1"),
+    ];
+    const { index } = layoutOf(nested);
+    const p = index.get("N-P1");
+    const m = index.get("N-M1");
+    const s = index.get("N-S1");
+    expect(Math.hypot(s.x - p.x, s.y - p.y)).toBeGreaterThan(Math.hypot(m.x - p.x, m.y - p.y));
+  });
+
   it("ignores an `orbits` pointing at a waypoint outside the system list", () => {
     const orphan = [wp("X1-AA-M9", "MOON", 3, 4, "X1-ZZ-P9")];
     const { nodes } = layoutOf(orphan);

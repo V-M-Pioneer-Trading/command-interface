@@ -90,9 +90,13 @@ describe("centerOn", () => {
 describe("iconScreenSize", () => {
   it("grows sub-linearly so zoom separates crowded waypoints", () => {
     const base = 24;
-    // 8x the spacing, but well under 2x the icon.
     expect(iconScreenSize(base, 1)).toBe(base);
-    expect(iconScreenSize(base, MAX_SCALE) / base).toBeLessThan(2);
     expect(iconScreenSize(base, MAX_SCALE)).toBeGreaterThan(base);
+
+    // The whole point: spacing scales linearly, icons don't, so the net
+    // separation gain at max zoom is close to an order of magnitude.
+    const iconGrowth = iconScreenSize(base, MAX_SCALE) / base;
+    expect(iconGrowth).toBeLessThan(3);
+    expect(MAX_SCALE / iconGrowth).toBeGreaterThan(10);
   });
 });

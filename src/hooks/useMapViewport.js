@@ -9,7 +9,12 @@ import {
   zoomCentered,
 } from "../map/viewport";
 
-const DRAG_THRESHOLD = 4;
+// Two separate thresholds on purpose. The first only drives the grab/grabbing
+// cursor, so it can be twitchy. The second decides whether the click that ends
+// a gesture gets swallowed — a click where the mouse shifts a few pixels is
+// still a click, and suppressing it makes the map feel broken.
+const DRAG_CURSOR_THRESHOLD = 4;
+const CLICK_SUPPRESS_THRESHOLD = 10;
 const KEY_PAN_STEP = 48;
 
 /**
@@ -29,7 +34,10 @@ export function useMapViewport({ width, height }) {
   // would make all but the last one a no-op.
   const sizeRef = useRef({ width, height });
   sizeRef.current = { width, height };
-  const drag = useRef({ active: false, startX: 0, startY: 0, lastX: 0, lastY: 0 });
+  // `moved` is the gesture's travel distance. It lives in the ref, not in
+  // state, because the click that ends a gesture is dispatched before React has
+  // necessarily re-rendered — reading a state value there would be stale.
+  const drag = useRef({ active: false, startX: 0, startY: 0, lastX: 0, lastY: 0, moved: 0 });
 
   // Resizing changes how far the content can be panned.
   useEffect(() => {
@@ -75,8 +83,22 @@ export function useMapViewport({ width, height }) {
 
   function onPointerDown(e) {
     if (e.button !== 0) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    drag.current = { active: true, startX: e.clientX, startY: e.clientY, lastX: e.clientX, lastY: e.clientY };
+    // Throws if the pointer is already gone; nothing here depends on capture
+    // succeeding, so a failure just means we fall back to plain pointer events.
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* no capture available */
+    }
+    drag.current = {
+      active: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      lastX: e.clientX,
+      lastY: e.clientY,
+      moved: 0,
+    };
+    setIsDragging(false);
   }
 
   function onPointerMove(e) {
@@ -86,30 +108,38 @@ export function useMapViewport({ width, height }) {
     const { x: px, y: py } = toLocal(drag.current.lastX, drag.current.lastY);
     drag.current.lastX = e.clientX;
     drag.current.lastY = e.clientY;
-    if (Math.hypot(e.clientX - drag.current.startX, e.clientY - drag.current.startY) > DRAG_THRESHOLD) {
-      setIsDragging(true);
-    }
+    drag.current.moved = Math.hypot(e.clientX - drag.current.startX, e.clientY - drag.current.startY);
+    if (drag.current.moved > DRAG_CURSOR_THRESHOLD) setIsDragging(true);
     setView((v) => panBy(v, lx - px, ly - py, w, h));
   }
 
   function onPointerUp(e) {
     if (!drag.current.active) return;
-    e.currentTarget.releasePointerCapture(e.pointerId);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* capture already released */
+    }
     drag.current.active = false;
+    // Reset here rather than in the click handler: a drag that ends without a
+    // click (released off-target) would otherwise leave the cursor stuck.
+    setIsDragging(false);
   }
 
   // Capture can be lost without a pointerup reaching us (alt-tab, OS gesture
   // takeover) — without this, drag.current.active would stay stuck true.
   function onLostPointerCapture() {
     drag.current.active = false;
+    setIsDragging(false);
   }
 
-  // Swallow the click that ends a drag so it doesn't dismiss the popover.
+  // Swallow only the click that ends a real pan, so it doesn't dismiss the
+  // popover. `moved` is reset on every pointerdown, so a suppressed drag can
+  // never leak into the next click.
   function onClickCapture(e) {
-    if (isDragging) {
-      e.stopPropagation();
-      setIsDragging(false);
-    }
+    const dragged = drag.current.moved > CLICK_SUPPRESS_THRESHOLD;
+    drag.current.moved = 0;
+    if (dragged) e.stopPropagation();
   }
 
   function onDoubleClick(e) {

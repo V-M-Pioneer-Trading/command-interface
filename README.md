@@ -132,10 +132,20 @@ fix that:
   orbitals fades in that one ring, so you get the "these belong together" cue
   exactly when you're asking the question and no ring clutter the rest of the
   time.
-- Icons grow **sub-linearly**, `size x scale^0.3`. At max zoom (8x) spacing is 8x
-  wider while a planet is only ~1.9x bigger, so crowded waypoints genuinely
-  separate instead of scaling together. Labels, strokes and badges are
-  counter-scaled to a fixed pixel size the same way.
+- Ring rotation is **neighbour-aware**: each ring aims its widest gap at the
+  nearest other body. Seeding each ring independently from `hash(parent)` looked
+  fine on a small mock, but in a real 93-waypoint system every close pair was a
+  collision between two *different* families — a moon of one planet landing on a
+  station of the next. Same-ring spacing was never the problem.
+- Icons grow **sub-linearly**, `size x scale^0.3`. At max zoom (32x) spacing is
+  32x wider while a planet is only ~2.8x bigger — a net ~11x separation gain —
+  so crowded waypoints genuinely separate instead of scaling together. Labels,
+  strokes and badges are counter-scaled to a fixed pixel size the same way.
+
+Max zoom is 32x rather than something tamer because real systems need it: fit-
+to-system on a 93-waypoint system compresses distinct bodies to ~1.7px apart, and
+8x could not pull those past their own icon widths. At 32x that system has zero
+overlapping icon pairs.
 
 Everything positional resolves through the layout index **by symbol**.
 `nav.route.origin/destination` carry raw API coordinates, which for a moon are

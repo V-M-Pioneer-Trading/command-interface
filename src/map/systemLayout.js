@@ -29,6 +29,25 @@ export function seededAngle(symbol) {
   return (hashString(symbol) / 0xffffffff) * Math.PI * 2;
 }
 
+/**
+ * Where to start laying children out on a ring.
+ *
+ * Rings used to be seeded purely from hash(parent), independently per parent.
+ * In a dense real system that put a moon of one planet straight on top of a
+ * station of the neighbouring planet — every close pair observed in X1-DT69 was
+ * a collision between two *different* families, never within one ring.
+ *
+ * So: aim the widest gap in the ring at whatever is nearest. With `count`
+ * children spaced `2pi/count` apart, offsetting the start by half a step puts
+ * the crowded direction exactly between two children, which is the most
+ * clearance available. Falls back to the hash when there is no neighbour.
+ */
+export function ringStartAngle(symbol, count, neighbourAngle) {
+  const step = (Math.PI * 2) / count;
+  if (neighbourAngle === null) return seededAngle(symbol);
+  return neighbourAngle + step / 2;
+}
+
 function ringRadius(childCount, depth) {
   const extra = Math.max(0, childCount - 3) * RING_RADIUS_PER_EXTRA_CHILD;
   return (RING_BASE_RADIUS + extra) * Math.pow(RING_DEPTH_FALLOFF, depth);
@@ -62,7 +81,24 @@ export function buildSystemLayout(waypoints, fit) {
   const index = new Map();
   const visited = new Set();
 
-  function place(waypoint, x, y, depth, parentSymbol) {
+  // Direction from a root toward the nearest other root — the direction its
+  // orbitals most need to avoid. Roots are what's pinned in space, so this is
+  // stable and needs computing only once per parent.
+  function nearestRootAngle(x, y, selfSymbol) {
+    let best = null;
+    let bestDist = Infinity;
+    for (const other of rootPositions) {
+      if (other.symbol === selfSymbol) continue;
+      const d = Math.hypot(other.x - x, other.y - y);
+      if (d < bestDist) {
+        bestDist = d;
+        best = other;
+      }
+    }
+    return best ? Math.atan2(best.y - y, best.x - x) : null;
+  }
+
+  function place(waypoint, x, y, depth, parentSymbol, parentX, parentY) {
     // `orbits` is server data; a cycle would otherwise recurse forever.
     if (visited.has(waypoint.symbol)) return;
     visited.add(waypoint.symbol);
@@ -86,18 +122,36 @@ export function buildSystemLayout(waypoints, fit) {
     const radius = ringRadius(kids.length, depth);
     rings.push({ symbol: waypoint.symbol, x, y, r: radius, childCount: kids.length });
 
-    const start = seededAngle(waypoint.symbol);
+    // Nested orbitals aim away from their own parent; roots aim away from the
+    // nearest other root.
+    const crowdedAngle =
+      depth > 0 && parentX !== undefined
+        ? Math.atan2(parentY - y, parentX - x)
+        : nearestRootAngle(x, y, waypoint.symbol);
+    const start = ringStartAngle(waypoint.symbol, kids.length, crowdedAngle);
     const step = (Math.PI * 2) / kids.length;
     kids.forEach((kid, i) => {
       const angle = start + i * step;
-      place(kid, x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, depth + 1, waypoint.symbol);
+      place(
+        kid,
+        x + Math.cos(angle) * radius,
+        y + Math.sin(angle) * radius,
+        depth + 1,
+        waypoint.symbol,
+        x,
+        y,
+      );
     });
   }
 
   roots.sort((a, b) => a.symbol.localeCompare(b.symbol));
-  for (const root of roots) {
+  const rootPositions = roots.map((root) => {
     const p = project(fit, root.x, root.y);
-    place(root, p.x, p.y, 0, null);
+    return { symbol: root.symbol, x: p.x, y: p.y };
+  });
+
+  for (const root of rootPositions) {
+    place(bySymbol.get(root.symbol), root.x, root.y, 0, null);
   }
 
   // A cycle among orbitals would leave members unplaced — drop them at their
