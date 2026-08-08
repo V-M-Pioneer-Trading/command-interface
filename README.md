@@ -71,7 +71,7 @@ Contracts/Autopilot): four sections reading from automation-service's
 aggregate endpoints.
 
 - **Credits / Hour** — a hand-rolled inline SVG line chart (no charting
-  library, matching `SystemMap.jsx`'s existing convention) from
+  library, matching the system map's existing convention) from
   `GET /metrics/context`'s rollups. 2px line, an end-dot direct-labeled with
   its value, hairline recessive gridlines, and a crosshair+tooltip that snaps
   to the nearest rollup on hover — every value it shows is also listed as
@@ -114,8 +114,58 @@ concurrent edit is never allowed to silently discard what an operator is
 mid-typing. Saving still always overwrites the current server value
 (last-write-wins), same as before.
 
+## System map
+
+Rendered as SVG (no rendering library — the scale is ~10–100 waypoints and
+under 20 ships, and staying in the DOM keeps LCARS CSS variables, popovers and
+hit-testing free). The map is split into pure modules under `src/map/` and thin
+layer components that just draw what those modules produce.
+
+**Zoom separates, it doesn't magnify.** SpaceTraders gives orbitals — moons,
+orbital stations, fuel stations that `orbits` a body — the *exact same* x/y as
+their parent, so no amount of geometric zoom would pull them apart. Two things
+fix that:
+
+- `buildSystemLayout` fans a body's orbitals onto a ring around it. Ring radius
+  lives in base coordinates, so it scales linearly with zoom; the ring itself is
+  drawn from ~1.5x, fading in as the cluster opens up.
+- Icons grow **sub-linearly**, `size x scale^0.3`. At max zoom (8x) spacing is 8x
+  wider while a planet is only ~1.9x bigger, so crowded waypoints genuinely
+  separate instead of scaling together. Labels, strokes and badges are
+  counter-scaled to a fixed pixel size the same way.
+
+Everything positional resolves through the layout index **by symbol**.
+`nav.route.origin/destination` carry raw API coordinates, which for a moon are
+its *parent's* — a coordinate-based renderer draws ships flying to the wrong
+body once orbitals are offset.
+
+Sprites are pixel art authored in code: character grids (procedurally generated
+for spheres, rocks, rings and clouds; hand-drawn for ship silhouettes and
+badges) compiled once at load into run-length-merged `<rect>`s inside an SVG
+`<symbol>`. That means crisp at any zoom, no binary assets and no build step. All
+14 `WaypointType`s are covered, with deterministic per-symbol variants so a
+system doesn't read as copy-paste, plus corner badges for
+MARKETPLACE / SHIPYARD / under-construction. Celestial bodies use naturalistic
+colours; the LCARS palette stays on the chrome around them (labels, rings,
+transit paths, selection, badges). Ships collapse the 16 frames into 5
+silhouette families sized by mass, rotate to their heading, tint by nav status
+via `currentColor`, and carry a role badge for the five roles this fleet flies.
+
+Interaction: wheel or `+`/`−`/⌂ buttons to zoom, drag to pan, double-click to
+zoom toward the cursor, arrows/`+`/`−`/`0` from the keyboard, and clicking a
+waypoint both centres it and opens its popover. In-transit ships interpolate
+between departure and arrival on a **single** shared rAF clock that stops when
+nothing is moving (previously every ship marker ran its own loop).
+
+`npm test` (vitest) covers the pure modules — layout, viewport math and sprite
+compilation. There are no component tests.
+
 ## Structure
 
+- `src/map/` — framework-free map core: `viewport.js` (zoom/pan, screen↔world;
+  deliberately knows nothing about systems, so a future sector map reuses it),
+  `systemLayout.js` (waypoints → positioned nodes, orbit rings, ship
+  interpolation) and `sprites/` (pixel grids, generators, registry)
 - `src/api/` — thin fetch clients per backend service; agent/navigation/fleet
   forward the bearer token from `AuthContext`, `automationService.js` doesn't
   (see Auth model above)

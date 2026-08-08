@@ -13,45 +13,111 @@
 }
 
 .lcars-system-map__svg {
-  width: 100%;
-  height: 100%;
+  display: block;
   cursor: grab;
+  touch-action: none;
+}
+
+.lcars-system-map__svg:focus {
+  outline: none;
+}
+
+.lcars-system-map__svg:focus-visible {
+  outline: 1px solid var(--lcars-blue);
+  outline-offset: -1px;
 }
 
 .lcars-system-map__svg.is-dragging {
   cursor: grabbing;
 }
 
-.lcars-waypoint-icon {
+/* ── Map layers ─────────────────────────────────────────────────────────── */
+
+.lcars-map__waypoint,
+.lcars-map__ship {
   cursor: pointer;
 }
 
-.lcars-waypoint-icon__label {
-  font-size: 9px;
-  fill: var(--lcars-text-dim);
-  text-anchor: middle;
-  font-family: var(--font-body);
-  pointer-events: none;
+.lcars-map__waypoint-selection {
+  stroke: var(--lcars-orange);
 }
 
-.lcars-system-map__transit-path {
+.lcars-map__transit-path {
   stroke: var(--lcars-blue);
-  stroke-width: 1.5;
-  stroke-dasharray: 4 3;
   opacity: 0.6;
 }
 
-.lcars-ship-marker {
+.lcars-map__labels {
+  pointer-events: none;
+  font-family: var(--font-body);
+  text-anchor: middle;
+  /* Dark outline in em units so it counter-scales with the font size and stays
+     readable over a bright planet at any zoom. */
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.85);
+  stroke-width: 0.2em;
+  stroke-linejoin: round;
+}
+
+.lcars-map__waypoint-label {
+  fill: var(--lcars-text-dim);
+}
+
+.lcars-map__ship-label {
+  fill: var(--lcars-text);
+  font-weight: 700;
+}
+
+.lcars-map__ship-label.is-selected {
+  fill: var(--lcars-orange);
+}
+
+/* ── Zoom controls ──────────────────────────────────────────────────────── */
+
+.lcars-map__controls {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+
+.lcars-map__control {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--lcars-blue);
+  border-radius: var(--radius-pill);
+  background: rgba(10, 10, 10, 0.8);
+  color: var(--lcars-tan);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  line-height: 1;
   cursor: pointer;
 }
 
-.lcars-ship-marker__label {
-  font-size: 9px;
-  fill: var(--lcars-text);
-  text-anchor: middle;
-  font-weight: 700;
-  pointer-events: none;
+.lcars-map__control:hover:not(:disabled) {
+  background: var(--lcars-blue);
+  color: var(--lcars-text-on-light);
 }
+
+.lcars-map__control:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.lcars-map__zoom-readout {
+  text-align: center;
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  color: var(--lcars-text-dim);
+}
+
+/* ── Waypoint popover ───────────────────────────────────────────────────── */
 
 .lcars-waypoint-popover {
   position: absolute;

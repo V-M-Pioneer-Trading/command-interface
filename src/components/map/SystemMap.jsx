@@ -1,111 +1,158 @@
 import { useMemo, useState } from "react";
 import { useSystemWaypointsQuery, useShipsQuery } from "../../hooks/queries";
 import { useSelection } from "../../context/SelectionContext";
-import { useMapZoomPan } from "../../hooks/useMapZoomPan";
+import { useElementSize } from "../../hooks/useElementSize";
+import { useAnimationClock } from "../../hooks/useAnimationClock";
+import { useMapViewport } from "../../hooks/useMapViewport";
+import { ZOOM_STEP, computeBounds, computeFit } from "../../map/viewport";
+import { buildSystemLayout, shipRenderState } from "../../map/systemLayout";
+import { waypointSpriteId } from "../../map/sprites/registry";
+import { roleBadgeId, shipFamily, traitBadgeId } from "../../map/sprites/ships";
 import { Panel } from "../common/Panel";
-import { WaypointIcon } from "./WaypointIcon";
-import { ShipMarker } from "./ShipMarker";
+import { SpriteDefs } from "./SpriteDefs";
+import { MapControls } from "./MapControls";
+import { OrbitRingLayer } from "./layers/OrbitRingLayer";
+import { TransitPathLayer } from "./layers/TransitPathLayer";
+import { WaypointLayer } from "./layers/WaypointLayer";
+import { ShipLayer } from "./layers/ShipLayer";
+import { LabelLayer } from "./layers/LabelLayer";
 import { WaypointPopover } from "./WaypointPopover";
 import "./SystemMap.css";
 
-const VIEW_SIZE = 640;
-const PADDING = 60;
+// Leaves room for orbit-ring offsets and labels at the edge of the system.
+const FIT_PADDING = 44;
 
 export function SystemMap({ token, systemSymbol }) {
   const { data: waypointData, isLoading } = useSystemWaypointsQuery(token, systemSymbol);
   const { data: ships } = useShipsQuery(token);
   const { selectedShipSymbol, setSelectedShipSymbol } = useSelection();
   const [selectedWaypoint, setSelectedWaypoint] = useState(null);
-  const { scale, tx, ty, isDragging, bind, containerRef } = useMapZoomPan({ viewSize: VIEW_SIZE });
+  const [hovered, setHovered] = useState(null);
+
+  const { ref: canvasRef, size } = useElementSize();
+  const { width, height } = size;
+  const { view, isDragging, svgRef, zoomBy, reset, centerOnPoint, bind } = useMapViewport({
+    width,
+    height,
+  });
 
   const waypoints = waypointData?.data || [];
 
-  const bounds = useMemo(() => {
-    if (waypoints.length === 0) return null;
-    const xs = waypoints.map((w) => w.x);
-    const ys = waypoints.map((w) => w.y);
-    return {
-      minX: Math.min(...xs),
-      maxX: Math.max(...xs),
-      minY: Math.min(...ys),
-      maxY: Math.max(...ys),
-    };
-  }, [waypoints]);
+  const layout = useMemo(() => {
+    const fit = computeFit(computeBounds(waypoints), width, height, FIT_PADDING);
+    return buildSystemLayout(waypoints, fit);
+  }, [waypoints, width, height]);
 
-  const scaled = useMemo(() => {
-    if (!bounds) return { waypoints: [], scale: () => ({ x: 0, y: 0 }) };
-    const spanX = Math.max(bounds.maxX - bounds.minX, 1);
-    const spanY = Math.max(bounds.maxY - bounds.minY, 1);
-    const span = Math.max(spanX, spanY);
-    const drawable = VIEW_SIZE - PADDING * 2;
-    const scale = (x, y) => ({
-      x: PADDING + ((x - bounds.minX) / span) * drawable,
-      y: PADDING + ((y - bounds.minY) / span) * drawable,
-    });
-    return { scale };
-  }, [bounds]);
+  const shipsInSystem = useMemo(
+    () => (ships || []).filter((s) => s.nav?.systemSymbol === systemSymbol),
+    [ships, systemSymbol],
+  );
+  const hasTransit = shipsInSystem.some((s) => s.nav?.status === "IN_TRANSIT");
+  const now = useAnimationClock(hasTransit);
 
-  const scaledWaypoints = waypoints.map((w) => ({ ...w, ...scaled.scale(w.x, w.y) }));
+  const placedShips = useMemo(
+    () =>
+      shipsInSystem
+        .map((ship) => ({ ship, pos: shipRenderState(ship.nav, layout.index, now) }))
+        .filter((s) => s.pos),
+    [shipsInSystem, layout, now],
+  );
 
-  const shipsInSystem = (ships || []).filter((s) => s.nav?.systemSymbol === systemSymbol);
-  const scaledShips = shipsInSystem.map((ship) => {
-    if (!ship.nav?.route) {
-      const wp = scaledWaypoints.find((w) => w.symbol === ship.nav?.waypointSymbol);
-      return { ship, nav: wp ? { ...ship.nav, route: { destination: wp } } : ship.nav };
+  const transits = useMemo(
+    () =>
+      shipsInSystem
+        .filter((s) => s.nav?.status === "IN_TRANSIT")
+        .map((s) => ({
+          key: s.symbol,
+          from: layout.index.get(s.nav.route?.origin?.symbol),
+          to: layout.index.get(s.nav.route?.destination?.symbol),
+        }))
+        .filter((t) => t.from && t.to),
+    [shipsInSystem, layout],
+  );
+
+  // Only the symbols actually on screen get emitted into <defs>.
+  const spriteIds = useMemo(() => {
+    const ids = new Set();
+    for (const node of layout.nodes) {
+      ids.add(waypointSpriteId(node.symbol, node.type));
+      for (const trait of node.waypoint.traits || []) {
+        const id = traitBadgeId(trait.symbol);
+        if (id) ids.add(id);
+      }
+      if (node.waypoint.isUnderConstruction) ids.add(traitBadgeId("UNDER_CONSTRUCTION"));
     }
-    const origin = scaled.scale(ship.nav.route.origin.x, ship.nav.route.origin.y);
-    const destination = scaled.scale(ship.nav.route.destination.x, ship.nav.route.destination.y);
-    return {
-      ship,
-      nav: {
-        ...ship.nav,
-        route: {
-          ...ship.nav.route,
-          origin: { ...ship.nav.route.origin, ...origin },
-          destination: { ...ship.nav.route.destination, ...destination },
-        },
-      },
-    };
-  });
+    for (const { ship } of placedShips) {
+      ids.add(`ship-${shipFamily(ship.frame?.symbol)}`);
+      const badge = roleBadgeId(ship.registration?.role);
+      if (badge) ids.add(badge);
+    }
+    return [...ids];
+  }, [layout, placedShips]);
+
+  // Clicking a waypoint both opens its popover and pans it to centre, so the
+  // popover always describes something you can see.
+  const selectWaypoint = (node) => {
+    setSelectedWaypoint(node.waypoint);
+    centerOnPoint(node.x, node.y);
+  };
+
+  const ready = !isLoading && waypoints.length > 0 && width > 0 && height > 0;
 
   return (
-    <Panel title={systemSymbol ? `System Map — ${systemSymbol}` : "System Map"} accent="blue" className="lcars-system-map">
-      <div className="lcars-system-map__canvas">
+    <Panel
+      title={systemSymbol ? `System Map — ${systemSymbol}` : "System Map"}
+      accent="blue"
+      className="lcars-system-map"
+    >
+      <div className="lcars-system-map__canvas" ref={canvasRef}>
         {isLoading && <div className="lcars-system-map__loading">Loading system...</div>}
-        {!isLoading && waypoints.length > 0 && (
+        {ready && (
           <svg
-            ref={containerRef}
-            viewBox={`0 0 ${VIEW_SIZE} ${VIEW_SIZE}`}
+            ref={svgRef}
+            width={width}
+            height={height}
+            viewBox={`0 0 ${width} ${height}`}
             className={`lcars-system-map__svg${isDragging ? " is-dragging" : ""}`}
+            tabIndex={0}
             onClick={() => setSelectedWaypoint(null)}
             {...bind}
           >
-            <g transform={`translate(${tx},${ty}) scale(${scale})`}>
-              {scaledWaypoints.map((w) => (
-                <WaypointIcon key={w.symbol} waypoint={w} onClick={setSelectedWaypoint} />
-              ))}
-              {scaledShips
-                .filter(({ nav }) => nav?.status === "IN_TRANSIT" && nav.route?.origin && nav.route?.destination)
-                .map(({ ship, nav }) => (
-                  <line
-                    key={`path-${ship.symbol}`}
-                    className="lcars-system-map__transit-path"
-                    x1={nav.route.origin.x}
-                    y1={nav.route.origin.y}
-                    x2={nav.route.destination.x}
-                    y2={nav.route.destination.y}
-                  />
-                ))}
-              {scaledShips.map(({ ship, nav }) => (
-                <ShipMarker
-                  key={ship.symbol}
-                  ship={{ ...ship, nav }}
-                  isSelected={ship.symbol === selectedShipSymbol}
-                  onClick={setSelectedShipSymbol}
-                />
-              ))}
+            <SpriteDefs ids={spriteIds} />
+            <g transform={`translate(${view.tx},${view.ty}) scale(${view.scale})`}>
+              <OrbitRingLayer rings={layout.rings} scale={view.scale} />
+              <TransitPathLayer transits={transits} scale={view.scale} />
+              <WaypointLayer
+                nodes={layout.nodes}
+                scale={view.scale}
+                selectedSymbol={selectedWaypoint?.symbol}
+                onSelect={selectWaypoint}
+                onHover={setHovered}
+              />
+              <ShipLayer
+                ships={placedShips}
+                scale={view.scale}
+                selectedSymbol={selectedShipSymbol}
+                onSelect={setSelectedShipSymbol}
+              />
+              <LabelLayer
+                nodes={layout.nodes}
+                ships={placedShips}
+                scale={view.scale}
+                hovered={hovered}
+                selectedWaypoint={selectedWaypoint?.symbol}
+                selectedShip={selectedShipSymbol}
+              />
             </g>
           </svg>
+        )}
+        {ready && (
+          <MapControls
+            scale={view.scale}
+            onZoomIn={() => zoomBy(ZOOM_STEP)}
+            onZoomOut={() => zoomBy(1 / ZOOM_STEP)}
+            onReset={reset}
+          />
         )}
         {selectedWaypoint && (
           <WaypointPopover
