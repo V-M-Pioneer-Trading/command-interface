@@ -36,7 +36,7 @@ export function ShipLayer({ ships, scale, selectedSymbol, onSelect }) {
             style={{ color }}
             onClick={(e) => {
               e.stopPropagation();
-              onSelect(ship.symbol);
+              onSelect(ship.symbol, pos);
             }}
           >
             <circle r={Math.max(half, screenToLocal(10, scale))} fill="transparent" />

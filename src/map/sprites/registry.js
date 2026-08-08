@@ -22,7 +22,6 @@ import { BADGE_SPRITES, SHIP_SPRITES } from "./ships";
 const RAMPS = {
   ocean: ["#08203f", "#0f3a6b", "#1a5f9e", "#2f8ccc", "#5fb4e8"],
   land: ["#12331a", "#1f5426", "#357f36", "#55a84c", "#83cb72"],
-  ice: ["#a9c9d4", "#c6dfe7", "#dcf0f5", "#f2fbfd", "#ffffff"],
   desert: ["#4a2c11", "#75471b", "#a76d2c", "#d19a4c", "#eec27f"],
   desertAlt: ["#5d3a17", "#8a5722", "#bb8038", "#e2ae5e", "#f7d79b"],
   basalt: ["#1a0d0c", "#33130f", "#4d1e16", "#6b2c1e", "#8c4029"],
@@ -120,7 +119,7 @@ function domeOverlay({ grid, pal, size, center }) {
  */
 const WAYPOINT_VARIANTS = {
   PLANET: [
-    () => makeSphere({ seed: 11, base: RAMPS.ocean, alt: RAMPS.land, ice: RAMPS.ice, blotch: 0.52, capAt: 0.82 }),
+    () => makeSphere({ seed: 11, base: RAMPS.ocean, alt: RAMPS.land, blotch: 0.52 }),
     () => makeSphere({ seed: 23, base: RAMPS.desert, alt: RAMPS.desertAlt, blotch: 0.48 }),
     () => makeSphere({ seed: 37, base: RAMPS.basalt, alt: RAMPS.lava, blotch: 0.64 }),
   ],

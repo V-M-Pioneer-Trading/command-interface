@@ -11,12 +11,13 @@ import { roleBadgeId, shipFamily, traitBadgeId } from "../../map/sprites/ships";
 import { Panel } from "../common/Panel";
 import { SpriteDefs } from "./SpriteDefs";
 import { MapControls } from "./MapControls";
-import { OrbitRingLayer } from "./layers/OrbitRingLayer";
+import { OrbitRingLayer, activeRingSymbol } from "./layers/OrbitRingLayer";
 import { TransitPathLayer } from "./layers/TransitPathLayer";
 import { WaypointLayer } from "./layers/WaypointLayer";
 import { ShipLayer } from "./layers/ShipLayer";
 import { LabelLayer } from "./layers/LabelLayer";
 import { WaypointPopover } from "./WaypointPopover";
+import { ShipPopover } from "./ShipPopover";
 import "./SystemMap.css";
 
 // Leaves room for orbit-ring offsets and labels at the edge of the system.
@@ -26,7 +27,8 @@ export function SystemMap({ token, systemSymbol }) {
   const { data: waypointData, isLoading } = useSystemWaypointsQuery(token, systemSymbol);
   const { data: ships } = useShipsQuery(token);
   const { selectedShipSymbol, setSelectedShipSymbol } = useSelection();
-  const [selectedWaypoint, setSelectedWaypoint] = useState(null);
+  // One popover at a time: {kind: "waypoint", waypoint} | {kind: "ship", symbol}
+  const [detail, setDetail] = useState(null);
   const [hovered, setHovered] = useState(null);
 
   const { ref: canvasRef, size } = useElementSize();
@@ -90,12 +92,23 @@ export function SystemMap({ token, systemSymbol }) {
     return [...ids];
   }, [layout, placedShips]);
 
-  // Clicking a waypoint both opens its popover and pans it to centre, so the
-  // popover always describes something you can see.
+  // Clicking anything on the map both opens its popover and pans it to centre,
+  // so the popover always describes something you can see.
   const selectWaypoint = (node) => {
-    setSelectedWaypoint(node.waypoint);
+    setDetail({ kind: "waypoint", waypoint: node.waypoint });
     centerOnPoint(node.x, node.y);
   };
+
+  const selectShip = (symbol, pos) => {
+    setSelectedShipSymbol(symbol);
+    setDetail({ kind: "ship", symbol });
+    centerOnPoint(pos.x, pos.y);
+  };
+
+  // Re-read from the live ships list rather than snapshotting on click, so the
+  // popover's fuel/cargo/ETA stay current as the poll refreshes underneath it.
+  const detailShip =
+    detail?.kind === "ship" ? shipsInSystem.find((s) => s.symbol === detail.symbol) : null;
 
   const ready = !isLoading && waypoints.length > 0 && width > 0 && height > 0;
 
@@ -115,17 +128,21 @@ export function SystemMap({ token, systemSymbol }) {
             viewBox={`0 0 ${width} ${height}`}
             className={`lcars-system-map__svg${isDragging ? " is-dragging" : ""}`}
             tabIndex={0}
-            onClick={() => setSelectedWaypoint(null)}
+            onClick={() => setDetail(null)}
             {...bind}
           >
             <SpriteDefs ids={spriteIds} />
             <g transform={`translate(${view.tx},${view.ty}) scale(${view.scale})`}>
-              <OrbitRingLayer rings={layout.rings} scale={view.scale} />
+              <OrbitRingLayer
+                rings={layout.rings}
+                scale={view.scale}
+                activeSymbol={activeRingSymbol(hovered, layout.index)}
+              />
               <TransitPathLayer transits={transits} scale={view.scale} />
               <WaypointLayer
                 nodes={layout.nodes}
                 scale={view.scale}
-                selectedSymbol={selectedWaypoint?.symbol}
+                selectedSymbol={detail?.kind === "waypoint" ? detail.waypoint.symbol : null}
                 onSelect={selectWaypoint}
                 onHover={setHovered}
               />
@@ -133,14 +150,14 @@ export function SystemMap({ token, systemSymbol }) {
                 ships={placedShips}
                 scale={view.scale}
                 selectedSymbol={selectedShipSymbol}
-                onSelect={setSelectedShipSymbol}
+                onSelect={selectShip}
               />
               <LabelLayer
                 nodes={layout.nodes}
                 ships={placedShips}
                 scale={view.scale}
                 hovered={hovered}
-                selectedWaypoint={selectedWaypoint?.symbol}
+                selectedWaypoint={detail?.kind === "waypoint" ? detail.waypoint.symbol : null}
                 selectedShip={selectedShipSymbol}
               />
             </g>
@@ -154,13 +171,14 @@ export function SystemMap({ token, systemSymbol }) {
             onReset={reset}
           />
         )}
-        {selectedWaypoint && (
+        {detail?.kind === "waypoint" && (
           <WaypointPopover
             token={token}
-            waypoint={selectedWaypoint}
-            onClose={() => setSelectedWaypoint(null)}
+            waypoint={detail.waypoint}
+            onClose={() => setDetail(null)}
           />
         )}
+        {detailShip && <ShipPopover ship={detailShip} onClose={() => setDetail(null)} />}
       </div>
     </Panel>
   );

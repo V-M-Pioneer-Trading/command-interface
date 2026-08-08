@@ -127,8 +127,11 @@ their parent, so no amount of geometric zoom would pull them apart. Two things
 fix that:
 
 - `buildSystemLayout` fans a body's orbitals onto a ring around it. Ring radius
-  lives in base coordinates, so it scales linearly with zoom; the ring itself is
-  drawn from ~1.5x, fading in as the cluster opens up.
+  lives in base coordinates, so it scales linearly with zoom. The ring itself is
+  drawn only while its family is hovered — hovering a parent or any of its
+  orbitals fades in that one ring, so you get the "these belong together" cue
+  exactly when you're asking the question and no ring clutter the rest of the
+  time.
 - Icons grow **sub-linearly**, `size x scale^0.3`. At max zoom (8x) spacing is 8x
   wider while a planet is only ~1.9x bigger, so crowded waypoints genuinely
   separate instead of scaling together. Labels, strokes and badges are
@@ -152,8 +155,12 @@ silhouette families sized by mass, rotate to their heading, tint by nav status
 via `currentColor`, and carry a role badge for the five roles this fleet flies.
 
 Interaction: wheel or `+`/`−`/⌂ buttons to zoom, drag to pan, double-click to
-zoom toward the cursor, arrows/`+`/`−`/`0` from the keyboard, and clicking a
-waypoint both centres it and opens its popover. In-transit ships interpolate
+zoom toward the cursor, arrows/`+`/`−`/`0` from the keyboard, and clicking
+anything on the map both centres it and opens a popover — waypoint details
+(type, traits, market/shipyard) or a ship summary (role, frame, status,
+destination, ETA, fuel and cargo meters). Only one popover is open at a time;
+the ship one re-reads from the live ships list so its ETA and gauges stay
+current as the poll refreshes. In-transit ships interpolate
 between departure and arrival on a **single** shared rAF clock that stops when
 nothing is moving (previously every ship marker ran its own loop).
 
