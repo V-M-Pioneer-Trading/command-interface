@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSystemLayout, shipRenderState } from "./systemLayout";
+import { buildSystemLayout, placeShips, shipRenderState } from "./systemLayout";
 import { computeBounds, computeFit } from "./viewport";
 
 const wp = (symbol, type, x, y, orbits) => ({ symbol, type, x, y, orbits, traits: [] });
@@ -167,5 +167,77 @@ describe("shipRenderState", () => {
   it("returns null rather than NaN for a ship whose waypoint is unknown", () => {
     expect(shipRenderState({ status: "DOCKED", waypointSymbol: "X1-ZZ-Q1" }, index, 0)).toBeNull();
     expect(shipRenderState(null, index, 0)).toBeNull();
+  });
+});
+
+describe("placeShips", () => {
+  const { index } = layoutOf(SYSTEM);
+  const idle = (symbol, at) => ({ symbol, nav: { status: "IN_ORBIT", waypointSymbol: at } });
+
+  // Regression: ships rendered dead-centre on their waypoint left a planet with
+  // three ships on it only 16% clickable, and stacked those ships on each other.
+  it("parks idle ships clear of the body's own radius", () => {
+    const body = index.get("X1-AA-P1");
+    const [placed] = placeShips([idle("S1", "X1-AA-P1")], index, 0, { bodyRadius: () => 12 });
+    expect(Math.hypot(placed.pos.x - body.x, placed.pos.y - body.y)).toBeGreaterThan(12);
+  });
+
+  // A constant park radius large enough for a gas giant would fling a moon's
+  // ships onto its parent planet, so the radius follows the body.
+  it("scales the park radius with the body it is parked at", () => {
+    const body = index.get("X1-AA-P1");
+    const distanceFor = (r) => {
+      const [p] = placeShips([idle("S1", "X1-AA-P1")], index, 0, { bodyRadius: () => r });
+      return Math.hypot(p.pos.x - body.x, p.pos.y - body.y);
+    };
+    expect(distanceFor(15)).toBeGreaterThan(distanceFor(6));
+  });
+
+  it("fans several ships at one body evenly instead of stacking them", () => {
+    const ships = [idle("S1", "X1-AA-P1"), idle("S2", "X1-AA-P1"), idle("S3", "X1-AA-P1")];
+    const placed = placeShips(ships, index, 0);
+    expect(placed).toHaveLength(3);
+    for (let i = 0; i < placed.length; i += 1) {
+      for (let j = i + 1; j < placed.length; j += 1) {
+        const d = Math.hypot(placed[i].pos.x - placed[j].pos.x, placed[i].pos.y - placed[j].pos.y);
+        expect(d).toBeGreaterThan(10);
+      }
+    }
+  });
+
+  it("keeps a ship's slot stable when the fleet list reorders", () => {
+    const ships = [idle("S1", "X1-AA-P1"), idle("S2", "X1-AA-P1")];
+    const forward = placeShips(ships, index, 0);
+    const reversed = placeShips([...ships].reverse(), index, 0);
+    for (const { ship, pos } of forward) {
+      const other = reversed.find((p) => p.ship.symbol === ship.symbol);
+      expect(other.pos.x).toBeCloseTo(pos.x, 9);
+      expect(other.pos.y).toBeCloseTo(pos.y, 9);
+    }
+  });
+
+  it("leaves in-transit ships on the line between waypoints", () => {
+    const start = 1_000_000;
+    const transiting = {
+      symbol: "S9",
+      nav: {
+        status: "IN_TRANSIT",
+        route: {
+          origin: { symbol: "X1-AA-P1" },
+          destination: { symbol: "X1-AA-A1" },
+          departureTime: new Date(start).toISOString(),
+          arrival: new Date(start + 1000).toISOString(),
+        },
+      },
+    };
+    const a = index.get("X1-AA-P1");
+    const b = index.get("X1-AA-A1");
+    const [placed] = placeShips([transiting], index, start + 500);
+    expect(placed.pos.x).toBeCloseTo((a.x + b.x) / 2, 6);
+    expect(placed.pos.y).toBeCloseTo((a.y + b.y) / 2, 6);
+  });
+
+  it("drops ships whose waypoint isn't in this system", () => {
+    expect(placeShips([idle("S1", "X1-ZZ-Q9")], index, 0)).toEqual([]);
   });
 });

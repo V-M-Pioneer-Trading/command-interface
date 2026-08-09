@@ -5,9 +5,9 @@ import { useElementSize } from "../../hooks/useElementSize";
 import { useAnimationClock } from "../../hooks/useAnimationClock";
 import { useMapViewport } from "../../hooks/useMapViewport";
 import { ZOOM_STEP, computeBounds, computeFit } from "../../map/viewport";
-import { buildSystemLayout, shipRenderState } from "../../map/systemLayout";
-import { waypointSpriteId } from "../../map/sprites/registry";
-import { roleBadgeId, shipFamily, traitBadgeId } from "../../map/sprites/ships";
+import { buildSystemLayout, placeShips } from "../../map/systemLayout";
+import { waypointBaseSize, waypointSpriteId } from "../../map/sprites/registry";
+import { BADGE_LABEL, roleBadgeId, shipFamily, traitBadgeId } from "../../map/sprites/ships";
 import { Panel } from "../common/Panel";
 import { SpriteDefs } from "./SpriteDefs";
 import { MapControls } from "./MapControls";
@@ -30,6 +30,8 @@ export function SystemMap({ token, systemSymbol }) {
   // One popover at a time: {kind: "waypoint", waypoint} | {kind: "ship", symbol}
   const [detail, setDetail] = useState(null);
   const [hovered, setHovered] = useState(null);
+  // {id, x, y} in base coords — a 5x5 glyph can't state its own meaning.
+  const [badgeTip, setBadgeTip] = useState(null);
 
   const { ref: canvasRef, size } = useElementSize();
   const { width, height } = size;
@@ -54,9 +56,9 @@ export function SystemMap({ token, systemSymbol }) {
 
   const placedShips = useMemo(
     () =>
-      shipsInSystem
-        .map((ship) => ({ ship, pos: shipRenderState(ship.nav, layout.index, now) }))
-        .filter((s) => s.pos),
+      placeShips(shipsInSystem, layout.index, now, {
+        bodyRadius: (node) => waypointBaseSize(node.type) / 2,
+      }),
     [shipsInSystem, layout, now],
   );
 
@@ -145,12 +147,14 @@ export function SystemMap({ token, systemSymbol }) {
                 selectedSymbol={detail?.kind === "waypoint" ? detail.waypoint.symbol : null}
                 onSelect={selectWaypoint}
                 onHover={setHovered}
+                onBadgeHover={setBadgeTip}
               />
               <ShipLayer
                 ships={placedShips}
                 scale={view.scale}
                 selectedSymbol={selectedShipSymbol}
                 onSelect={selectShip}
+                onBadgeHover={setBadgeTip}
               />
               <LabelLayer
                 nodes={layout.nodes}
@@ -162,6 +166,19 @@ export function SystemMap({ token, systemSymbol }) {
               />
             </g>
           </svg>
+        )}
+        {/* Rendered as HTML over the canvas rather than inside the scaled <g>,
+            so it needs no counter-scaling and can use the LCARS type styles. */}
+        {badgeTip && BADGE_LABEL[badgeTip.id] && (
+          <div
+            className="lcars-map__tooltip"
+            style={{
+              left: `${badgeTip.x * view.scale + view.tx}px`,
+              top: `${badgeTip.y * view.scale + view.ty}px`,
+            }}
+          >
+            {BADGE_LABEL[badgeTip.id]}
+          </div>
         )}
         {ready && (
           <MapControls

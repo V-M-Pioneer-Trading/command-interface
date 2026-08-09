@@ -81,6 +81,27 @@
   fill: var(--lcars-orange);
 }
 
+.lcars-map__badge {
+  cursor: help;
+}
+
+.lcars-map__tooltip {
+  position: absolute;
+  /* Anchored at the badge, lifted clear of it and horizontally centred. */
+  transform: translate(-50%, calc(-100% - 0.5rem));
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--lcars-blue);
+  border-radius: var(--radius-pill);
+  background: rgba(10, 10, 10, 0.95);
+  color: var(--lcars-text);
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+}
+
 /* ── Zoom controls ──────────────────────────────────────────────────────── */
 
 .lcars-map__controls {

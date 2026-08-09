@@ -164,18 +164,36 @@ transit paths, selection, badges). Ships collapse the 16 frames into 5
 silhouette families sized by mass, rotate to their heading, tint by nav status
 via `currentColor`, and carry a role badge for the five roles this fleet flies.
 
-Interaction: wheel or `+`/`−`/⌂ buttons to zoom, drag to pan, double-click to
-zoom toward the cursor, arrows/`+`/`−`/`0` from the keyboard, and clicking
-anything on the map both centres it and opens a popover — waypoint details
-(type, traits, market/shipyard) or a ship summary (role, frame, status,
-destination, ETA, fuel and cargo meters). Only one popover is open at a time;
-the ship one re-reads from the live ships list so its ETA and gauges stay
-current as the poll refreshes. In-transit ships interpolate
+Interaction: wheel or `+`/`−`/⌂ buttons to zoom, drag to pan, arrows/`+`/`−`/`0`
+from the keyboard, and clicking anything on the map both centres it and opens a
+popover — waypoint details (type, traits, market/shipyard) or a ship summary
+(role, frame, status, destination, ETA, fuel and cargo meters). Only one popover
+is open at a time; the ship one re-reads from the live ships list so its ETA and
+gauges stay current as the poll refreshes. Hovering a corner badge names it —
+a 5x5 glyph can hint at a meaning but never state one.
+
+Hit-testing is deliberately tight. Idle ships park in a ring clear of the body
+they're at, sized to that body's radius, and fan out evenly when several share
+it; waypoint click targets are only inflated to 12px rather than 18px. Both
+exist because ships drawn dead-centre on a waypoint, plus generous hit targets
+on small icons, left a planet with three ships on it **16% clickable** — the
+rest of its surface belonged to invisible rectangles. It now measures 99-100%.
+The one remaining case is a ship in transit passing over a body, which takes
+the click because it is genuinely drawn on top.
+
+In-transit ships interpolate
 between departure and arrival on a **single** shared rAF clock that stops when
 nothing is moving (previously every ship marker ran its own loop).
 
 `npm test` (vitest) covers the pure modules — layout, viewport math and sprite
 compilation. There are no component tests.
+
+`/dev-map.html` renders the map against a stubbed backend with a generated
+system matching a real one's density (93 waypoints, 58 of them asteroids, ships
+parked on planets). It needs no token and no backends, and Vite only bundles
+`index.html` so it never ships. Every hit-testing and overlap number quoted
+above was measured there — that density is what surfaces the bugs a small mock
+never will.
 
 ## Structure
 

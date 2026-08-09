@@ -181,3 +181,16 @@ export function roleBadgeId(role) {
 export function traitBadgeId(trait) {
   return TRAIT_GLYPHS[trait] ? `trait-${trait}` : null;
 }
+
+// A 5x5 glyph can hint at a meaning but never state one — hovering a badge
+// spells it out.
+export const BADGE_LABEL = {
+  "trait-MARKETPLACE": "Marketplace — buy & sell cargo",
+  "trait-SHIPYARD": "Shipyard — purchase ships",
+  "trait-UNDER_CONSTRUCTION": "Under construction",
+  "role-EXCAVATOR": "Excavator — mines asteroids",
+  "role-HAULER": "Hauler — moves cargo",
+  "role-SURVEYOR": "Surveyor — scans for deposits",
+  "role-SATELLITE": "Satellite — stationary probe",
+  "role-COMMAND": "Command ship",
+};

@@ -142,12 +142,6 @@ export function useMapViewport({ width, height }) {
     if (dragged) e.stopPropagation();
   }
 
-  function onDoubleClick(e) {
-    const { width: w, height: h } = sizeRef.current;
-    const { x, y } = toLocal(e.clientX, e.clientY);
-    setView((v) => zoomAt(v, x, y, ZOOM_STEP * ZOOM_STEP, w, h));
-  }
-
   function onKeyDown(e) {
     const { width: w, height: h } = sizeRef.current;
     const step = KEY_PAN_STEP;
@@ -194,7 +188,6 @@ export function useMapViewport({ width, height }) {
       onPointerUp,
       onLostPointerCapture,
       onClickCapture,
-      onDoubleClick,
       onKeyDown,
     },
   };

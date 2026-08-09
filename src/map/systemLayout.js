@@ -165,6 +165,20 @@ export function buildSystemLayout(waypoints, fit) {
   return { nodes, index, rings };
 }
 
+/**
+ * Gap between a body's edge and the ships parked around it, in base
+ * coordinates.
+ *
+ * Ships used to render dead-centre on their waypoint, which made the body
+ * underneath almost unclickable — a planet with three ships on it measured 16%
+ * clickable — and stacked those ships on top of each other. Parking them in a
+ * ring clear of the body fixes both. The radius has to follow the body's own
+ * size, not be a constant: one that clears a gas giant would fling a moon's
+ * ships onto its parent planet.
+ */
+const SHIP_PARK_CLEARANCE = 10;
+const DEFAULT_BODY_RADIUS = 8;
+
 function lerp(a, b, t) {
   return a + (b - a) * t;
 }
@@ -203,4 +217,58 @@ export function shipRenderState(nav, index, now) {
     // Sprites are drawn nose-up; atan2 gives 0deg pointing +x, hence the +90.
     angle: dx === 0 && dy === 0 ? 0 : (Math.atan2(dy, dx) * 180) / Math.PI + 90,
   };
+}
+
+/**
+ * Positions for a whole fleet at once.
+ *
+ * Batched rather than per-ship because idle ships have to be fanned out evenly
+ * around the body they're at, which needs to know how many share it. In-transit
+ * ships are left on the straight line between waypoints.
+ *
+ * `bodyRadius(node)` reports a body's drawn radius in base units. It's injected
+ * rather than imported so this module stays free of sprite metrics.
+ */
+export function placeShips(ships, index, now, { bodyRadius } = {}) {
+  const radiusOf = (symbol) => {
+    const node = index.get(symbol);
+    const r = node && bodyRadius ? bodyRadius(node) : null;
+    return (Number.isFinite(r) ? r : DEFAULT_BODY_RADIUS) + SHIP_PARK_CLEARANCE;
+  };
+  const idleByWaypoint = new Map();
+  for (const ship of ships) {
+    if (ship.nav?.status === "IN_TRANSIT") continue;
+    const at = ship.nav?.waypointSymbol;
+    if (!at) continue;
+    if (!idleByWaypoint.has(at)) idleByWaypoint.set(at, []);
+    idleByWaypoint.get(at).push(ship);
+  }
+  // Sorted so a ship keeps its slot as the poll reorders the fleet list.
+  idleByWaypoint.forEach((list) => list.sort((a, b) => a.symbol.localeCompare(b.symbol)));
+
+  const placed = [];
+  for (const ship of ships) {
+    const pos = shipRenderState(ship.nav, index, now);
+    if (!pos) continue;
+
+    if (ship.nav?.status === "IN_TRANSIT") {
+      placed.push({ ship, pos });
+      continue;
+    }
+
+    const at = ship.nav?.waypointSymbol;
+    const peers = idleByWaypoint.get(at) || [ship];
+    const slot = Math.max(0, peers.indexOf(ship));
+    const angle = seededAngle(at || ship.symbol) + (slot * Math.PI * 2) / peers.length;
+    const radius = radiusOf(at);
+    placed.push({
+      ship,
+      pos: {
+        ...pos,
+        x: pos.x + Math.cos(angle) * radius,
+        y: pos.y + Math.sin(angle) * radius,
+      },
+    });
+  }
+  return placed;
 }

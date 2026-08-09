@@ -14,7 +14,7 @@ const ROLE_BADGE_SCREEN_SIZE = 7;
  * Hull tones inside the sprite are `currentColor`, so setting `color` here
  * tints the whole ship by nav status while the outline and engine glow stay put.
  */
-export function ShipLayer({ ships, scale, selectedSymbol, onSelect }) {
+export function ShipLayer({ ships, scale, selectedSymbol, onSelect, onBadgeHover }) {
   const showRole = scale >= ROLE_BADGE_MIN_SCALE;
   const badgeSize = screenToLocal(ROLE_BADGE_SCREEN_SIZE, scale);
 
@@ -39,7 +39,9 @@ export function ShipLayer({ ships, scale, selectedSymbol, onSelect }) {
               onSelect(ship.symbol, pos);
             }}
           >
-            <circle r={Math.max(half, screenToLocal(10, scale))} fill="transparent" />
+            {/* Sized to the sprite, not inflated: an oversized hit circle here
+                covered the body the ship is parked at and made it unclickable. */}
+            <circle r={Math.max(half, screenToLocal(7, scale))} fill="transparent" />
             {isSelected && (
               <circle
                 className="lcars-map__ship-selection"
@@ -55,11 +57,16 @@ export function ShipLayer({ ships, scale, selectedSymbol, onSelect }) {
             </g>
             {badge && (
               <use
+                className="lcars-map__badge"
                 href={`#${badge}`}
                 x={half - badgeSize / 2}
                 y={-half - badgeSize / 2}
                 width={badgeSize}
                 height={badgeSize}
+                onPointerEnter={() =>
+                  onBadgeHover({ id: badge, x: pos.x + half, y: pos.y - half })
+                }
+                onPointerLeave={() => onBadgeHover(null)}
               />
             )}
           </g>
