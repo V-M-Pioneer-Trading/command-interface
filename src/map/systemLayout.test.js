@@ -13,9 +13,9 @@ const SYSTEM = [
   wp("X1-AA-A1", "ASTEROID", 40, 20),
 ];
 
-function layoutOf(waypoints) {
+function layoutOf(waypoints, opts) {
   const fit = computeFit(computeBounds(waypoints), 400, 400, 40);
-  return buildSystemLayout(waypoints, fit);
+  return buildSystemLayout(waypoints, fit, opts);
 }
 
 describe("buildSystemLayout", () => {
@@ -47,6 +47,37 @@ describe("buildSystemLayout", () => {
     expect(rings).toHaveLength(1);
     expect(rings[0].symbol).toBe("X1-AA-P1");
     expect(rings[0].childCount).toBe(2);
+  });
+
+  // Click targets pad out to `clearance`, so it must measure room to a
+  // neighbour's drawn edge — not to its centre. Half the centre distance was
+  // the earlier, wrong budget: a planet's icon already reaches past the
+  // midpoint to its own moons.
+  it("measures clearance to a neighbour's icon edge, not its centre", () => {
+    const R = 6;
+    const { nodes } = layoutOf(SYSTEM, { bodyRadius: () => R });
+    for (const node of nodes) {
+      const nearest = Math.min(
+        ...nodes.filter((n) => n !== node).map((n) => Math.hypot(n.x - node.x, n.y - node.y)),
+      );
+      expect(node.clearance).toBeCloseTo(nearest - R, 9);
+    }
+  });
+
+  it("gives a body less room when its neighbour is drawn larger", () => {
+    const small = layoutOf(SYSTEM, { bodyRadius: () => 2 }).index.get("X1-AA-P1").clearance;
+    const large = layoutOf(SYSTEM, { bodyRadius: () => 12 }).index.get("X1-AA-P1").clearance;
+    expect(large).toBeLessThan(small);
+  });
+
+  it("never reports negative clearance for overlapping icons", () => {
+    const { nodes } = layoutOf(SYSTEM, { bodyRadius: () => 500 });
+    expect(nodes.every((n) => n.clearance === 0)).toBe(true);
+  });
+
+  it("reports infinite clearance for a lone waypoint", () => {
+    const { nodes } = layoutOf([wp("X1-AA-P1", "PLANET", 0, 0)]);
+    expect(nodes[0].clearance).toBe(Infinity);
   });
 
   it("is deterministic across rebuilds and input ordering", () => {

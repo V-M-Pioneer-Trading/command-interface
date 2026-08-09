@@ -6,12 +6,15 @@ const BADGE_SCREEN_SIZE = 7;
 const BADGE_MIN_SCALE = 2;
 
 /**
- * Smallest click target, in screen px. Kept close to the smallest icon (an
- * asteroid is 11px) on purpose: inflating tiny waypoints to a generous target
- * makes them overhang their neighbours and steal clicks from the body they sit
- * next to, which measurably ate 4-19% of nearby planets.
+ * Padding around an icon's edge that also responds to hover/click, in screen px.
+ *
+ * Capped per node by `clearance` — the room it has before reaching another
+ * body's drawn icon. A flat inflation is what used to make small waypoints
+ * overhang whatever they sat beside and eat 4-19% of nearby planets. This way a
+ * body with space around it gets the full margin, and one in a tight cluster
+ * falls back to its own icon.
  */
-const MIN_HIT_SCREEN_SIZE = 12;
+const HIT_PAD_SCREEN = 5;
 
 /** Trait/status badges, corner-mounted, only once there's room to read them. */
 function badgesFor(waypoint) {
@@ -34,7 +37,10 @@ export function WaypointLayer({ nodes, scale, selectedSymbol, onSelect, onHover,
       {nodes.map((node) => {
         const size = iconLocalSize(waypointBaseSize(node.type), scale);
         const half = size / 2;
-        const hit = Math.max(size, screenToLocal(MIN_HIT_SCREEN_SIZE, scale));
+        // Circular rather than a square: a square's corners reach 1.41x its
+        // half-width, which is exactly where a neighbour tends to be.
+        const budget = node.clearance ?? Infinity;
+        const hitRadius = Math.max(half, Math.min(half + screenToLocal(HIT_PAD_SCREEN, scale), budget));
         const isSelected = node.symbol === selectedSymbol;
 
         return (
@@ -49,7 +55,7 @@ export function WaypointLayer({ nodes, scale, selectedSymbol, onSelect, onHover,
             onPointerEnter={() => onHover(node.symbol)}
             onPointerLeave={() => onHover(null)}
           >
-            <rect x={-hit / 2} y={-hit / 2} width={hit} height={hit} fill="transparent" />
+            <circle r={hitRadius} fill="transparent" />
             {isSelected && (
               <circle
                 className="lcars-map__waypoint-selection"

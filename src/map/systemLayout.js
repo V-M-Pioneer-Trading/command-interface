@@ -56,10 +56,17 @@ function ringRadius(childCount, depth) {
 /**
  * @param waypoints raw SpaceTraders waypoints (needs symbol, type, x, y, orbits)
  * @param fit       projection from `computeFit`
+ * @param bodyRadius reports a waypoint's drawn radius at zoom 1, used to budget
+ *                   click targets. Injected rather than imported so this module
+ *                   stays free of sprite metrics.
  * @returns { nodes, index, rings, bounds } — nodes carry base-space x/y
  */
-export function buildSystemLayout(waypoints, fit) {
+export function buildSystemLayout(waypoints, fit, { bodyRadius } = {}) {
   const list = Array.isArray(waypoints) ? waypoints : [];
+  const radiusOf = (node) => {
+    const r = bodyRadius ? bodyRadius(node) : null;
+    return Number.isFinite(r) ? r : DEFAULT_BODY_RADIUS;
+  };
   const bySymbol = new Map(list.map((w) => [w.symbol, w]));
 
   const childrenOf = new Map();
@@ -160,6 +167,23 @@ export function buildSystemLayout(waypoints, fit) {
     if (visited.has(w.symbol)) continue;
     const p = project(fit, w.x, w.y);
     place(w, p.x, p.y, 0, null);
+  }
+
+  // How far a node may grow its click target before it reaches into the *drawn
+  // icon* of another body. Half the distance to the nearest neighbour is not
+  // the right budget: a planet's icon already extends past the midpoint to a
+  // moon 19 units away, so a moon padded to 9.5 would sit on top of it.
+  //
+  // Measured with icons at their zoom-1 size. Icons shrink in these units as
+  // you zoom in, so this stays a conservative floor at every zoom level.
+  for (const a of nodes) {
+    let clearance = Infinity;
+    for (const b of nodes) {
+      if (a === b) continue;
+      const room = Math.hypot(a.x - b.x, a.y - b.y) - radiusOf(b);
+      if (room < clearance) clearance = room;
+    }
+    a.clearance = Math.max(0, clearance);
   }
 
   return { nodes, index, rings };

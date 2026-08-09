@@ -42,9 +42,11 @@ export function SystemMap({ token, systemSymbol }) {
 
   const waypoints = waypointData?.data || [];
 
+  const bodyRadius = (node) => waypointBaseSize(node.type) / 2;
+
   const layout = useMemo(() => {
     const fit = computeFit(computeBounds(waypoints), width, height, FIT_PADDING);
-    return buildSystemLayout(waypoints, fit);
+    return buildSystemLayout(waypoints, fit, { bodyRadius });
   }, [waypoints, width, height]);
 
   const shipsInSystem = useMemo(
@@ -56,9 +58,7 @@ export function SystemMap({ token, systemSymbol }) {
 
   const placedShips = useMemo(
     () =>
-      placeShips(shipsInSystem, layout.index, now, {
-        bodyRadius: (node) => waypointBaseSize(node.type) / 2,
-      }),
+      placeShips(shipsInSystem, layout.index, now, { bodyRadius }),
     [shipsInSystem, layout, now],
   );
 

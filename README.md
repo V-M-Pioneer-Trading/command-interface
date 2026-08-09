@@ -172,14 +172,22 @@ is open at a time; the ship one re-reads from the live ships list so its ETA and
 gauges stay current as the poll refreshes. Hovering a corner badge names it —
 a 5x5 glyph can hint at a meaning but never state one.
 
-Hit-testing is deliberately tight. Idle ships park in a ring clear of the body
-they're at, sized to that body's radius, and fan out evenly when several share
-it; waypoint click targets are only inflated to 12px rather than 18px. Both
-exist because ships drawn dead-centre on a waypoint, plus generous hit targets
-on small icons, left a planet with three ships on it **16% clickable** — the
-rest of its surface belonged to invisible rectangles. It now measures 99-100%.
-The one remaining case is a ship in transit passing over a body, which takes
-the click because it is genuinely drawn on top.
+Hit targets are geometric, not fixed. Each waypoint gets a circular target
+padded 5px beyond its icon, capped per node by `clearance` — the room it has
+before reaching another body's *drawn edge*. An isolated gas giant takes the
+full margin; an orbital station wedged against its planet takes none. Idle ships
+likewise park in a ring clear of the body they're at, sized to that body's
+radius, fanning out evenly when several share it.
+
+All of it exists because ships drawn dead-centre on a waypoint, plus flat
+inflation of small icons, left a planet with three ships on it **16%
+clickable** — the rest of its surface belonged to invisible rectangles. Bodies
+now measure 100%. Note the budget is room to a neighbour's *edge*, not half the
+distance to its centre: a planet's icon already reaches past the midpoint to its
+own moons, so a midpoint rule puts moons back on top of it.
+
+The one remaining case is a ship in transit passing over a body, which takes the
+click because it is genuinely drawn on top.
 
 In-transit ships interpolate
 between departure and arrival on a **single** shared rAF clock that stops when

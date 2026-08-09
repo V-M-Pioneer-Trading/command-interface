@@ -39,9 +39,11 @@ export function ShipLayer({ ships, scale, selectedSymbol, onSelect, onBadgeHover
               onSelect(ship.symbol, pos);
             }}
           >
-            {/* Sized to the sprite, not inflated: an oversized hit circle here
-                covered the body the ship is parked at and made it unclickable. */}
-            <circle r={Math.max(half, screenToLocal(7, scale))} fill="transparent" />
+            {/* Sprite-sized, with a floor so a probe stays catchable. No margin
+                beyond that: ships park close to the body they orbit, so padding
+                here goes straight back to covering it — which is what made
+                bodies unclickable in the first place. */}
+            <circle r={Math.max(half, screenToLocal(8, scale))} fill="transparent" />
             {isSelected && (
               <circle
                 className="lcars-map__ship-selection"
