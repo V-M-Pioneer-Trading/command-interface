@@ -14,7 +14,9 @@
 
 .lcars-system-map__svg {
   display: block;
-  cursor: grab;
+  /* Plain arrow at rest, like a slippy map — the grab hand implied the map was
+     the thing you interact with, when mostly you're clicking what's on it. */
+  cursor: default;
   touch-action: none;
 }
 
@@ -27,8 +29,12 @@
   outline-offset: -1px;
 }
 
-.lcars-system-map__svg.is-dragging {
-  cursor: grabbing;
+/* Once a drag actually starts moving, the whole map becomes the pan cursor —
+   including over icons and badges, which otherwise keep their own pointer/help
+   cursor mid-drag and make the gesture look like it ended. */
+.lcars-system-map__svg.is-dragging,
+.lcars-system-map__svg.is-dragging * {
+  cursor: all-scroll;
 }
 
 /* ── Map layers ─────────────────────────────────────────────────────────── */
