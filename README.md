@@ -189,6 +189,17 @@ own moons, so a midpoint rule puts moons back on top of it.
 The one remaining case is a ship in transit passing over a body, which takes the
 click because it is genuinely drawn on top.
 
+One trap worth knowing about, because it cost a release: **do not
+`setPointerCapture` on the `<svg>` when the press starts.** `click` fires at the
+nearest common ancestor of the pointerdown and pointerup targets, and capture
+retargets pointerup to the capture element — so every click on a waypoint gets
+delivered to the `<svg>`, which reads it as "clicked empty space" and closes the
+popover instead of opening it. Capture is taken lazily in `onPointerMove`, at
+the same threshold that suppresses the click, so a captured gesture is only ever
+one whose click was going to be discarded. Because capture no longer starts on
+press, `onPointerMove` also has to notice `buttons === 0` and end a drag whose
+button was released off-map.
+
 In-transit ships interpolate
 between departure and arrival on a **single** shared rAF clock that stops when
 nothing is moving (previously every ship marker ran its own loop).

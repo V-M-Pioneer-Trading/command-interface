@@ -83,15 +83,15 @@ export function useMapViewport({ width, height }) {
 
   function onPointerDown(e) {
     if (e.button !== 0) return;
-    // Throws if the pointer is already gone; nothing here depends on capture
-    // succeeding, so a failure just means we fall back to plain pointer events.
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      /* no capture available */
-    }
+    // Deliberately no setPointerCapture here. Capturing to the <svg> on every
+    // press retargets pointerup to the <svg>, and `click` fires at the nearest
+    // common ancestor of the pointerdown and pointerup targets — so a click on
+    // a waypoint was delivered to the <svg>, which treats it as "clicked empty
+    // space" and closes the popover. Capture is taken lazily in onPointerMove
+    // once the gesture is unambiguously a pan.
     drag.current = {
       active: true,
+      captured: false,
       startX: e.clientX,
       startY: e.clientY,
       lastX: e.clientX,
@@ -103,6 +103,13 @@ export function useMapViewport({ width, height }) {
 
   function onPointerMove(e) {
     if (!drag.current.active) return;
+    // Without capture from the first press, a button released outside the map
+    // never delivers pointerup here, and the drag would stick — the next
+    // hover would pan. `buttons === 0` means it was let go somewhere else.
+    if (e.buttons === 0) {
+      endDrag();
+      return;
+    }
     const { width: w, height: h } = sizeRef.current;
     const { x: lx, y: ly } = toLocal(e.clientX, e.clientY);
     const { x: px, y: py } = toLocal(drag.current.lastX, drag.current.lastY);
@@ -110,26 +117,50 @@ export function useMapViewport({ width, height }) {
     drag.current.lastY = e.clientY;
     drag.current.moved = Math.hypot(e.clientX - drag.current.startX, e.clientY - drag.current.startY);
     if (drag.current.moved > DRAG_CURSOR_THRESHOLD) setIsDragging(true);
+
+    // Capture keeps a pan tracking once the pointer leaves the map, but it also
+    // retargets the closing click to the <svg>. Taking it at exactly the
+    // click-suppression threshold keeps those two facts compatible: any gesture
+    // that captures is one whose click we were going to discard anyway.
+    if (!drag.current.captured && drag.current.moved > CLICK_SUPPRESS_THRESHOLD) {
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        drag.current.captured = true;
+      } catch {
+        /* no live pointer to capture; panning still works while over the map */
+      }
+    }
+
     setView((v) => panBy(v, lx - px, ly - py, w, h));
   }
 
-  function onPointerUp(e) {
-    if (!drag.current.active) return;
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      /* capture already released */
+  // Ends the gesture but deliberately leaves `moved` alone — the click that
+  // follows still needs it to decide whether it was a pan.
+  function endDrag(e) {
+    if (drag.current.captured && e) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        /* capture already released */
+      }
     }
+    drag.current.captured = false;
     drag.current.active = false;
     // Reset here rather than in the click handler: a drag that ends without a
     // click (released off-target) would otherwise leave the cursor stuck.
     setIsDragging(false);
   }
 
+  function onPointerUp(e) {
+    if (!drag.current.active) return;
+    endDrag(e);
+  }
+
   // Capture can be lost without a pointerup reaching us (alt-tab, OS gesture
   // takeover) — without this, drag.current.active would stay stuck true.
   function onLostPointerCapture() {
     drag.current.active = false;
+    drag.current.captured = false;
     setIsDragging(false);
   }
 
