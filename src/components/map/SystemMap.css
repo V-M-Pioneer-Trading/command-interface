@@ -13,47 +13,150 @@
 }
 
 .lcars-system-map__svg {
-  width: 100%;
-  height: 100%;
-  cursor: grab;
+  display: block;
+  /* Plain arrow at rest, like a slippy map — the grab hand implied the map was
+     the thing you interact with, when mostly you're clicking what's on it. */
+  cursor: default;
+  touch-action: none;
 }
 
-.lcars-system-map__svg.is-dragging {
-  cursor: grabbing;
+.lcars-system-map__svg:focus {
+  outline: none;
 }
 
-.lcars-waypoint-icon {
+.lcars-system-map__svg:focus-visible {
+  outline: 1px solid var(--lcars-blue);
+  outline-offset: -1px;
+}
+
+/* Once a drag actually starts moving, the whole map becomes the pan cursor —
+   including over icons and badges, which otherwise keep their own pointer/help
+   cursor mid-drag and make the gesture look like it ended. */
+.lcars-system-map__svg.is-dragging,
+.lcars-system-map__svg.is-dragging * {
+  cursor: all-scroll;
+}
+
+/* ── Map layers ─────────────────────────────────────────────────────────── */
+
+.lcars-map__waypoint,
+.lcars-map__ship {
   cursor: pointer;
 }
 
-.lcars-waypoint-icon__label {
-  font-size: 9px;
-  fill: var(--lcars-text-dim);
-  text-anchor: middle;
-  font-family: var(--font-body);
+.lcars-map__waypoint-selection {
+  stroke: var(--lcars-orange);
+}
+
+.lcars-map__orbit-rings {
   pointer-events: none;
 }
 
-.lcars-system-map__transit-path {
+.lcars-map__orbit-ring {
   stroke: var(--lcars-blue);
-  stroke-width: 1.5;
-  stroke-dasharray: 4 3;
+  transition: opacity 140ms ease-out;
+}
+
+.lcars-map__transit-path {
+  stroke: var(--lcars-blue);
   opacity: 0.6;
 }
 
-.lcars-ship-marker {
+.lcars-map__labels {
+  pointer-events: none;
+  font-family: var(--font-body);
+  text-anchor: middle;
+  /* Dark outline in em units so it counter-scales with the font size and stays
+     readable over a bright planet at any zoom. */
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.85);
+  stroke-width: 0.2em;
+  stroke-linejoin: round;
+}
+
+.lcars-map__waypoint-label {
+  fill: var(--lcars-text-dim);
+}
+
+.lcars-map__ship-label {
+  fill: var(--lcars-text);
+  font-weight: 700;
+}
+
+.lcars-map__ship-label.is-selected {
+  fill: var(--lcars-orange);
+}
+
+.lcars-map__badge {
+  cursor: help;
+}
+
+.lcars-map__tooltip {
+  position: absolute;
+  /* Anchored at the badge, lifted clear of it and horizontally centred. */
+  transform: translate(-50%, calc(-100% - 0.5rem));
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--lcars-blue);
+  border-radius: var(--radius-pill);
+  background: rgba(10, 10, 10, 0.95);
+  color: var(--lcars-text);
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ── Zoom controls ──────────────────────────────────────────────────────── */
+
+.lcars-map__controls {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+
+.lcars-map__control {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--lcars-blue);
+  border-radius: var(--radius-pill);
+  background: rgba(10, 10, 10, 0.8);
+  color: var(--lcars-tan);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  line-height: 1;
   cursor: pointer;
 }
 
-.lcars-ship-marker__label {
-  font-size: 9px;
-  fill: var(--lcars-text);
-  text-anchor: middle;
-  font-weight: 700;
-  pointer-events: none;
+.lcars-map__control:hover:not(:disabled) {
+  background: var(--lcars-blue);
+  color: var(--lcars-text-on-light);
 }
 
-.lcars-waypoint-popover {
+.lcars-map__control:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.lcars-map__zoom-readout {
+  text-align: center;
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  color: var(--lcars-text-dim);
+}
+
+/* ── Map popovers (waypoint + ship share one shell) ─────────────────────── */
+
+.lcars-waypoint-popover,
+.lcars-map-popover {
   position: absolute;
   bottom: 0.75rem;
   right: 0.75rem;
@@ -66,13 +169,15 @@
   padding: 0.75rem 1rem;
 }
 
-.lcars-waypoint-popover h3 {
+.lcars-waypoint-popover h3,
+.lcars-map-popover h3 {
   font-size: 1rem;
   color: var(--lcars-orange);
   margin-bottom: 0.25rem;
 }
 
-.lcars-waypoint-popover__close {
+.lcars-waypoint-popover__close,
+.lcars-map-popover__close {
   position: absolute;
   top: 0.4rem;
   right: 0.6rem;
@@ -82,10 +187,74 @@
   font-size: 1rem;
 }
 
-.lcars-waypoint-popover__type {
+.lcars-waypoint-popover__type,
+.lcars-map-popover__type {
   color: var(--lcars-tan);
   font-size: 0.75rem;
   letter-spacing: 0.05em;
+}
+
+/* ── Ship popover ───────────────────────────────────────────────────────── */
+
+.lcars-map-popover__facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.6rem;
+  margin-top: 0.6rem;
+  font-size: 0.75rem;
+}
+
+.lcars-map-popover__facts dt {
+  color: var(--lcars-text-dim);
+}
+
+.lcars-map-popover__facts dd {
+  color: var(--lcars-text);
+  text-align: right;
+}
+
+.lcars-map-popover__facts dd.is-docked {
+  color: var(--status-docked);
+}
+
+.lcars-map-popover__facts dd.is-in_orbit {
+  color: var(--status-in-orbit);
+}
+
+.lcars-map-popover__facts dd.is-in_transit {
+  color: var(--status-in-transit);
+}
+
+.lcars-map-popover__meter {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+  font-size: 0.7rem;
+}
+
+.lcars-map-popover__meter-label {
+  color: var(--lcars-text-dim);
+  width: 2.6rem;
+}
+
+.lcars-map-popover__meter-track {
+  flex: 1;
+  height: 0.4rem;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.lcars-map-popover__meter-fill {
+  display: block;
+  height: 100%;
+  background: var(--lcars-tan);
+}
+
+.lcars-map-popover__meter-value {
+  color: var(--lcars-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .lcars-waypoint-popover__traits {

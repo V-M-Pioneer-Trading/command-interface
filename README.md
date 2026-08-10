@@ -71,7 +71,7 @@ Contracts/Autopilot): four sections reading from automation-service's
 aggregate endpoints.
 
 - **Credits / Hour** — a hand-rolled inline SVG line chart (no charting
-  library, matching `SystemMap.jsx`'s existing convention) from
+  library, matching the system map's existing convention) from
   `GET /metrics/context`'s rollups. 2px line, an end-dot direct-labeled with
   its value, hairline recessive gridlines, and a crosshair+tooltip that snaps
   to the nearest rollup on hover — every value it shows is also listed as
@@ -114,8 +114,112 @@ concurrent edit is never allowed to silently discard what an operator is
 mid-typing. Saving still always overwrites the current server value
 (last-write-wins), same as before.
 
+## System map
+
+Rendered as SVG (no rendering library — the scale is ~10–100 waypoints and
+under 20 ships, and staying in the DOM keeps LCARS CSS variables, popovers and
+hit-testing free). The map is split into pure modules under `src/map/` and thin
+layer components that just draw what those modules produce.
+
+**Zoom separates, it doesn't magnify.** SpaceTraders gives orbitals — moons,
+orbital stations, fuel stations that `orbits` a body — the *exact same* x/y as
+their parent, so no amount of geometric zoom would pull them apart. Two things
+fix that:
+
+- `buildSystemLayout` fans a body's orbitals onto a ring around it. Ring radius
+  lives in base coordinates, so it scales linearly with zoom. The ring itself is
+  drawn only while its family is hovered — hovering a parent or any of its
+  orbitals fades in that one ring, so you get the "these belong together" cue
+  exactly when you're asking the question and no ring clutter the rest of the
+  time.
+- Ring rotation is **neighbour-aware**: each ring aims its widest gap at the
+  nearest other body. Seeding each ring independently from `hash(parent)` looked
+  fine on a small mock, but in a real 93-waypoint system every close pair was a
+  collision between two *different* families — a moon of one planet landing on a
+  station of the next. Same-ring spacing was never the problem.
+- Icons grow **sub-linearly**, `size x scale^0.3`. At max zoom (32x) spacing is
+  32x wider while a planet is only ~2.8x bigger — a net ~11x separation gain —
+  so crowded waypoints genuinely separate instead of scaling together. Labels,
+  strokes and badges are counter-scaled to a fixed pixel size the same way.
+
+Max zoom is 32x rather than something tamer because real systems need it: fit-
+to-system on a 93-waypoint system compresses distinct bodies to ~1.7px apart, and
+8x could not pull those past their own icon widths. At 32x that system has zero
+overlapping icon pairs.
+
+Everything positional resolves through the layout index **by symbol**.
+`nav.route.origin/destination` carry raw API coordinates, which for a moon are
+its *parent's* — a coordinate-based renderer draws ships flying to the wrong
+body once orbitals are offset.
+
+Sprites are pixel art authored in code: character grids (procedurally generated
+for spheres, rocks, rings and clouds; hand-drawn for ship silhouettes and
+badges) compiled once at load into run-length-merged `<rect>`s inside an SVG
+`<symbol>`. That means crisp at any zoom, no binary assets and no build step. All
+14 `WaypointType`s are covered, with deterministic per-symbol variants so a
+system doesn't read as copy-paste, plus corner badges for
+MARKETPLACE / SHIPYARD / under-construction. Celestial bodies use naturalistic
+colours; the LCARS palette stays on the chrome around them (labels, rings,
+transit paths, selection, badges). Ships collapse the 16 frames into 5
+silhouette families sized by mass, rotate to their heading, tint by nav status
+via `currentColor`, and carry a role badge for the five roles this fleet flies.
+
+Interaction: wheel or `+`/`−`/⌂ buttons to zoom, drag to pan, arrows/`+`/`−`/`0`
+from the keyboard, and clicking anything on the map both centres it and opens a
+popover — waypoint details (type, traits, market/shipyard) or a ship summary
+(role, frame, status, destination, ETA, fuel and cargo meters). Only one popover
+is open at a time; the ship one re-reads from the live ships list so its ETA and
+gauges stay current as the poll refreshes. Hovering a corner badge names it —
+a 5x5 glyph can hint at a meaning but never state one.
+
+Hit targets are geometric, not fixed. Each waypoint gets a circular target
+padded 5px beyond its icon, capped per node by `clearance` — the room it has
+before reaching another body's *drawn edge*. An isolated gas giant takes the
+full margin; an orbital station wedged against its planet takes none. Idle ships
+likewise park in a ring clear of the body they're at, sized to that body's
+radius, fanning out evenly when several share it.
+
+All of it exists because ships drawn dead-centre on a waypoint, plus flat
+inflation of small icons, left a planet with three ships on it **16%
+clickable** — the rest of its surface belonged to invisible rectangles. Bodies
+now measure 100%. Note the budget is room to a neighbour's *edge*, not half the
+distance to its centre: a planet's icon already reaches past the midpoint to its
+own moons, so a midpoint rule puts moons back on top of it.
+
+The one remaining case is a ship in transit passing over a body, which takes the
+click because it is genuinely drawn on top.
+
+One trap worth knowing about, because it cost a release: **do not
+`setPointerCapture` on the `<svg>` when the press starts.** `click` fires at the
+nearest common ancestor of the pointerdown and pointerup targets, and capture
+retargets pointerup to the capture element — so every click on a waypoint gets
+delivered to the `<svg>`, which reads it as "clicked empty space" and closes the
+popover instead of opening it. Capture is taken lazily in `onPointerMove`, at
+the same threshold that suppresses the click, so a captured gesture is only ever
+one whose click was going to be discarded. Because capture no longer starts on
+press, `onPointerMove` also has to notice `buttons === 0` and end a drag whose
+button was released off-map.
+
+In-transit ships interpolate
+between departure and arrival on a **single** shared rAF clock that stops when
+nothing is moving (previously every ship marker ran its own loop).
+
+`npm test` (vitest) covers the pure modules — layout, viewport math and sprite
+compilation. There are no component tests.
+
+`/dev-map.html` renders the map against a stubbed backend with a generated
+system matching a real one's density (93 waypoints, 58 of them asteroids, ships
+parked on planets). It needs no token and no backends, and Vite only bundles
+`index.html` so it never ships. Every hit-testing and overlap number quoted
+above was measured there — that density is what surfaces the bugs a small mock
+never will.
+
 ## Structure
 
+- `src/map/` — framework-free map core: `viewport.js` (zoom/pan, screen↔world;
+  deliberately knows nothing about systems, so a future sector map reuses it),
+  `systemLayout.js` (waypoints → positioned nodes, orbit rings, ship
+  interpolation) and `sprites/` (pixel grids, generators, registry)
 - `src/api/` — thin fetch clients per backend service; agent/navigation/fleet
   forward the bearer token from `AuthContext`, `automationService.js` doesn't
   (see Auth model above)
