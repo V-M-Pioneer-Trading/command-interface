@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import { useAlerts } from "../../context/AlertContext";
+import { useOperator, SCOPE_FLEET_CONTROL } from "../../hooks/useOperator";
 import { agentService } from "../../api/agentService";
 import { PillButton } from "../common/PillButton";
 import "./ContractsPanel.css";
@@ -52,6 +53,8 @@ export function ContractsPanel({ contracts, onClose, style }) {
   const { token } = useAuth();
   const { pushAlert } = useAlerts();
   const queryClient = useQueryClient();
+  const { can, getToken } = useOperator();
+  const hasControl = can(SCOPE_FLEET_CONTROL);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["contracts", token] });
@@ -59,17 +62,17 @@ export function ContractsPanel({ contracts, onClose, style }) {
   };
 
   const acceptMutation = useMutation({
-    mutationFn: (contractId) => agentService.acceptContract(token, contractId),
+    mutationFn: async (contractId) => agentService.acceptContract(token, contractId, await getToken()),
     onSuccess: invalidate,
     onError: (err) => pushAlert(err.message || "Failed to accept contract"),
   });
   const fulfillMutation = useMutation({
-    mutationFn: (contractId) => agentService.fulfillContract(token, contractId),
+    mutationFn: async (contractId) => agentService.fulfillContract(token, contractId, await getToken()),
     onSuccess: invalidate,
     onError: (err) => pushAlert(err.message || "Failed to fulfill contract"),
   });
 
-  const busy = acceptMutation.isPending || fulfillMutation.isPending;
+  const busy = acceptMutation.isPending || fulfillMutation.isPending || !hasControl;
 
   return (
     <div className="lcars-contracts-panel" style={style}>

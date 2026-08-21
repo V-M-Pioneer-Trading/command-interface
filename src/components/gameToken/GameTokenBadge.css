@@ -1,0 +1,35 @@
+.lcars-game-token {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lcars-game-token__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lcars-yellow);
+}
+
+.lcars-game-token__label--set {
+  color: var(--lcars-text-dim);
+}
+
+.lcars-game-token--editing {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lcars-game-token--editing textarea {
+  background: #1a1a1a;
+  color: var(--lcars-text);
+  border: 1px solid var(--lcars-violet);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  font-family: monospace;
+  font-size: 0.75rem;
+  width: 16rem;
+  resize: vertical;
+}
