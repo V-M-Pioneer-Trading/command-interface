@@ -18,6 +18,12 @@ jobs:
       VITE_FLEET_SERVICE_URL: https://spacetraders.radomskyi.com/api/fleet/v1
       VITE_AUTOMATION_SERVICE_URL: https://spacetraders.radomskyi.com/api/automation/v1
       VITE_ST_GATEWAY_URL: https://spacetraders.radomskyi.com
+      # Public by design — names the Clerk instance, authorizes nothing. Stored
+      # as a repo variable (not a secret) for exactly that reason. Missing here
+      # is what shipped the "VITE_CLERK_PUBLISHABLE_KEY is not set" build to
+      # every visitor: the operator-auth PR added the key to .env.example but
+      # never to the workflow that actually builds what gets deployed.
+      VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
 
     steps:
       - name: Checkout code
