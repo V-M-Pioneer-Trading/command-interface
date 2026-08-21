@@ -114,3 +114,10 @@
   gap: 0.5rem;
   padding: 0 1rem;
 }
+
+.lcars-autopilot-panel__gated {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: var(--lcars-yellow);
+}
