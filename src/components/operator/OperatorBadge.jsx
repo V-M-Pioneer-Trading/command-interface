@@ -1,4 +1,5 @@
-import { useSignIn, useUser } from "@clerk/clerk-react";
+import { useEffect, useRef } from "react";
+import { useSignIn, useSignUp, useUser } from "@clerk/clerk-react";
 import { useOperator, SCOPE_FLEET_CONTROL } from "../../hooks/useOperator";
 import { PillButton } from "../common/PillButton";
 import "./OperatorBadge.css";
@@ -15,8 +16,26 @@ import "./OperatorBadge.css";
  */
 export function OperatorBadge() {
   const { isLoaded, isSignedIn, signOut, can } = useOperator();
-  const { signIn } = useSignIn();
+  const { signIn, isLoaded: signInLoaded } = useSignIn();
+  const { signUp, setActive, isLoaded: signUpLoaded } = useSignUp();
   const { user } = useUser();
+  const transferAttempted = useRef(false);
+
+  useEffect(() => {
+    if (!signInLoaded || !signUpLoaded || isSignedIn || transferAttempted.current) return;
+    // A brand-new Google account has no existing Clerk user for signIn to find.
+    // Clerk marks that attempt "transferable" instead of erroring outright —
+    // completing it means creating the account here, explicitly, through the
+    // sign-up object. Without this the redirect just bounces back to this same
+    // page with no session and no error, which is indistinguishable from a
+    // silent failure.
+    if (signIn?.firstFactorVerification?.status !== "transferable") return;
+
+    transferAttempted.current = true;
+    signUp.create({ transfer: true }).then((attempt) => {
+      if (attempt.status === "complete") setActive({ session: attempt.createdSessionId });
+    });
+  }, [signInLoaded, signUpLoaded, isSignedIn, signIn, signUp, setActive]);
 
   if (!isLoaded) return <span className="lcars-operator lcars-operator--loading">…</span>;
 
