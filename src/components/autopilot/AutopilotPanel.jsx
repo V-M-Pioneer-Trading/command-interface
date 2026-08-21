@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import { useAlerts } from "../../context/AlertContext";
 import { useAutopilotStatusQuery } from "../../hooks/queries";
+import { useOperator, SCOPE_FLEET_CONTROL } from "../../hooks/useOperator";
 import { automationService } from "../../api/automationService";
 import { PillButton } from "../common/PillButton";
 import "./AutopilotPanel.css";
@@ -12,6 +13,13 @@ export function AutopilotPanel({ onClose, style }) {
   const { pushAlert } = useAlerts();
   const queryClient = useQueryClient();
   const { data: status, isLoading } = useAutopilotStatusQuery();
+  const { isSignedIn, can, getToken } = useOperator();
+
+  // Rendered disabled rather than hidden. A visitor should be able to see that
+  // an arm/abort surface exists and is gated — hiding it makes the system look
+  // less capable than it is, and a disabled control is self-documenting in a
+  // way an absent one is not.
+  const hasControl = can(SCOPE_FLEET_CONTROL);
 
   // Prefilled from the operator's already-pasted SpaceTraders token, but
   // editable — automation-service holds its own copy in memory, independent
@@ -22,17 +30,17 @@ export function AutopilotPanel({ onClose, style }) {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["autopilotStatus"] });
 
   const armMutation = useMutation({
-    mutationFn: () => automationService.arm(armToken, mode),
+    mutationFn: async () => automationService.arm(armToken, mode, await getToken()),
     onSuccess: invalidate,
     onError: (err) => pushAlert(err.message || "Failed to arm autopilot"),
   });
   const pauseMutation = useMutation({
-    mutationFn: () => automationService.pause(),
+    mutationFn: async () => automationService.pause(await getToken()),
     onSuccess: invalidate,
     onError: (err) => pushAlert(err.message || "Failed to pause autopilot"),
   });
   const abortMutation = useMutation({
-    mutationFn: () => automationService.abort(),
+    mutationFn: async () => automationService.abort(await getToken()),
     onSuccess: invalidate,
     onError: (err) => pushAlert(err.message || "Failed to abort autopilot"),
   });
@@ -42,8 +50,8 @@ export function AutopilotPanel({ onClose, style }) {
   // Arming (or re-arming, to switch live<->shadow or replace the held token)
   // is allowed from any status per automation-service's AutopilotState — only
   // pause/abort are gated by the current status.
-  const canPause = currentStatus === "armed";
-  const canAbort = currentStatus === "armed" || currentStatus === "paused";
+  const canPause = hasControl && currentStatus === "armed";
+  const canAbort = hasControl && (currentStatus === "armed" || currentStatus === "paused");
 
   return (
     <div className="lcars-autopilot-panel" style={style}>
@@ -79,21 +87,29 @@ export function AutopilotPanel({ onClose, style }) {
           onChange={(e) => setArmToken(e.target.value)}
           placeholder="SpaceTraders token"
           className="lcars-autopilot-panel__token-input"
-          disabled={busy}
+          disabled={busy || !hasControl}
         />
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value)}
-          disabled={busy}
+          disabled={busy || !hasControl}
           className="lcars-autopilot-panel__mode-select"
         >
           <option value="live">Live</option>
           <option value="shadow">Shadow</option>
         </select>
-        <PillButton type="submit" accent="green" disabled={busy || !armToken}>
+        <PillButton type="submit" accent="green" disabled={busy || !armToken || !hasControl}>
           Arm
         </PillButton>
       </form>
+
+      {!hasControl && (
+        <p className="lcars-autopilot-panel__gated">
+          {isSignedIn
+            ? "This account has no fleet:control scope. Controls are read-only."
+            : "Sign in as an operator to arm, pause or abort."}
+        </p>
+      )}
 
       <div className="lcars-autopilot-panel__actions">
         <PillButton accent="yellow" disabled={!canPause || busy} onClick={() => pauseMutation.mutate()}>

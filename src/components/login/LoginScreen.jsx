@@ -3,6 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { agentService } from "../../api/agentService";
 import { PillButton } from "../common/PillButton";
 import { SystemStatus } from "../layout/SystemStatus";
+import { OperatorBadge } from "../operator/OperatorBadge";
 import "./LoginScreen.css";
 
 export function LoginScreen() {
@@ -51,6 +52,10 @@ export function LoginScreen() {
           </PillButton>
         </form>
         <div className="lcars-login__status">
+          {/* Operator sign-in belongs here as well as in the dashboard chrome.
+              The two credentials are independent, and requiring a SpaceTraders
+              token before you can even sign in as an operator is backwards. */}
+          <OperatorBadge />
           <SystemStatus />
         </div>
       </div>

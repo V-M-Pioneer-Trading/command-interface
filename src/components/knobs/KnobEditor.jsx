@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAlerts } from "../../context/AlertContext";
 import { useKnobsQuery } from "../../hooks/queries";
+import { useOperator, SCOPE_FLEET_CONTROL } from "../../hooks/useOperator";
 import { automationService } from "../../api/automationService";
 import { KnobRow } from "./KnobRow";
 import "./KnobEditor.css";
@@ -35,9 +36,14 @@ export function KnobEditor({ onClose, style }) {
   const { pushAlert } = useAlerts();
   const queryClient = useQueryClient();
   const { data: knobs, isLoading } = useKnobsQuery();
+  const { isSignedIn, can, getToken } = useOperator();
+
+  // Knob *values* stay public — reading what the planner believes is the most
+  // useful thing on this panel and needs no credential. Only writing is gated.
+  const hasControl = can(SCOPE_FLEET_CONTROL);
 
   const setMutation = useMutation({
-    mutationFn: ({ name, value }) => automationService.setKnob(name, value),
+    mutationFn: async ({ name, value }) => automationService.setKnob(name, value, await getToken()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["knobs"] });
       // A successful edit is logged as a knob_changed event server-side —
@@ -55,6 +61,13 @@ export function KnobEditor({ onClose, style }) {
           ×
         </button>
       </div>
+      {!hasControl && (
+        <p className="lcars-knob-editor__gated">
+          {isSignedIn
+            ? "This account has no fleet:control scope. Values are read-only."
+            : "Sign in as an operator to change knob values."}
+        </p>
+      )}
       {isLoading && <div className="lcars-knob-editor__loading">Loading...</div>}
       {!isLoading && (!knobs || knobs.length === 0) && (
         <div className="lcars-knob-editor__empty">No knobs</div>
@@ -75,7 +88,7 @@ export function KnobEditor({ onClose, style }) {
                 <KnobRow
                   key={knob.name}
                   knob={knob}
-                  busy={setMutation.isPending}
+                  busy={setMutation.isPending || !hasControl}
                   onSave={(name, value) => setMutation.mutate({ name, value })}
                 />
               ))}

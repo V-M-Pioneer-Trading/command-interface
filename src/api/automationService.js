@@ -17,14 +17,23 @@ async function parseErrorMessage(res) {
   }
 }
 
-// automation-service's own admin API is unauthenticated (it holds the
-// SpaceTraders token in memory after /autopilot/arm, keyed by nothing but
-// process lifetime) — unlike agent/navigation/fleet-service, no bearer token
-// is forwarded on these calls.
-async function call(path, { method = "GET", body } = {}) {
+// Reads are public: the observability surface — status, event log, metrics,
+// knob values, per-ship task state — is meant to be watchable without
+// credentials. Mutating calls carry a **Clerk** session token, not the
+// SpaceTraders one: automation-service verifies it locally and requires the
+// `fleet:control` scope.
+//
+// The Clerk token is passed in per call rather than held here, because Clerk
+// tokens are short-lived and refreshed by the SDK; caching one in this module
+// would mean sending a stale token the moment it expires.
+async function call(path, { method = "GET", body, authToken } = {}) {
+  const headers = {};
+  if (body) headers["Content-Type"] = "application/json";
+  if (authToken) headers.Authorization = `Bearer ${authToken}`;
+
   const res = await fetch(`${base}${path}`, {
     method,
-    headers: body ? { "Content-Type": "application/json" } : undefined,
+    headers: Object.keys(headers).length > 0 ? headers : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
 
@@ -35,9 +44,15 @@ async function call(path, { method = "GET", body } = {}) {
 
 export const automationService = {
   getStatus: () => call("/autopilot/status"),
-  arm: (token, mode = "live") => call("/autopilot/arm", { method: "POST", body: { token, mode } }),
-  pause: () => call("/autopilot/pause", { method: "POST" }),
-  abort: () => call("/autopilot/abort", { method: "POST" }),
+  // `token` is the SpaceTraders credential automation-service will fly with;
+  // `authToken` is the Clerk session proving you may arm at all. Two different
+  // secrets doing two different jobs — the first goes in the body, the second
+  // in the header. The first disappears in increment 3, when st-gateway starts
+  // injecting the game token and arming becomes `{ mode }` alone.
+  arm: (token, mode = "live", authToken) =>
+    call("/autopilot/arm", { method: "POST", body: { token, mode }, authToken }),
+  pause: (authToken) => call("/autopilot/pause", { method: "POST", authToken }),
+  abort: (authToken) => call("/autopilot/abort", { method: "POST", authToken }),
   // A ship with no autopilot task yet (or one automation-service isn't
   // configured to manage) 404s — that's a normal "not managed" state here,
   // not an error worth surfacing.
@@ -76,5 +91,6 @@ export const automationService = {
   // Unlike metrics/anomalies, the knob API always exists — no operator config
   // gates it, so a call here never 404s for "feature not enabled."
   getKnobs: async () => (await call("/planner/knobs")).knobs,
-  setKnob: async (name, value) => (await call(`/planner/knobs/${name}`, { method: "PUT", body: { value } })).knob,
+  setKnob: async (name, value, authToken) =>
+    (await call(`/planner/knobs/${name}`, { method: "PUT", body: { value }, authToken })).knob,
 };

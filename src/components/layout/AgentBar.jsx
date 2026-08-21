@@ -2,6 +2,7 @@ import { useAgentQuery, useAutopilotStatusQuery } from "../../hooks/queries";
 import { useAuth } from "../../context/AuthContext";
 import { PillButton } from "../common/PillButton";
 import { SystemStatus } from "./SystemStatus";
+import { OperatorBadge } from "../operator/OperatorBadge";
 import "./AgentBar.css";
 
 export function AgentBar({
@@ -37,6 +38,7 @@ export function AgentBar({
         </span>
       </div>
       <div className="lcars-agent-bar__actions">
+        <OperatorBadge />
         <SystemStatus />
         <PillButton accent="lavender" onClick={onToggleContracts}>
           Contracts{contractCount ? ` (${contractCount})` : ""}

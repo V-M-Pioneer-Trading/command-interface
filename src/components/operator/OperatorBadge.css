@@ -1,0 +1,42 @@
+.lcars-operator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.lcars-operator--loading {
+  color: var(--lcars-text-dim);
+  letter-spacing: 0.2em;
+}
+
+.lcars-operator__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lcars-text-dim);
+}
+
+/* Only an operator who actually holds fleet:control gets the live colour —
+   "signed in" and "may arm the fleet" are different states and should not
+   look the same. */
+.lcars-operator__label--control {
+  color: var(--lcars-green);
+}
+
+.lcars-operator__name {
+  font-size: 0.8rem;
+  color: var(--lcars-tan);
+  max-width: 18ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lcars-operator__note {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lcars-yellow);
+}
