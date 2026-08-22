@@ -1,10 +1,12 @@
-import { useAuth } from "./context/AuthContext";
-import { LoginScreen } from "./components/login/LoginScreen";
 import { Dashboard } from "./components/layout/Dashboard";
 
+// No login wall (auth-design.md decision 13): the dashboard always renders.
+// Anonymous visitors get the public observability surface; gated controls
+// render disabled and visible rather than hidden, so what exists and what's
+// gated is never ambiguous. Operator sign-in and the game token are both
+// small affordances in AgentBar's chrome, not a precondition for the page.
 function App() {
-  const { token } = useAuth();
-  return token ? <Dashboard /> : <LoginScreen />;
+  return <Dashboard />;
 }
 
 export default App;

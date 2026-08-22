@@ -3,6 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { PillButton } from "../common/PillButton";
 import { SystemStatus } from "./SystemStatus";
 import { OperatorBadge } from "../operator/OperatorBadge";
+import { GameTokenBadge } from "../gameToken/GameTokenBadge";
 import "./AgentBar.css";
 
 export function AgentBar({
@@ -16,7 +17,7 @@ export function AgentBar({
   onToggleKnobs,
   knobsOpen,
 }) {
-  const { token, logout } = useAuth();
+  const { token } = useAuth();
   const { data: agent, isLoading } = useAgentQuery(token);
   const { data: autopilotStatus } = useAutopilotStatusQuery();
 
@@ -38,6 +39,7 @@ export function AgentBar({
         </span>
       </div>
       <div className="lcars-agent-bar__actions">
+        <GameTokenBadge />
         <OperatorBadge />
         <SystemStatus />
         <PillButton accent="lavender" onClick={onToggleContracts}>
@@ -58,9 +60,6 @@ export function AgentBar({
         <PillButton accent="tan" onClick={onToggleKnobs}>
           Knobs
           {knobsOpen ? " ▲" : " ▼"}
-        </PillButton>
-        <PillButton accent="red" onClick={logout}>
-          Disconnect
         </PillButton>
       </div>
     </div>

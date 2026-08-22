@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSelection } from "../../context/SelectionContext";
 import { useAlerts } from "../../context/AlertContext";
+import { useOperator, SCOPE_FLEET_CONTROL } from "../../hooks/useOperator";
 import {
   useShipsQuery,
   useCooldownQuery,
@@ -26,6 +27,8 @@ import "./ShipDetailPanel.css";
 const FLIGHT_MODES = ["CRUISE", "BURN", "DRIFT", "STEALTH"];
 
 export function ShipDetailPanel({ token, contracts }) {
+  const { can, getToken } = useOperator();
+  const hasControl = can(SCOPE_FLEET_CONTROL);
   const { selectedShipSymbol } = useSelection();
   const { data: ships } = useShipsQuery(token);
   const ship = ships?.find((s) => s.symbol === selectedShipSymbol);
@@ -57,23 +60,23 @@ export function ShipDetailPanel({ token, contracts }) {
   const onActionError = (err) => pushAlert(err.message || "Action failed");
 
   const orbitMutation = useMutation({
-    mutationFn: () => fleetService.orbit(token, selectedShipSymbol),
+    mutationFn: async () => fleetService.orbit(token, selectedShipSymbol, await getToken()),
     onSuccess: invalidateShip,
     onError: onActionError,
   });
   const dockMutation = useMutation({
-    mutationFn: () => fleetService.dock(token, selectedShipSymbol),
+    mutationFn: async () => fleetService.dock(token, selectedShipSymbol, await getToken()),
     onSuccess: invalidateShip,
     onError: onActionError,
   });
   const navigateMutation = useMutation({
-    mutationFn: (waypointSymbol) =>
-      fleetService.navigate(token, selectedShipSymbol, waypointSymbol),
+    mutationFn: async (waypointSymbol) =>
+      fleetService.navigate(token, selectedShipSymbol, waypointSymbol, await getToken()),
     onSuccess: invalidateShip,
     onError: onActionError,
   });
   const refuelMutation = useMutation({
-    mutationFn: () => fleetService.refuel(token, selectedShipSymbol),
+    mutationFn: async () => fleetService.refuel(token, selectedShipSymbol, await getToken()),
     onSuccess: (res) => {
       const units = res?.data?.transaction?.units;
       if (units === 0) {
@@ -89,17 +92,19 @@ export function ShipDetailPanel({ token, contracts }) {
     onError: onActionError,
   });
   const extractMutation = useMutation({
-    mutationFn: () => fleetService.extract(token, selectedShipSymbol),
+    mutationFn: async () => fleetService.extract(token, selectedShipSymbol, await getToken()),
     onSuccess: invalidateShip,
     onError: onActionError,
   });
   const extractSurveyMutation = useMutation({
-    mutationFn: (survey) => fleetService.extractWithSurvey(token, selectedShipSymbol, survey),
+    mutationFn: async (survey) =>
+      fleetService.extractWithSurvey(token, selectedShipSymbol, survey, await getToken()),
     onSuccess: invalidateShip,
     onError: onActionError,
   });
   const sellMutation = useMutation({
-    mutationFn: ({ symbol, units }) => agentService.sell(token, selectedShipSymbol, symbol, units),
+    mutationFn: async ({ symbol, units }) =>
+      agentService.sell(token, selectedShipSymbol, symbol, units, await getToken()),
     onSuccess: () => {
       invalidateShip();
       queryClient.invalidateQueries({ queryKey: ["agent", token] });
@@ -107,8 +112,8 @@ export function ShipDetailPanel({ token, contracts }) {
     onError: onActionError,
   });
   const deliverMutation = useMutation({
-    mutationFn: ({ contractId, symbol, units }) =>
-      fleetService.deliverContract(token, contractId, selectedShipSymbol, symbol, units),
+    mutationFn: async ({ contractId, symbol, units }) =>
+      fleetService.deliverContract(token, contractId, selectedShipSymbol, symbol, units, await getToken()),
     onSuccess: () => {
       invalidateShip();
       queryClient.invalidateQueries({ queryKey: ["contracts", token] });
@@ -116,7 +121,7 @@ export function ShipDetailPanel({ token, contracts }) {
     onError: (err) => pushAlert(err.message || "Delivery failed"),
   });
   const surveyMutation = useMutation({
-    mutationFn: () => fleetService.survey(token, selectedShipSymbol),
+    mutationFn: async () => fleetService.survey(token, selectedShipSymbol, await getToken()),
     onSuccess: (data) => {
       setSurveys((prev) => [...prev, ...(data?.data?.surveys || [])]);
       invalidateShip();
@@ -124,13 +129,14 @@ export function ShipDetailPanel({ token, contracts }) {
     onError: (err) => pushAlert(err.message || "Survey failed"),
   });
   const flightModeMutation = useMutation({
-    mutationFn: (flightMode) => fleetService.setFlightMode(token, selectedShipSymbol, flightMode),
+    mutationFn: async (flightMode) =>
+      fleetService.setFlightMode(token, selectedShipSymbol, flightMode, await getToken()),
     onSuccess: invalidateShip,
     onError: onActionError,
   });
   const purchaseMutation = useMutation({
-    mutationFn: ({ symbol, units }) =>
-      agentService.purchaseCargo(token, selectedShipSymbol, symbol, units),
+    mutationFn: async ({ symbol, units }) =>
+      agentService.purchaseCargo(token, selectedShipSymbol, symbol, units, await getToken()),
     onSuccess: () => {
       invalidateShip();
       queryClient.invalidateQueries({ queryKey: ["agent", token] });
@@ -138,8 +144,8 @@ export function ShipDetailPanel({ token, contracts }) {
     onError: onActionError,
   });
   const transferMutation = useMutation({
-    mutationFn: ({ targetShipSymbol, symbol, units }) =>
-      fleetService.transferCargo(token, selectedShipSymbol, symbol, units, targetShipSymbol),
+    mutationFn: async ({ targetShipSymbol, symbol, units }) =>
+      fleetService.transferCargo(token, selectedShipSymbol, symbol, units, targetShipSymbol, await getToken()),
     onSuccess: invalidateShip,
     onError: onActionError,
   });
@@ -180,7 +186,7 @@ export function ShipDetailPanel({ token, contracts }) {
         <TransitTimer nav={ship.nav} />
         <select
           value={ship.nav?.flightMode || "CRUISE"}
-          disabled={anyMutating}
+          disabled={anyMutating || !hasControl}
           onChange={(e) => flightModeMutation.mutate(e.target.value)}
         >
           {FLIGHT_MODES.map((mode) => (
@@ -201,21 +207,21 @@ export function ShipDetailPanel({ token, contracts }) {
       <div className="lcars-ship-detail__actions">
         <PillButton
           accent="blue"
-          disabled={!isDocked || anyMutating}
+          disabled={!isDocked || anyMutating || !hasControl}
           onClick={() => orbitMutation.mutate()}
         >
           Orbit
         </PillButton>
         <PillButton
           accent="green"
-          disabled={!isOrbiting || anyMutating}
+          disabled={!isOrbiting || anyMutating || !hasControl}
           onClick={() => dockMutation.mutate()}
         >
           Dock
         </PillButton>
         <PillButton
           accent="orange"
-          disabled={!isDocked || anyMutating || ship.fuel?.capacity === 0}
+          disabled={!isDocked || anyMutating || ship.fuel?.capacity === 0 || !hasControl}
           title={ship.fuel?.capacity === 0 ? "This ship has no fuel tank" : undefined}
           onClick={() => refuelMutation.mutate()}
         >
@@ -226,7 +232,7 @@ export function ShipDetailPanel({ token, contracts }) {
       <NavigatePicker
         token={token}
         systemSymbol={ship.nav?.systemSymbol}
-        disabled={!isOrbiting || anyMutating}
+        disabled={!isOrbiting || anyMutating || !hasControl}
         isNavigating={navigateMutation.isPending}
         onNavigate={(waypointSymbol) => navigateMutation.mutate(waypointSymbol)}
       />
@@ -234,14 +240,14 @@ export function ShipDetailPanel({ token, contracts }) {
       <div className="lcars-ship-detail__actions">
         <PillButton
           accent="tan"
-          disabled={!isOrbiting || hasCooldown || anyMutating}
+          disabled={!isOrbiting || hasCooldown || anyMutating || !hasControl}
           onClick={() => surveyMutation.mutate()}
         >
           Survey
         </PillButton>
         <PillButton
           accent="violet"
-          disabled={!isOrbiting || hasCooldown || anyMutating}
+          disabled={!isOrbiting || hasCooldown || anyMutating || !hasControl}
           onClick={() => extractMutation.mutate()}
         >
           Extract
@@ -250,7 +256,7 @@ export function ShipDetailPanel({ token, contracts }) {
 
       <SurveyList
         surveys={surveys}
-        disabled={!isOrbiting || hasCooldown || anyMutating}
+        disabled={!isOrbiting || hasCooldown || anyMutating || !hasControl}
         onExtract={(survey) => extractSurveyMutation.mutate(survey)}
       />
 
@@ -262,7 +268,7 @@ export function ShipDetailPanel({ token, contracts }) {
         currentWaypointSymbol={ship.nav?.waypointSymbol}
         contracts={contracts}
         otherShipsAtWaypoint={otherShipsAtWaypoint}
-        busy={anyMutating}
+        busy={anyMutating || !hasControl}
         onSell={(symbol, units) => sellMutation.mutate({ symbol, units })}
         onDeliver={(contractId, symbol, units) =>
           deliverMutation.mutate({ contractId, symbol, units })
@@ -279,7 +285,7 @@ export function ShipDetailPanel({ token, contracts }) {
             market={market}
             docked={isDocked}
             credits={agent?.credits}
-            busy={anyMutating}
+            busy={anyMutating || !hasControl}
             onBuy={(symbol, units) => purchaseMutation.mutate({ symbol, units })}
           />
         </>

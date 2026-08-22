@@ -14,13 +14,20 @@ async function parseErrorMessage(res) {
   }
 }
 
-export async function request(baseUrl, path, { method = "GET", token, body } = {}) {
-  if (!token) throw new ApiError(401, "No SpaceTraders token set");
-
+// Two different credentials travel on two different headers (auth-design.md
+// decision 18). `Authorization` is always the Clerk session — the identity
+// nav/agent/fleet-service gate on. `X-SpaceTraders-Token` is the pasted game
+// credential, still needed for the live upstream call until auth-service and
+// st-gateway injection remove it from the browser entirely. Neither is
+// required client-side: a call missing one simply gets whatever response the
+// server gives an unauthenticated or uncredentialed caller, rather than the
+// client refusing to even try.
+export async function request(baseUrl, path, { method = "GET", token, authToken, body } = {}) {
   const res = await fetch(`${baseUrl}${path}`, {
     method,
     headers: {
-      Authorization: `Bearer ${token}`,
+      ...(token ? { "X-SpaceTraders-Token": token } : {}),
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       // Every call from this UI is a user-initiated action — propagated by
       // fleet/agent/navigation-service all the way to st-gateway's priority
       // queue so browser traffic stays responsive alongside automation-service's

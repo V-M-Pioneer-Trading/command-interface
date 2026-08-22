@@ -5,6 +5,7 @@ import { agentService } from "../../api/agentService";
 import { PillButton } from "../common/PillButton";
 import { useAlerts } from "../../context/AlertContext";
 import { useAgentQuery } from "../../hooks/queries";
+import { useOperator, SCOPE_FLEET_CONTROL } from "../../hooks/useOperator";
 
 export function WaypointPopover({ token, waypoint, onClose }) {
   const [detail, setDetail] = useState(null);
@@ -13,9 +14,11 @@ export function WaypointPopover({ token, waypoint, onClose }) {
   const { pushAlert } = useAlerts();
   const { data: agent } = useAgentQuery(token);
   const queryClient = useQueryClient();
+  const { can, getToken } = useOperator();
+  const hasControl = can(SCOPE_FLEET_CONTROL);
 
   const purchaseShipMutation = useMutation({
-    mutationFn: (shipType) => agentService.purchaseShip(token, shipType, waypoint.symbol),
+    mutationFn: async (shipType) => agentService.purchaseShip(token, shipType, waypoint.symbol, await getToken()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ships", token] });
       queryClient.invalidateQueries({ queryKey: ["agent", token] });
@@ -97,11 +100,13 @@ export function WaypointPopover({ token, waypoint, onClose }) {
                   <span>{cost !== undefined ? `${cost}cr` : "—"}</span>
                   <PillButton
                     accent="orange"
-                    disabled={cost === undefined || purchaseShipMutation.isPending}
+                    disabled={cost === undefined || purchaseShipMutation.isPending || !hasControl}
                     title={
                       cost === undefined
                         ? "Dock a ship here to see price & buy"
-                        : undefined
+                        : !hasControl
+                          ? "Sign in with fleet:control to buy ships"
+                          : undefined
                     }
                     onClick={() => setActiveType(activeType === s.type ? null : s.type)}
                   >
@@ -112,7 +117,7 @@ export function WaypointPopover({ token, waypoint, onClose }) {
                   <div className="lcars-waypoint-popover__shipyard-confirm">
                     <PillButton
                       accent="red"
-                      disabled={!canAfford || purchaseShipMutation.isPending}
+                      disabled={!canAfford || purchaseShipMutation.isPending || !hasControl}
                       title={!canAfford ? "Not enough credits" : undefined}
                       onClick={() => purchaseShipMutation.mutate(s.type)}
                     >
