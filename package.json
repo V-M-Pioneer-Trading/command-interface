@@ -2,6 +2,7 @@
   "name": "command-interface",
   "version": "0.1.0",
   "private": true,
+  "description": "LCARS-styled operator dashboard for the V&M SpaceTraders mining POC. See README.md.",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -18,6 +18,10 @@ jobs:
       VITE_FLEET_SERVICE_URL: https://spacetraders.radomskyi.com/api/fleet/v1
       VITE_AUTOMATION_SERVICE_URL: https://spacetraders.radomskyi.com/api/automation/v1
       VITE_ST_GATEWAY_URL: https://spacetraders.radomskyi.com
+      # VITE_AI_SERVICE_URL is deliberately absent: ai-service has no CloudFront
+      # origin, so there is no URL a browser on this domain could reach. The app
+      # drops health targets it cannot probe rather than showing a dot that is
+      # red forever. Give it an https origin and it belongs here like the rest.
       # Public by design — names the Clerk instance, authorizes nothing. Stored
       # as a repo variable (not a secret) for exactly that reason. Missing here
       # is what shipped the "VITE_CLERK_PUBLISHABLE_KEY is not set" build to
