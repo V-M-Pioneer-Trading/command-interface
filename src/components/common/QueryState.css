@@ -1,0 +1,15 @@
+.lcars-query-state {
+  margin: 0.35rem 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: var(--lcars-text-dim);
+}
+
+.lcars-query-state--muted {
+  font-style: italic;
+}
+
+.lcars-query-state--error {
+  color: var(--lcars-red-alert);
+  font-style: normal;
+}

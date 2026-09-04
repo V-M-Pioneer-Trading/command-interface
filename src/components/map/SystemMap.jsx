@@ -23,9 +23,18 @@ import "./SystemMap.css";
 // Leaves room for orbit-ring offsets and labels at the edge of the system.
 const FIT_PADDING = 44;
 
-export function SystemMap({ token, systemSymbol }) {
-  const { data: waypointData, isLoading } = useSystemWaypointsQuery(token, systemSymbol);
-  const { data: ships } = useShipsQuery(token);
+// Stable identity: `waypointData?.data || []` handed the layout memo a fresh
+// array on every render before the query resolved, rebuilding the whole layout
+// each time.
+const NO_WAYPOINTS = [];
+
+/** A body's drawn radius at zoom 1, in base units. Injected into the layout
+ *  modules so they stay free of sprite metrics. */
+const bodyRadius = (node) => waypointBaseSize(node.type) / 2;
+
+export function SystemMap({ systemSymbol }) {
+  const { data: waypointData, isLoading } = useSystemWaypointsQuery(systemSymbol);
+  const { data: ships } = useShipsQuery();
   const { selectedShipSymbol, setSelectedShipSymbol } = useSelection();
   // One popover at a time: {kind: "waypoint", waypoint} | {kind: "ship", symbol}
   const [detail, setDetail] = useState(null);
@@ -40,9 +49,7 @@ export function SystemMap({ token, systemSymbol }) {
     height,
   });
 
-  const waypoints = waypointData?.data || [];
-
-  const bodyRadius = (node) => waypointBaseSize(node.type) / 2;
+  const waypoints = waypointData?.data || NO_WAYPOINTS;
 
   const layout = useMemo(() => {
     const fit = computeFit(computeBounds(waypoints), width, height, FIT_PADDING);
@@ -75,7 +82,11 @@ export function SystemMap({ token, systemSymbol }) {
     [shipsInSystem, layout],
   );
 
-  // Only the symbols actually on screen get emitted into <defs>.
+  // Only the symbols actually on screen get emitted into <defs>. Which sprites
+  // those are depends on *what* is on the map, never on where it currently is —
+  // so this is deliberately keyed off `shipsInSystem` rather than `placedShips`.
+  // Keyed off the placed ships it was recomputed (and the whole <defs> tree
+  // reconciled) on every animation frame of every transit.
   const spriteIds = useMemo(() => {
     const ids = new Set();
     for (const node of layout.nodes) {
@@ -86,13 +97,13 @@ export function SystemMap({ token, systemSymbol }) {
       }
       if (node.waypoint.isUnderConstruction) ids.add(traitBadgeId("UNDER_CONSTRUCTION"));
     }
-    for (const { ship } of placedShips) {
+    for (const ship of shipsInSystem) {
       ids.add(`ship-${shipFamily(ship.frame?.symbol)}`);
       const badge = roleBadgeId(ship.registration?.role);
       if (badge) ids.add(badge);
     }
     return [...ids];
-  }, [layout, placedShips]);
+  }, [layout, shipsInSystem]);
 
   // Clicking anything on the map both opens its popover and pans it to centre,
   // so the popover always describes something you can see.
@@ -189,11 +200,7 @@ export function SystemMap({ token, systemSymbol }) {
           />
         )}
         {detail?.kind === "waypoint" && (
-          <WaypointPopover
-            token={token}
-            waypoint={detail.waypoint}
-            onClose={() => setDetail(null)}
-          />
+          <WaypointPopover waypoint={detail.waypoint} onClose={() => setDetail(null)} />
         )}
         {detailShip && <ShipPopover ship={detailShip} onClose={() => setDetail(null)} />}
       </div>

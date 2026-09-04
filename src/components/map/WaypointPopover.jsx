@@ -4,15 +4,18 @@ import { navigationService } from "../../api/navigationService";
 import { agentService } from "../../api/agentService";
 import { PillButton } from "../common/PillButton";
 import { useAlerts } from "../../context/AlertContext";
+import { useAuth } from "../../context/AuthContext";
 import { useAgentQuery } from "../../hooks/queries";
-import { useOperator, SCOPE_FLEET_CONTROL } from "../../hooks/useOperator";
+import { queryKeys } from "../../hooks/queryKeys";
+import { useOperator, SCOPE_FLEET_CONTROL } from "../../context/OperatorContext";
 
-export function WaypointPopover({ token, waypoint, onClose }) {
+export function WaypointPopover({ waypoint, onClose }) {
+  const { token } = useAuth();
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(null);
   const [activeType, setActiveType] = useState(null);
   const { pushAlert } = useAlerts();
-  const { data: agent } = useAgentQuery(token);
+  const { data: agent } = useAgentQuery();
   const queryClient = useQueryClient();
   const { can, getToken } = useOperator();
   const hasControl = can(SCOPE_FLEET_CONTROL);
@@ -20,8 +23,8 @@ export function WaypointPopover({ token, waypoint, onClose }) {
   const purchaseShipMutation = useMutation({
     mutationFn: async (shipType) => agentService.purchaseShip(token, shipType, waypoint.symbol, await getToken()),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ships", token] });
-      queryClient.invalidateQueries({ queryKey: ["agent", token] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ships(token) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.agent(token) });
       setActiveType(null);
     },
     onError: (err) => pushAlert(err.message || "Purchase failed"),

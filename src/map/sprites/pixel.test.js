@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { gridToRects, mulberry32, spriteFromRows } from "./pixel";
+import { gridToRects, spriteFromRows } from "./pixel";
+import { mulberry32 } from "../rand";
+import { makeTank } from "./generators";
 import { SPRITES, waypointBaseSize, waypointSpriteId } from "./registry";
 import { SHIP_FAMILY_SIZE, shipFamily } from "./ships";
 
@@ -91,6 +93,30 @@ describe("registry", () => {
       Array.from({ length: 40 }, (_, i) => waypointSpriteId(`X1-AA-P${i}`, "PLANET")),
     );
     expect(used.size).toBeGreaterThan(1);
+  });
+
+  // Regression: `makeTank` wrote its accent valve at `grid[y][c]` with
+  // `c = (size - 1) / 2` — 7.5 on the 16px grid. That assigns a string-keyed
+  // property to the row array rather than a cell, so the pixel vanished
+  // silently and FUEL_STATION compiled with no accent colour at all.
+  it("draws the fuel station's accent valve", () => {
+    const { grid, palette } = makeTank({ ramp: ["#111", "#222", "#333"], accent: "#ffcc33" });
+    const accentChars = Object.entries(palette)
+      .filter(([, value]) => value === "#ffcc33")
+      .map(([char]) => char);
+
+    expect(accentChars).toHaveLength(1);
+    expect(grid.flat().filter((cell) => cell === accentChars[0])).toHaveLength(2);
+    expect(SPRITES.get("wp-FUEL_STATION-0").rects.some((r) => r.fill === "#ffcc33")).toBe(true);
+  });
+
+  // The general form of that bug: every write into a grid must land on an
+  // integer cell, or gridToRects never sees it.
+  it("leaves no fractional cells on any generated sprite grid", () => {
+    const { grid } = makeTank({ ramp: ["#111", "#222", "#333"], accent: "#ffcc33" });
+    for (const row of grid) {
+      expect(Object.keys(row).every((key) => Number.isInteger(Number(key)))).toBe(true);
+    }
   });
 
   it("produces non-empty sprites", () => {

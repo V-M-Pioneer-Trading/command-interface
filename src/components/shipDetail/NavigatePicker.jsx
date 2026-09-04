@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useSystemWaypointsQuery } from "../../hooks/queries";
 import { PillButton } from "../common/PillButton";
 
-export function NavigatePicker({ token, systemSymbol, disabled, onNavigate, isNavigating }) {
-  const { data } = useSystemWaypointsQuery(token, systemSymbol);
+export function NavigatePicker({ systemSymbol, disabled, onNavigate, isNavigating }) {
+  const { data } = useSystemWaypointsQuery(systemSymbol);
   const waypoints = data?.data || [];
   const [target, setTarget] = useState("");
 

@@ -1,21 +1,7 @@
 import { config } from "./config";
-import { ApiError } from "./client";
+import { readResponse, withQuery } from "./client";
 
 const base = config.automationServiceUrl;
-
-// automation-service's error body nests the message ({ error: { message } })
-// rather than the flat string/message shape client.js's own parser expects,
-// so this can't share that helper directly — but the status code still
-// belongs on ApiError so callers can distinguish e.g. a 409 InvalidTransition
-// (pause/abort from the wrong state) from a generic failure.
-async function parseErrorMessage(res) {
-  try {
-    const body = await res.json();
-    return body.error?.message || body.error || res.statusText;
-  } catch {
-    return res.statusText;
-  }
-}
 
 // Reads are public: the observability surface — status, event log, metrics,
 // knob values, per-ship task state — is meant to be watchable without
@@ -26,7 +12,12 @@ async function parseErrorMessage(res) {
 // The Clerk token is passed in per call rather than held here, because Clerk
 // tokens are short-lived and refreshed by the SDK; caching one in this module
 // would mean sending a stale token the moment it expires.
-async function call(path, { method = "GET", body, authToken } = {}) {
+//
+// Unlike client.js's `request`, an unauthenticated GET here sends **no headers
+// at all**. That keeps it a CORS-simple request with no preflight, which is
+// what the public read surface relies on — do not add a blanket custom header
+// to this path without checking automation-service's allowed-headers list.
+async function call(path, { method = "GET", body, authToken, allow404 = false } = {}) {
   const headers = {};
   if (body) headers["Content-Type"] = "application/json";
   if (authToken) headers.Authorization = `Bearer ${authToken}`;
@@ -37,9 +28,7 @@ async function call(path, { method = "GET", body, authToken } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  if (res.status === 204) return null;
-  if (!res.ok) throw new ApiError(res.status, await parseErrorMessage(res));
-  return res.json();
+  return readResponse(res, { allow404 });
 }
 
 export const automationService = {
@@ -57,37 +46,19 @@ export const automationService = {
   // configured to manage) 404s — that's a normal "not managed" state here,
   // not an error worth surfacing.
   getShipTask: async (shipSymbol) => {
-    const res = await fetch(`${base}/autopilot/ships/${shipSymbol}`);
-    if (res.status === 404) return null;
-    if (!res.ok) throw new ApiError(res.status, await parseErrorMessage(res));
-    const body = await res.json();
-    return body.task;
+    const body = await call(`/autopilot/ships/${shipSymbol}`, { allow404: true });
+    return body ? body.task : null;
   },
   // Both routes below only exist if the operator configured the relevant
   // scheduler (metricsRollupIntervalMs / an anomaly webhook) — otherwise
   // automation-service never registers them and a call 404s. That's a normal
   // "feature not enabled on this deployment" state here, not an error.
-  getMetricsContext: async ({ rollupLimit, eventLimit } = {}) => {
-    const params = new URLSearchParams();
-    if (rollupLimit) params.set("rollupLimit", rollupLimit);
-    if (eventLimit) params.set("eventLimit", eventLimit);
-    const qs = params.toString();
-    const res = await fetch(`${base}/metrics/context${qs ? `?${qs}` : ""}`);
-    if (res.status === 404) return null;
-    if (!res.ok) throw new ApiError(res.status, await parseErrorMessage(res));
-    return res.json();
-  },
-  getAnomaliesDigest: async ({ windowMinutes, anomalyLimit, eventLimit } = {}) => {
-    const params = new URLSearchParams();
-    if (windowMinutes) params.set("windowMinutes", windowMinutes);
-    if (anomalyLimit) params.set("anomalyLimit", anomalyLimit);
-    if (eventLimit) params.set("eventLimit", eventLimit);
-    const qs = params.toString();
-    const res = await fetch(`${base}/anomalies/digest${qs ? `?${qs}` : ""}`);
-    if (res.status === 404) return null;
-    if (!res.ok) throw new ApiError(res.status, await parseErrorMessage(res));
-    return res.json();
-  },
+  getMetricsContext: ({ rollupLimit, eventLimit } = {}) =>
+    call(withQuery("/metrics/context", { rollupLimit, eventLimit }), { allow404: true }),
+  getAnomaliesDigest: ({ windowMinutes, anomalyLimit, eventLimit } = {}) =>
+    call(withQuery("/anomalies/digest", { windowMinutes, anomalyLimit, eventLimit }), {
+      allow404: true,
+    }),
   // Unlike metrics/anomalies, the knob API always exists — no operator config
   // gates it, so a call here never 404s for "feature not enabled."
   getKnobs: async () => (await call("/planner/knobs")).knobs,

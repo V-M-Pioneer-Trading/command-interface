@@ -1,9 +1,10 @@
-import { MAX_SCALE, MIN_SCALE, ZOOM_STEP } from "../../map/viewport";
+import { MAX_SCALE, MIN_SCALE } from "../../map/viewport";
 
 /**
  * Zoom affordances for trackpads (where wheel-zoom is fiddly) and for
- * discoverability — the map also takes wheel, drag, double-click and
- * arrows/+/-/0 from the keyboard.
+ * discoverability — the map also takes wheel, drag, and arrows/+/-/0 from the
+ * keyboard. (Double-click zoom was removed: it swallowed the second click of
+ * anyone double-clicking a waypoint.)
  */
 export function MapControls({ scale, onZoomIn, onZoomOut, onReset }) {
   return (
@@ -42,5 +43,3 @@ export function MapControls({ scale, onZoomIn, onZoomOut, onReset }) {
     </div>
   );
 }
-
-export { ZOOM_STEP };

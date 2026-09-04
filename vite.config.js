@@ -7,10 +7,13 @@ export default defineConfig({
     port: 3000,
     strictPort: true,
   },
-  // Unit tests cover the pure map modules (layout, viewport math, sprite
-  // compilation) — no DOM environment needed.
+  // Two levels of test. The pure map modules (layout, viewport math, sprite
+  // compilation) need no DOM; the hooks and the small components that decide
+  // what a panel says when it has no data do. Rather than run two environments,
+  // everything runs under jsdom — the pure tests neither notice nor care.
   test: {
-    environment: "node",
-    include: ["src/**/*.test.js"],
+    environment: "jsdom",
+    include: ["src/**/*.test.{js,jsx}"],
+    restoreMocks: true,
   },
 });

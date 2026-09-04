@@ -56,9 +56,7 @@
   margin-bottom: 0.4rem;
 }
 
-.lcars-observability-panel__loading,
-.lcars-observability-panel__disabled {
-  color: var(--lcars-text-dim);
-  font-size: 0.75rem;
+/* Loading / not-configured / error lines are rendered by common/QueryState. */
+.lcars-observability-panel__section .lcars-query-state {
   padding: 0.5rem 0;
 }

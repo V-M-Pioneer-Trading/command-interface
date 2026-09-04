@@ -4,7 +4,9 @@ import { navigationService } from "../api/navigationService";
 import { fleetService } from "../api/fleetService";
 import { automationService } from "../api/automationService";
 import { healthService } from "../api/healthService";
-import { useOperator } from "./useOperator";
+import { useAuth } from "../context/AuthContext";
+import { useOperator } from "../context/OperatorContext";
+import { queryKeys } from "./queryKeys";
 
 const SYSTEM_HEALTH_POLL_MS = 10_000;
 const SHIPS_POLL_MS = 12_000;
@@ -18,86 +20,101 @@ const METRICS_CONTEXT_POLL_MS = 15_000;
 const ANOMALIES_DIGEST_POLL_MS = 15_000;
 const KNOBS_POLL_MS = 15_000;
 
+/**
+ * A read that agent-service or fleet-service will only answer for a signed-in
+ * operator (auth-design.md decision 18 — no scope, just an authenticated
+ * caller) holding a SpaceTraders token to forward.
+ *
+ * Gated here rather than only server-side so a visitor with neither credential
+ * doesn't fire a doomed request on every poll interval. Every such query goes
+ * through this helper so the rule lives in one place: five hand-written copies
+ * of `enabled: isSignedIn && !!token` is five chances for a new query to
+ * quietly miss one half of it.
+ *
+ * Both credentials are read from context here rather than passed in. They are
+ * ambient facts about the session, and threading the game token down through
+ * Dashboard → SystemMap → WaypointPopover as a prop while the Clerk token came
+ * from context meant two halves of one concept travelling by different routes.
+ */
+function useGatedQuery({ key, queryFn, enabled = true, ...options }) {
+  const { token } = useAuth();
+  const { isSignedIn, getToken } = useOperator();
+  return useQuery({
+    ...options,
+    queryKey: key(token),
+    queryFn: async () => queryFn(token, await getToken()),
+    enabled: isSignedIn && !!token && enabled,
+  });
+}
+
 // Unauthenticated and unconditional — the dashboard has no login wall, so
 // this never gates on a token the way the queries below do.
 export function useSystemHealthQuery() {
   return useQuery({
-    queryKey: ["systemHealth"],
+    queryKey: queryKeys.systemHealth(),
     queryFn: () => healthService.checkAll(),
     refetchInterval: SYSTEM_HEALTH_POLL_MS,
   });
 }
 
-// agent-service and fleet-service's two reads require a signed-in Clerk
-// session (auth-design.md decision 18 — no scope, just an authenticated
-// operator) plus the SpaceTraders token to forward; agent-service holds no
-// credential of its own, so an anonymous caller has nothing to serve. Gated
-// on `isSignedIn` here rather than only server-side so this doesn't fire a
-// doomed request on every poll interval for a visitor with neither.
-export function useAgentQuery(token) {
-  const { isSignedIn, getToken } = useOperator();
-  return useQuery({
-    queryKey: ["agent", token],
-    queryFn: async () => agentService.getAgent(token, await getToken()),
-    enabled: isSignedIn && !!token,
+export function useAgentQuery() {
+  return useGatedQuery({
+    key: queryKeys.agent,
+    queryFn: (token, authToken) => agentService.getAgent(token, authToken),
     refetchInterval: AGENT_POLL_MS,
   });
 }
 
-export function useShipsQuery(token) {
-  const { isSignedIn, getToken } = useOperator();
-  return useQuery({
-    queryKey: ["ships", token],
-    queryFn: async () => agentService.getShips(token, await getToken()),
-    enabled: isSignedIn && !!token,
+export function useShipsQuery() {
+  return useGatedQuery({
+    key: queryKeys.ships,
+    queryFn: (token, authToken) => agentService.getShips(token, authToken),
     refetchInterval: SHIPS_POLL_MS,
   });
 }
 
-export function useContractsQuery(token) {
-  const { isSignedIn, getToken } = useOperator();
-  return useQuery({
-    queryKey: ["contracts", token],
-    queryFn: async () => agentService.getContracts(token, await getToken()),
-    enabled: isSignedIn && !!token,
+export function useContractsQuery() {
+  return useGatedQuery({
+    key: queryKeys.contracts,
+    queryFn: (token, authToken) => agentService.getContracts(token, authToken),
     refetchInterval: CONTRACTS_POLL_MS,
   });
 }
 
 // Public — navigation-service serves its SQLite cache with no credential at
 // all; the token, when present, only extends it to a live fetch-on-miss.
-export function useSystemWaypointsQuery(token, systemSymbol) {
+export function useSystemWaypointsQuery(systemSymbol) {
+  const { token } = useAuth();
   return useQuery({
-    queryKey: ["systemWaypoints", token, systemSymbol],
+    queryKey: queryKeys.systemWaypoints(token, systemSymbol),
     queryFn: () => navigationService.getSystemWaypoints(token, systemSymbol),
     enabled: !!systemSymbol,
     staleTime: Infinity,
   });
 }
 
-export function useCooldownQuery(token, shipSymbol, { enabled = true } = {}) {
-  const { isSignedIn, getToken } = useOperator();
-  return useQuery({
-    queryKey: ["cooldown", token, shipSymbol],
-    queryFn: async () => fleetService.getCooldown(token, shipSymbol, await getToken()),
-    enabled: isSignedIn && !!token && !!shipSymbol && enabled,
+export function useCooldownQuery(shipSymbol, { enabled = true } = {}) {
+  return useGatedQuery({
+    key: (token) => queryKeys.cooldown(token, shipSymbol),
+    queryFn: (token, authToken) => fleetService.getCooldown(token, shipSymbol, authToken),
+    enabled: !!shipSymbol && enabled,
     refetchInterval: COOLDOWN_POLL_MS,
   });
 }
 
-export function useCargoQuery(token, shipSymbol) {
-  const { isSignedIn, getToken } = useOperator();
-  return useQuery({
-    queryKey: ["cargo", token, shipSymbol],
-    queryFn: async () => fleetService.getCargo(token, shipSymbol, await getToken()),
-    enabled: isSignedIn && !!token && !!shipSymbol,
+export function useCargoQuery(shipSymbol) {
+  return useGatedQuery({
+    key: (token) => queryKeys.cargo(token, shipSymbol),
+    queryFn: (token, authToken) => fleetService.getCargo(token, shipSymbol, authToken),
+    enabled: !!shipSymbol,
     select: (res) => res?.data ?? null,
   });
 }
 
-export function useMarketQuery(token, waypointSymbol, { enabled = true } = {}) {
+export function useMarketQuery(waypointSymbol, { enabled = true } = {}) {
+  const { token } = useAuth();
   return useQuery({
-    queryKey: ["market", token, waypointSymbol],
+    queryKey: queryKeys.market(token, waypointSymbol),
     queryFn: () => navigationService.getMarket(token, waypointSymbol),
     enabled: !!waypointSymbol && enabled,
     refetchInterval: MARKET_POLL_MS,
@@ -106,7 +123,7 @@ export function useMarketQuery(token, waypointSymbol, { enabled = true } = {}) {
 
 export function useAutopilotStatusQuery() {
   return useQuery({
-    queryKey: ["autopilotStatus"],
+    queryKey: queryKeys.autopilotStatus(),
     queryFn: () => automationService.getStatus(),
     refetchInterval: AUTOPILOT_STATUS_POLL_MS,
   });
@@ -121,7 +138,7 @@ export function useAutopilotStatusQuery() {
 // of the fixed 5s poll.
 export function useShipTaskQuery(shipSymbol) {
   return useQuery({
-    queryKey: ["shipTask", shipSymbol],
+    queryKey: queryKeys.shipTask(shipSymbol),
     queryFn: () => automationService.getShipTask(shipSymbol),
     enabled: !!shipSymbol,
     retry: 1,
@@ -131,27 +148,27 @@ export function useShipTaskQuery(shipSymbol) {
 
 // `null` means metrics rollups aren't configured on this deployment (the
 // route doesn't exist), not an error — same treatment as useShipTaskQuery's 404.
-export function useMetricsContextQuery({ rollupLimit, eventLimit } = {}) {
+export function useMetricsContextQuery(params) {
   return useQuery({
-    queryKey: ["metricsContext", rollupLimit, eventLimit],
-    queryFn: () => automationService.getMetricsContext({ rollupLimit, eventLimit }),
+    queryKey: queryKeys.metricsContext(params),
+    queryFn: () => automationService.getMetricsContext(params),
     refetchInterval: METRICS_CONTEXT_POLL_MS,
   });
 }
 
 // `null` means anomaly detection isn't configured (no webhook set) — same
 // "feature not enabled" treatment as useMetricsContextQuery.
-export function useAnomaliesDigestQuery({ windowMinutes, anomalyLimit, eventLimit } = {}) {
+export function useAnomaliesDigestQuery(params) {
   return useQuery({
-    queryKey: ["anomaliesDigest", windowMinutes, anomalyLimit, eventLimit],
-    queryFn: () => automationService.getAnomaliesDigest({ windowMinutes, anomalyLimit, eventLimit }),
+    queryKey: queryKeys.anomaliesDigest(params),
+    queryFn: () => automationService.getAnomaliesDigest(params),
     refetchInterval: ANOMALIES_DIGEST_POLL_MS,
   });
 }
 
 export function useKnobsQuery() {
   return useQuery({
-    queryKey: ["knobs"],
+    queryKey: queryKeys.knobs(),
     queryFn: () => automationService.getKnobs(),
     refetchInterval: KNOBS_POLL_MS,
   });
