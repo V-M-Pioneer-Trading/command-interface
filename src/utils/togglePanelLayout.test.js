@@ -16,7 +16,7 @@ describe("computeTogglePanelOffsets", () => {
     expect(offsets.autopilot).toBeUndefined();
   });
 
-  it("gives every open panel a finite offset, even an unknown key", () => {
+  it("gives every open panel a finite, unique offset", () => {
     const offsets = computeTogglePanelOffsets(new Set(PANEL_ORDER));
     expect(Object.values(offsets).every(Number.isFinite)).toBe(true);
     expect(new Set(Object.values(offsets)).size).toBe(PANEL_ORDER.length);
