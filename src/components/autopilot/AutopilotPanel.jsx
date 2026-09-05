@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "../../context/AuthContext";
 import { useAlerts } from "../../context/AlertContext";
 import { useAutopilotStatusQuery } from "../../hooks/queries";
 import { useOperator, SCOPE_FLEET_CONTROL } from "../../context/OperatorContext";
@@ -10,7 +9,6 @@ import { PillButton } from "../common/PillButton";
 import "./AutopilotPanel.css";
 
 export function AutopilotPanel({ onClose, style }) {
-  const { token: sessionToken } = useAuth();
   const { pushAlert } = useAlerts();
   const queryClient = useQueryClient();
   const { data: status, isLoading } = useAutopilotStatusQuery();
@@ -22,17 +20,16 @@ export function AutopilotPanel({ onClose, style }) {
   // way an absent one is not.
   const hasControl = can(SCOPE_FLEET_CONTROL);
 
-  // Prefilled from the operator's already-pasted SpaceTraders token, but
-  // editable — automation-service holds its own copy in memory, independent
-  // of this app's own session token, and never persists it beyond that.
-  const [armToken, setArmToken] = useState(sessionToken || "");
+  // Arming carries no credential (auth-design.md decision 5): st-gateway
+  // injects the game token, so the mode is the only input and the Clerk
+  // session in the header is what proves you may arm at all.
   const [mode, setMode] = useState("live");
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: queryKeys.autopilotStatus() });
 
   const armMutation = useMutation({
-    mutationFn: async () => automationService.arm(armToken, mode, await getToken()),
+    mutationFn: async () => automationService.arm(mode, await getToken()),
     onSuccess: invalidate,
     onError: (err) => pushAlert(err.message || "Failed to arm autopilot"),
   });
@@ -49,7 +46,7 @@ export function AutopilotPanel({ onClose, style }) {
 
   const busy = armMutation.isPending || pauseMutation.isPending || abortMutation.isPending;
   const currentStatus = status?.status;
-  // Arming (or re-arming, to switch live<->shadow or replace the held token)
+  // Arming (or re-arming, to switch live<->shadow)
   // is allowed from any status per automation-service's AutopilotState — only
   // pause/abort are gated by the current status.
   const canPause = hasControl && currentStatus === "armed";
@@ -83,14 +80,6 @@ export function AutopilotPanel({ onClose, style }) {
           armMutation.mutate();
         }}
       >
-        <input
-          type="password"
-          value={armToken}
-          onChange={(e) => setArmToken(e.target.value)}
-          placeholder="SpaceTraders token"
-          className="lcars-autopilot-panel__token-input"
-          disabled={busy || !hasControl}
-        />
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value)}
@@ -100,7 +89,7 @@ export function AutopilotPanel({ onClose, style }) {
           <option value="live">Live</option>
           <option value="shadow">Shadow</option>
         </select>
-        <PillButton type="submit" accent="green" disabled={busy || !armToken || !hasControl}>
+        <PillButton type="submit" accent="green" disabled={busy || !hasControl}>
           Arm
         </PillButton>
       </form>

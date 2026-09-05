@@ -91,15 +91,6 @@
   padding: 0 1rem 0.75rem;
 }
 
-.lcars-autopilot-panel__token-input {
-  background: #1a1a1a;
-  border: 1px solid var(--lcars-text-dim);
-  border-radius: 0.3rem;
-  padding: 0.4rem 0.6rem;
-  color: var(--lcars-text);
-  font-size: 0.8rem;
-}
-
 .lcars-autopilot-panel__mode-select {
   background: #1a1a1a;
   border: 1px solid var(--lcars-text-dim);

@@ -4,7 +4,7 @@ import "./QueryState.css";
  * The four answers a panel owes a reader, instead of an empty box.
  *
  * A query that has failed, a query that was never allowed to run (no operator
- * session, no game token) and a feature the deployment doesn't have all used to
+ * session) and a feature the deployment doesn't have all used to
  * render as the same thing: nothing at all, or — worse — the panel's "none
  * found" message, which states as fact something nobody checked. `isLoading` is
  * false in every one of those cases, so branching on it alone hid all three.

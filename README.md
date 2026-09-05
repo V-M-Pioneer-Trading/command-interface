@@ -14,9 +14,9 @@ map does not magnify — it *fans* co-located bodies onto a ring and then grows
 spacing faster than it grows icons. [Everything about how that works is below.](#system-map)
 
 The second thing worth knowing before reading the code: **there is no login
-wall**. The dashboard renders for anyone. Signing in and pasting a game token
-each unlock more of it, and gated controls render *disabled and visible* rather
-than hidden, so what exists and what is withheld is never ambiguous.
+wall**. The dashboard renders for anyone. Signing in unlocks more of it, and
+gated controls render *disabled and visible* rather than hidden, so what exists
+and what is withheld is never ambiguous.
 
 ## Architecture
 
@@ -27,8 +27,6 @@ flowchart LR
 
     subgraph browser["Operator's browser"]
         app["command-interface<br/>React SPA"]
-        store[("sessionStorage<br/>game token only")]
-        app --- store
     end
 
     subgraph backends["Sibling services — see the meta repo"]
@@ -45,45 +43,48 @@ flowchart LR
     app -. "health probe, local only" .-> ai["ai-service :3004"]
 ```
 
-The app stores nothing anywhere except the pasted game token, in
-`sessionStorage`, which the browser clears when the tab closes. Everything else
+The app stores nothing at all. The Clerk SDK holds the session; everything else
 on screen is polled and thrown away.
 
 | Service | What this app asks it for | Reachable without credentials? |
 | --- | --- | --- |
-| **agent-service** `:8080` | Agent stats, ship list, contracts, cargo purchase/sale, ship purchase | No — needs a Clerk session *and* a game token |
-| **navigation-service** `:8081` | System waypoints, market and shipyard data | Yes — serves its SQLite cache; a game token upgrades it to a live fetch-on-miss |
-| **fleet-service** `:3001` | Orbit, dock, navigate, survey, extract, refuel, transfer, flight mode, contract delivery | No — needs `fleet:control` *and* a game token |
+| **agent-service** `:8080` | Agent stats, ship list, contracts, cargo purchase/sale, ship purchase | No — needs a Clerk session |
+| **navigation-service** `:8081` | System waypoints, market and shipyard data | Yes — serves its SQLite cache; a session upgrades it to a live fetch-on-miss |
+| **fleet-service** `:3001` | Orbit, dock, navigate, survey, extract, refuel, transfer, flight mode, contract delivery | No — needs `fleet:control` |
 | **automation-service** `:3003` | Autopilot arm/pause/abort, per-ship task state, planner knobs, metrics rollups, anomaly digest | Reads yes, writes need `fleet:control` |
 | **st-gateway** `:3002` | Nothing directly — health probe only. It is the rate-limited chokepoint the four services above share | Health probe is public |
 | **ai-service** `:3004` | Nothing yet — health probe only, and only in local development | See [known limitations](#known-limitations) |
 
 ## Auth model
 
-Two different credentials do two different jobs, and neither is a login.
+One credential, and it is not a login wall.
 
-| | Clerk session | SpaceTraders game token |
-| --- | --- | --- |
-| Answers | *Who are you, and may you act?* | *Which agent's game is this?* |
-| Travels as | `Authorization: Bearer …` | `X-SpaceTraders-Token: …` |
-| Obtained by | Google sign-in, from the agent bar | Pasted, from the agent bar |
-| Held in | Clerk's SDK, refreshed automatically | `sessionStorage`, cleared with the tab |
-| Grants | `fleet:control` → every write in the UI | The ability to make any live upstream call at all |
-| Goes away when | — | st-gateway starts injecting it (auth-design decision 5) |
+| | Clerk session |
+| --- | --- |
+| Answers | *Who are you, and may you act?* |
+| Travels as | `Authorization: Bearer …` |
+| Obtained by | Google sign-in, from the agent bar |
+| Held in | Clerk's SDK, refreshed automatically |
+| Grants | `fleet:control` → every write in the UI |
 
-Every request also carries `X-Priority: interactive`, which the backends
-propagate to st-gateway's priority queue so a human clicking a button is not
-stuck behind the autopilot's background traffic.
+The SpaceTraders game token used to travel beside it on `X-SpaceTraders-Token`,
+pasted by the operator and kept in `sessionStorage`. It is gone: st-gateway
+holds the only copy and injects it on every upstream call (auth-design decision
+5), so nothing the browser holds could drive the fleet even if it leaked.
+
+There is no `X-Priority` header either. st-gateway derives the queue from the
+session the backends forward to it — a human operator reaches the interactive
+lane, the autopilot's machine identity queues behind (decision 2) — so a
+browser can no longer promote itself by declaring a header.
+
 
 ```mermaid
 flowchart TD
     start["A panel wants data"] --> pub{"Is the route public?"}
-    pub -- "navigation-service<br/>automation-service reads" --> send["Send it — attach<br/>whichever credentials exist"]
+    pub -- "navigation-service<br/>automation-service reads" --> send["Send it — with the<br/>session if there is one"]
     pub -- "agent-service / fleet-service" --> signed{"Signed in?"}
     signed -- no --> skip["Query stays disabled.<br/>The panel says why."]
-    signed -- yes --> tok{"Game token set?"}
-    tok -- no --> skip
-    tok -- yes --> send
+    signed -- yes --> send
     send --> resp{"Response"}
     resp -- "2xx" --> render["Render it"]
     resp -- "404 on an optional route" --> off["'Not configured on this deployment'"]
@@ -100,7 +101,7 @@ this bundle to re-enable a control earns a 403, not an armed autopilot.
 ```
 npm install
 npm run dev      # http://localhost:3000
-npm test         # vitest, 77 tests
+npm test         # vitest, 81 tests
 npm run build    # static bundle into dist/
 ```
 

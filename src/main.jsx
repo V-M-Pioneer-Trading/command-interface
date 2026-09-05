@@ -6,7 +6,6 @@ import "./styles/fonts.css";
 import "./styles/theme.css";
 import "./styles/global.css";
 import App from "./App";
-import { AuthProvider } from "./context/AuthContext";
 import { OperatorProvider } from "./context/OperatorContext";
 import { AlertProvider } from "./context/AlertContext";
 
@@ -48,13 +47,11 @@ if (!clerkPublishableKey) {
         <OperatorProvider>
           <QueryClientProvider client={queryClient}>
             <AlertProvider>
-              {/* Two credentials coexist until increment 3. Clerk owns operator
-                  identity — who may arm, abort or retune. AuthProvider still owns
-                  the pasted SpaceTraders token, because agent/navigation/fleet
-                  remain pass-throughs until st-gateway starts injecting it. */}
-              <AuthProvider>
-                <App />
-              </AuthProvider>
+              {/* One credential: the Clerk session. It says who the operator is
+                  and, forwarded through the backends to st-gateway, which queue
+                  their traffic lands in. The game token never enters the browser
+                  — st-gateway injects it (auth-design.md decision 5). */}
+              <App />
             </AlertProvider>
           </QueryClientProvider>
         </OperatorProvider>

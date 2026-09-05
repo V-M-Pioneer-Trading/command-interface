@@ -32,12 +32,11 @@ yourself.
 | `src/api/{agent,navigation,fleet}Service.js` | One function per backend route | `client`, `config` |
 | `src/api/automationService.js` | automation-service routes **and its own header policy** | `client` (`readResponse`, `withQuery`), `config` |
 | `src/api/healthService.js` | Service list, probeability filter, `checkAll` | `config` |
-| `src/context/AuthContext.jsx` | The pasted game token + `sessionStorage` | react |
 | `src/context/OperatorContext.jsx` | Clerk identity, scope decode, the anonymous default | Clerk, react |
 | `src/context/AlertContext.jsx` | Toast stack and its dismiss timers | react |
 | `src/context/SelectionContext.jsx` | Which ship is selected | react |
 | `src/hooks/queryKeys.js` | **Every** react-query cache key | nothing |
-| `src/hooks/queries.js` | Every query hook, poll intervals, the gated-read rule | api clients, both credential contexts, `queryKeys` |
+| `src/hooks/queries.js` | Every query hook, poll intervals, the gated-read rule | api clients, `OperatorContext`, `queryKeys` |
 | `src/hooks/useShipSurveys.js` | Surveys, scoped to the ship that found them | react |
 | `src/hooks/useMapViewport.js` | React binding for viewport math: wheel, drag, keyboard, resize | `map/viewport` |
 | `src/hooks/useElementSize.js` | Live content-box size via `ResizeObserver` | react |
@@ -73,8 +72,8 @@ These hold today. Breaking one is a design change, not a refactor.
    Everything else goes through `useOperator()`. This is what lets a tree with
    no Clerk provider — `dev-map.html`, or a Clerk outage — render as an
    anonymous observer instead of throwing.
-5. **Components do not take credentials as props.** Both the game token and the
-   Clerk session are read from context at the point of use.
+5. **Components do not take credentials as props.** The Clerk session is read
+   from context at the point of use.
 6. **Cache keys come from `hooks/queryKeys.js`.** Never write an array literal
    into `useQuery` or `invalidateQueries`.
 
@@ -131,8 +130,10 @@ Stated so you can recognise a violation.
   is not enabled on this deployment, a rejection = it failed. Rendering any of
   them as the panel's own "none found" line states as fact something nobody
   checked. `components/common/QueryState.jsx` is the one place that decides.
-- Any cache key for token-scoped data includes the game token, so changing
-  tokens cannot show the previous agent's ships.
+- Cache keys carry no credential. They used to include the pasted game token so
+  that changing it could not show the previous agent's ships; the Clerk session
+  that replaced it rotates on its own schedule, and keying on a rotating value
+  would evict the whole cache several times an hour.
 - **automation-service GET requests must stay CORS-simple.** Its public reads
   send no headers at all; adding a blanket custom header (`X-Priority`, say)
   turns them into preflighted requests and needs a matching
@@ -156,8 +157,7 @@ ClerkProvider            → OperatorProvider needs Clerk's useAuth
   OperatorProvider       → query hooks read the session + scopes from here
     QueryClientProvider  → everything below issues queries
       AlertProvider      → mutations push alerts from anywhere below
-        AuthProvider     → query hooks read the game token from here
-          App
+        App
 ```
 
 `dev-map.html` (`src/devMap.jsx`) supplies `OperatorContext.Provider` directly
@@ -194,9 +194,8 @@ line of sight.
 
 | Identifier | Who else depends on it |
 | --- | --- |
-| `X-SpaceTraders-Token`, `Authorization: Bearer`, `X-Priority: interactive` | agent-, navigation-, fleet-, automation-service; st-gateway's priority queue |
+| `Authorization: Bearer <Clerk session>` | agent-, navigation-, fleet-, automation-service — and st-gateway, which they forward it to for the priority queue |
 | Scope string `fleet:control` | automation-service verifies it; it must be in the Clerk user's `public_metadata` |
-| `sessionStorage` key `spacetraders_token` | Nothing else reads it, but changing it silently logs every existing tab out |
 | Health paths `/api/<service>/health` (unversioned) | Each backend serves these specifically so CloudFront's path routing can tell the origins apart on one domain |
 | `VITE_*` env var names | `.env.example` **and** `.github/workflows/deploy.yml` — they are baked in at build time, so a variable missing from the workflow ships a localhost URL to production. That is exactly how the "VITE_CLERK_PUBLISHABLE_KEY is not set" build reached every visitor. |
 | Sprite ids and `BADGE_LABEL` keys | `SpriteDefs`, `WaypointLayer`, `ShipLayer`, the tooltip |
@@ -281,9 +280,9 @@ The manual level above the suite is `/dev-map.html`.
 invariant). Never call `fetch` from a component.
 
 **A query** → add its key to `hooks/queryKeys.js`, then the hook to
-`hooks/queries.js` with a named `*_POLL_MS` constant. If it needs both a
-signed-in operator and a game token, build it with `useGatedQuery` rather than
-re-writing `enabled: isSignedIn && !!token`.
+`hooks/queries.js` with a named `*_POLL_MS` constant. If it needs a signed-in
+operator, build it with `useGatedQuery` rather than re-writing
+`enabled: isSignedIn`.
 
 **A toggle panel** → four edits, all required: `PANEL_ORDER` and
 `PANEL_WIDTH_REM` in `utils/togglePanelLayout.js`, `PANEL_BUTTONS` in

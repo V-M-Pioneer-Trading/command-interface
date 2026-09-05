@@ -4,7 +4,6 @@ import { navigationService } from "../api/navigationService";
 import { fleetService } from "../api/fleetService";
 import { automationService } from "../api/automationService";
 import { healthService } from "../api/healthService";
-import { useAuth } from "../context/AuthContext";
 import { useOperator } from "../context/OperatorContext";
 import { queryKeys } from "./queryKeys";
 
@@ -22,33 +21,27 @@ const KNOBS_POLL_MS = 15_000;
 
 /**
  * A read that agent-service or fleet-service will only answer for a signed-in
- * operator (auth-design.md decision 18 — no scope, just an authenticated
- * caller) holding a SpaceTraders token to forward.
+ * operator: no scope, just an authenticated caller (auth-design.md decision 3 —
+ * these are reads about the one account the fleet plays, so not anonymous,
+ * though they move nothing).
  *
- * Gated here rather than only server-side so a visitor with neither credential
- * doesn't fire a doomed request on every poll interval. Every such query goes
- * through this helper so the rule lives in one place: five hand-written copies
- * of `enabled: isSignedIn && !!token` is five chances for a new query to
- * quietly miss one half of it.
- *
- * Both credentials are read from context here rather than passed in. They are
- * ambient facts about the session, and threading the game token down through
- * Dashboard → SystemMap → WaypointPopover as a prop while the Clerk token came
- * from context meant two halves of one concept travelling by different routes.
+ * Gated here rather than only server-side so a visitor doesn't fire a doomed
+ * request on every poll interval. Every such query goes through this helper so
+ * the rule lives in one place.
  */
 function useGatedQuery({ key, queryFn, enabled = true, ...options }) {
-  const { token } = useAuth();
   const { isSignedIn, getToken } = useOperator();
   return useQuery({
     ...options,
-    queryKey: key(token),
-    queryFn: async () => queryFn(token, await getToken()),
-    enabled: isSignedIn && !!token && enabled,
+    queryKey: key(),
+    queryFn: async () => queryFn(await getToken()),
+    enabled: isSignedIn && enabled,
   });
 }
 
+
 // Unauthenticated and unconditional — the dashboard has no login wall, so
-// this never gates on a token the way the queries below do.
+// this never gates on a session the way the queries below do.
 export function useSystemHealthQuery() {
   return useQuery({
     queryKey: queryKeys.systemHealth(),
@@ -60,7 +53,7 @@ export function useSystemHealthQuery() {
 export function useAgentQuery() {
   return useGatedQuery({
     key: queryKeys.agent,
-    queryFn: (token, authToken) => agentService.getAgent(token, authToken),
+    queryFn: (authToken) => agentService.getAgent(authToken),
     refetchInterval: AGENT_POLL_MS,
   });
 }
@@ -68,7 +61,7 @@ export function useAgentQuery() {
 export function useShipsQuery() {
   return useGatedQuery({
     key: queryKeys.ships,
-    queryFn: (token, authToken) => agentService.getShips(token, authToken),
+    queryFn: (authToken) => agentService.getShips(authToken),
     refetchInterval: SHIPS_POLL_MS,
   });
 }
@@ -76,18 +69,20 @@ export function useShipsQuery() {
 export function useContractsQuery() {
   return useGatedQuery({
     key: queryKeys.contracts,
-    queryFn: (token, authToken) => agentService.getContracts(token, authToken),
+    queryFn: (authToken) => agentService.getContracts(authToken),
     refetchInterval: CONTRACTS_POLL_MS,
   });
 }
 
-// Public — navigation-service serves its SQLite cache with no credential at
-// all; the token, when present, only extends it to a live fetch-on-miss.
+// Public — navigation-service serves its SQLite cache to anyone; a session,
+// when there is one, only extends that to a live fetch-on-miss. So this fires
+// for a visitor too, and the map draws before anyone signs in.
 export function useSystemWaypointsQuery(systemSymbol) {
-  const { token } = useAuth();
+  const { getToken } = useOperator();
   return useQuery({
-    queryKey: queryKeys.systemWaypoints(token, systemSymbol),
-    queryFn: () => navigationService.getSystemWaypoints(token, systemSymbol),
+    queryKey: queryKeys.systemWaypoints(systemSymbol),
+    queryFn: async () => navigationService.getSystemWaypoints(systemSymbol, await getToken()),
+
     enabled: !!systemSymbol,
     staleTime: Infinity,
   });
@@ -95,8 +90,8 @@ export function useSystemWaypointsQuery(systemSymbol) {
 
 export function useCooldownQuery(shipSymbol, { enabled = true } = {}) {
   return useGatedQuery({
-    key: (token) => queryKeys.cooldown(token, shipSymbol),
-    queryFn: (token, authToken) => fleetService.getCooldown(token, shipSymbol, authToken),
+    key: () => queryKeys.cooldown(shipSymbol),
+    queryFn: (authToken) => fleetService.getCooldown(shipSymbol, authToken),
     enabled: !!shipSymbol && enabled,
     refetchInterval: COOLDOWN_POLL_MS,
   });
@@ -104,18 +99,19 @@ export function useCooldownQuery(shipSymbol, { enabled = true } = {}) {
 
 export function useCargoQuery(shipSymbol) {
   return useGatedQuery({
-    key: (token) => queryKeys.cargo(token, shipSymbol),
-    queryFn: (token, authToken) => fleetService.getCargo(token, shipSymbol, authToken),
+    key: () => queryKeys.cargo(shipSymbol),
+    queryFn: (authToken) => fleetService.getCargo(shipSymbol, authToken),
     enabled: !!shipSymbol,
     select: (res) => res?.data ?? null,
   });
 }
 
 export function useMarketQuery(waypointSymbol, { enabled = true } = {}) {
-  const { token } = useAuth();
+  const { getToken } = useOperator();
   return useQuery({
-    queryKey: queryKeys.market(token, waypointSymbol),
-    queryFn: () => navigationService.getMarket(token, waypointSymbol),
+    queryKey: queryKeys.market(waypointSymbol),
+    queryFn: async () => navigationService.getMarket(waypointSymbol, await getToken()),
+
     enabled: !!waypointSymbol && enabled,
     refetchInterval: MARKET_POLL_MS,
   });

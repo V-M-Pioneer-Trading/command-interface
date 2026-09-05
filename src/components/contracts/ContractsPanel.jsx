@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "../../context/AuthContext";
 import { useAlerts } from "../../context/AlertContext";
 import { useOperator, SCOPE_FLEET_CONTROL } from "../../context/OperatorContext";
 import { useContractsQuery } from "../../hooks/queries";
@@ -53,7 +52,6 @@ function ContractCard({ contract, onAccept, onFulfill, busy }) {
 }
 
 export function ContractsPanel({ onClose, style }) {
-  const { token } = useAuth();
   const contractsQuery = useContractsQuery();
   const { pushAlert } = useAlerts();
   const queryClient = useQueryClient();
@@ -61,17 +59,17 @@ export function ContractsPanel({ onClose, style }) {
   const hasControl = can(SCOPE_FLEET_CONTROL);
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.contracts(token) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.agent(token) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.contracts() });
+    queryClient.invalidateQueries({ queryKey: queryKeys.agent() });
   };
 
   const acceptMutation = useMutation({
-    mutationFn: async (contractId) => agentService.acceptContract(token, contractId, await getToken()),
+    mutationFn: async (contractId) => agentService.acceptContract(contractId, await getToken()),
     onSuccess: invalidate,
     onError: (err) => pushAlert(err.message || "Failed to accept contract"),
   });
   const fulfillMutation = useMutation({
-    mutationFn: async (contractId) => agentService.fulfillContract(token, contractId, await getToken()),
+    mutationFn: async (contractId) => agentService.fulfillContract(contractId, await getToken()),
     onSuccess: invalidate,
     onError: (err) => pushAlert(err.message || "Failed to fulfill contract"),
   });
@@ -88,7 +86,7 @@ export function ContractsPanel({ onClose, style }) {
       </div>
       <QueryState
         query={contractsQuery}
-        empty="Sign in and set a game token to see contracts."
+        empty="Sign in to see contracts."
       >
         {(contracts) =>
           contracts.length === 0 ? (

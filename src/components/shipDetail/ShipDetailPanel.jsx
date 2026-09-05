@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "../../context/AuthContext";
 import { useSelection } from "../../context/SelectionContext";
 import { useAlerts } from "../../context/AlertContext";
 import { useOperator, SCOPE_FLEET_CONTROL } from "../../context/OperatorContext";
@@ -30,7 +29,6 @@ import "./ShipDetailPanel.css";
 const FLIGHT_MODES = ["CRUISE", "BURN", "DRIFT", "STEALTH"];
 
 export function ShipDetailPanel() {
-  const { token } = useAuth();
   const { can, getToken } = useOperator();
   const hasControl = can(SCOPE_FLEET_CONTROL);
   const { selectedShipSymbol } = useSelection();
@@ -57,31 +55,31 @@ export function ShipDetailPanel() {
   const queryClient = useQueryClient();
 
   const invalidateShip = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.ships(token) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.cooldown(token, selectedShipSymbol) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.cargo(token, selectedShipSymbol) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.ships() });
+    queryClient.invalidateQueries({ queryKey: queryKeys.cooldown(selectedShipSymbol) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.cargo(selectedShipSymbol) });
   };
 
   const onActionError = (err) => pushAlert(err.message || "Action failed");
 
   const orbitMutation = useMutation({
-    mutationFn: async () => fleetService.orbit(token, selectedShipSymbol, await getToken()),
+    mutationFn: async () => fleetService.orbit(selectedShipSymbol, await getToken()),
     onSuccess: invalidateShip,
     onError: onActionError,
   });
   const dockMutation = useMutation({
-    mutationFn: async () => fleetService.dock(token, selectedShipSymbol, await getToken()),
+    mutationFn: async () => fleetService.dock(selectedShipSymbol, await getToken()),
     onSuccess: invalidateShip,
     onError: onActionError,
   });
   const navigateMutation = useMutation({
     mutationFn: async (waypointSymbol) =>
-      fleetService.navigate(token, selectedShipSymbol, waypointSymbol, await getToken()),
+      fleetService.navigate(selectedShipSymbol, waypointSymbol, await getToken()),
     onSuccess: invalidateShip,
     onError: onActionError,
   });
   const refuelMutation = useMutation({
-    mutationFn: async () => fleetService.refuel(token, selectedShipSymbol, await getToken()),
+    mutationFn: async () => fleetService.refuel(selectedShipSymbol, await getToken()),
     onSuccess: (res) => {
       const units = res?.data?.transaction?.units;
       if (units === 0) {
@@ -92,41 +90,41 @@ export function ShipDetailPanel() {
         pushAlert(`Refueled ${units} units`, { severity: "info", timeoutMs: 3000 });
       }
       invalidateShip();
-      queryClient.invalidateQueries({ queryKey: queryKeys.agent(token) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.agent() });
     },
     onError: onActionError,
   });
   const extractMutation = useMutation({
-    mutationFn: async () => fleetService.extract(token, selectedShipSymbol, await getToken()),
+    mutationFn: async () => fleetService.extract(selectedShipSymbol, await getToken()),
     onSuccess: invalidateShip,
     onError: onActionError,
   });
   const extractSurveyMutation = useMutation({
     mutationFn: async (survey) =>
-      fleetService.extractWithSurvey(token, selectedShipSymbol, survey, await getToken()),
+      fleetService.extractWithSurvey(selectedShipSymbol, survey, await getToken()),
     onSuccess: invalidateShip,
     onError: onActionError,
   });
   const sellMutation = useMutation({
     mutationFn: async ({ symbol, units }) =>
-      agentService.sell(token, selectedShipSymbol, symbol, units, await getToken()),
+      agentService.sell(selectedShipSymbol, symbol, units, await getToken()),
     onSuccess: () => {
       invalidateShip();
-      queryClient.invalidateQueries({ queryKey: queryKeys.agent(token) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.agent() });
     },
     onError: onActionError,
   });
   const deliverMutation = useMutation({
     mutationFn: async ({ contractId, symbol, units }) =>
-      fleetService.deliverContract(token, contractId, selectedShipSymbol, symbol, units, await getToken()),
+      fleetService.deliverContract(contractId, selectedShipSymbol, symbol, units, await getToken()),
     onSuccess: () => {
       invalidateShip();
-      queryClient.invalidateQueries({ queryKey: queryKeys.contracts(token) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.contracts() });
     },
     onError: (err) => pushAlert(err.message || "Delivery failed"),
   });
   const surveyMutation = useMutation({
-    mutationFn: async () => fleetService.survey(token, selectedShipSymbol, await getToken()),
+    mutationFn: async () => fleetService.survey(selectedShipSymbol, await getToken()),
     onSuccess: (data) => {
       addSurveys(data?.data?.surveys || []);
       invalidateShip();
@@ -135,22 +133,22 @@ export function ShipDetailPanel() {
   });
   const flightModeMutation = useMutation({
     mutationFn: async (flightMode) =>
-      fleetService.setFlightMode(token, selectedShipSymbol, flightMode, await getToken()),
+      fleetService.setFlightMode(selectedShipSymbol, flightMode, await getToken()),
     onSuccess: invalidateShip,
     onError: onActionError,
   });
   const purchaseMutation = useMutation({
     mutationFn: async ({ symbol, units }) =>
-      agentService.purchaseCargo(token, selectedShipSymbol, symbol, units, await getToken()),
+      agentService.purchaseCargo(selectedShipSymbol, symbol, units, await getToken()),
     onSuccess: () => {
       invalidateShip();
-      queryClient.invalidateQueries({ queryKey: queryKeys.agent(token) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.agent() });
     },
     onError: onActionError,
   });
   const transferMutation = useMutation({
     mutationFn: async ({ targetShipSymbol, symbol, units }) =>
-      fleetService.transferCargo(token, selectedShipSymbol, symbol, units, targetShipSymbol, await getToken()),
+      fleetService.transferCargo(selectedShipSymbol, symbol, units, targetShipSymbol, await getToken()),
     onSuccess: invalidateShip,
     onError: onActionError,
   });
