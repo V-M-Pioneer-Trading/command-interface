@@ -19,18 +19,25 @@ docker-compose setup that runs all four together.
 
 ## Auth model
 
-There's no registration/login flow. Paste an existing SpaceTraders bearer
-token on the login screen; it's kept in `sessionStorage` (cleared when the
-tab closes) and forwarded as-is to agent/navigation/fleet-service, which
-forward it upstream to the SpaceTraders API. Nothing is persisted server-side.
+There is no login wall and no SpaceTraders token anywhere in the browser.
+The dashboard is public (auth-design.md decision 13); an operator signs in
+with Clerk from the badge in the app chrome (Google only, headless). That
+Clerk session is the one credential this app holds, and `src/api/client.js`
+sends it as `Authorization` on every call to agent/fleet/navigation/automation-
+service — fetched fresh per request via `getToken()`, since Clerk rotates
+session tokens.
 
-automation-service's admin API is a separate concern: it's unauthenticated
-except for `POST /api/automation/v1/autopilot/arm`, which takes the SpaceTraders token in its
-request body (not a bearer header) and holds it in memory server-side for as
-long as autopilot stays armed. The Autopilot panel (meta#16) pre-fills its own
-arm-token field from the same session token for convenience, but it's an
-independent, editable value — arming automation-service is a distinct action
-from this app's own login.
+What a visitor can see without signing in is each backend's decision, not
+this app's: navigation-service serves cached universe data anonymously,
+automation-service's observability surface is public, and the fleet itself
+(agent, ships, contracts, ship actions) needs a session. Mutations additionally
+need the `fleet:control` scope; the UI reads scopes from the session token
+(`src/hooks/useOperator.js`) only to decide what to render enabled — every
+backend verifies the signature and the scope itself.
+
+The game credential never enters the browser: st-gateway holds the only copy
+and injects it on every upstream call (decision 5). Arming the autopilot is
+`POST /api/automation/v1/autopilot/arm` with `{ mode }` and nothing else.
 
 ## Running locally
 
@@ -47,7 +54,7 @@ to point at non-default backend URLs.
 
 Toggled from the "Autopilot" button in the agent bar (same pattern as the
 existing Contracts toggle): shows live status/mode polled from
-`GET /api/automation/v1/autopilot/status`, an arm form (token + live/shadow mode →
+`GET /api/automation/v1/autopilot/status`, an arm form (live/shadow mode →
 `POST /api/automation/v1/autopilot/arm`), and Pause/Abort buttons gated on the current status
 (Pause only enabled while armed; Abort while armed or paused; Arm is always
 enabled — automation-service allows re-arming, e.g. to switch live↔shadow,
@@ -220,9 +227,8 @@ never will.
   deliberately knows nothing about systems, so a future sector map reuses it),
   `systemLayout.js` (waypoints → positioned nodes, orbit rings, ship
   interpolation) and `sprites/` (pixel grids, generators, registry)
-- `src/api/` — thin fetch clients per backend service; agent/navigation/fleet
-  forward the bearer token from `AuthContext`, `automationService.js` doesn't
-  (see Auth model above)
+- `src/api/` — thin fetch clients per backend service; all four send the
+  operator's Clerk session when there is one (see Auth model above)
 - `src/hooks/queries.js` — TanStack Query hooks (polling, cache keys)
 - `src/utils/eventLog.js` — shared formatting for event/anomaly `detail`
   blobs and timestamps, used by both the Event Feed and Anomaly Log
@@ -230,7 +236,7 @@ never will.
   horizontal offset dynamically (see Autopilot panel, above)
 - `src/components/common/` — reusable LCARS primitives (Panel, PillButton,
   StatusPill, AlertBanner)
-- `src/components/{fleet,map,shipDetail,contracts,autopilot,observability,knobs,chat,login,layout}/` —
+- `src/components/{fleet,map,shipDetail,contracts,autopilot,observability,knobs,chat,operator,layout}/` —
   feature panels
 - `src/styles/theme.css` — LCARS Classic color palette as CSS variables
 

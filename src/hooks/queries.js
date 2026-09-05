@@ -17,8 +17,8 @@ const METRICS_CONTEXT_POLL_MS = 15_000;
 const ANOMALIES_DIGEST_POLL_MS = 15_000;
 const KNOBS_POLL_MS = 15_000;
 
-// Unauthenticated — must render before login (LoginScreen) as well as after,
-// so this never gates on a token the way the queries below do.
+// Unauthenticated — the health strip renders for visitors and operators alike,
+// so this never gates on a token the way the fleet queries below do.
 export function useSystemHealthQuery() {
   return useQuery({
     queryKey: ["systemHealth"],
@@ -54,11 +54,14 @@ export function useContractsQuery(token) {
   });
 }
 
+// navigation-service serves cached universe data to anyone (auth-design.md
+// decision 3); a session only unlocks a live fetch on a miss. So these two do
+// not gate on a token, unlike the fleet reads above.
 export function useSystemWaypointsQuery(token, systemSymbol) {
   return useQuery({
     queryKey: ["systemWaypoints", token, systemSymbol],
     queryFn: () => navigationService.getSystemWaypoints(token, systemSymbol),
-    enabled: !!token && !!systemSymbol,
+    enabled: !!systemSymbol,
     staleTime: Infinity,
   });
 }
@@ -85,7 +88,7 @@ export function useMarketQuery(token, waypointSymbol, { enabled = true } = {}) {
   return useQuery({
     queryKey: ["market", token, waypointSymbol],
     queryFn: () => navigationService.getMarket(token, waypointSymbol),
-    enabled: !!token && !!waypointSymbol && enabled,
+    enabled: !!waypointSymbol && enabled,
     refetchInterval: MARKET_POLL_MS,
   });
 }

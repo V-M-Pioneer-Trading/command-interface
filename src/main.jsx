@@ -6,7 +6,6 @@ import "./styles/fonts.css";
 import "./styles/theme.css";
 import "./styles/global.css";
 import App from "./App";
-import { AuthProvider } from "./context/AuthContext";
 import { AlertProvider } from "./context/AlertContext";
 
 const queryClient = new QueryClient({
@@ -46,13 +45,12 @@ if (!clerkPublishableKey) {
       <ClerkProvider publishableKey={clerkPublishableKey} afterSignOutUrl="/">
         <QueryClientProvider client={queryClient}>
           <AlertProvider>
-            {/* Two credentials coexist until increment 3. Clerk owns operator
-                identity — who may arm, abort or retune. AuthProvider still owns
-                the pasted SpaceTraders token, because agent/navigation/fleet
-                remain pass-throughs until st-gateway starts injecting it. */}
-            <AuthProvider>
-              <App />
-            </AuthProvider>
+            {/* One credential: the Clerk session. It says who the operator is
+                (arm, abort, retune, drive ships) and, forwarded through the
+                backends to st-gateway, which queue their traffic lands in. The
+                SpaceTraders token never enters the browser — st-gateway injects
+                it (auth-design.md decision 5). */}
+            <App />
           </AlertProvider>
         </QueryClientProvider>
       </ClerkProvider>

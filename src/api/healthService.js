@@ -1,9 +1,8 @@
 import { config } from "./config";
 
-// Every service here exposes an unauthenticated GET health check — this
-// check must work before a SpaceTraders token exists (login screen) as well
-// as after, so it never routes through client.js's `request()` (which
-// requires a token) and never forwards Authorization.
+// Every service here exposes an unauthenticated GET health check. It is
+// deliberately not routed through client.js's `request()`: a health probe
+// should never carry the operator's session, and must work for a visitor.
 //
 // healthPath is explicit per service rather than derived from `url`: in
 // production all backend origins share the spacetraders.radomskyi.com

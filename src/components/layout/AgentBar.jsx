@@ -59,9 +59,11 @@ export function AgentBar({
           Knobs
           {knobsOpen ? " ▲" : " ▼"}
         </PillButton>
-        <PillButton accent="red" onClick={logout}>
-          Disconnect
-        </PillButton>
+        {token && (
+          <PillButton accent="red" onClick={logout}>
+            Sign out
+          </PillButton>
+        )}
       </div>
     </div>
   );

@@ -44,13 +44,10 @@ async function call(path, { method = "GET", body, authToken } = {}) {
 
 export const automationService = {
   getStatus: () => call("/autopilot/status"),
-  // `token` is the SpaceTraders credential automation-service will fly with;
-  // `authToken` is the Clerk session proving you may arm at all. Two different
-  // secrets doing two different jobs — the first goes in the body, the second
-  // in the header. The first disappears in increment 3, when st-gateway starts
-  // injecting the game token and arming becomes `{ mode }` alone.
-  arm: (token, mode = "live", authToken) =>
-    call("/autopilot/arm", { method: "POST", body: { token, mode }, authToken }),
+  // Arming carries no credential: st-gateway injects the game token on every
+  // upstream call (auth-design.md decision 5), so the body is `{ mode }` and
+  // the Clerk session in the header is the only thing that proves you may arm.
+  arm: (mode = "live", authToken) => call("/autopilot/arm", { method: "POST", body: { mode }, authToken }),
   pause: (authToken) => call("/autopilot/pause", { method: "POST", authToken }),
   abort: (authToken) => call("/autopilot/abort", { method: "POST", authToken }),
   // A ship with no autopilot task yet (or one automation-service isn't
