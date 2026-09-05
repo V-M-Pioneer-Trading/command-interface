@@ -4,13 +4,11 @@ import { navigationService } from "../../api/navigationService";
 import { agentService } from "../../api/agentService";
 import { PillButton } from "../common/PillButton";
 import { useAlerts } from "../../context/AlertContext";
-import { useAuth } from "../../context/AuthContext";
 import { useAgentQuery } from "../../hooks/queries";
 import { queryKeys } from "../../hooks/queryKeys";
 import { useOperator, SCOPE_FLEET_CONTROL } from "../../context/OperatorContext";
 
 export function WaypointPopover({ waypoint, onClose }) {
-  const { token } = useAuth();
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(null);
   const [activeType, setActiveType] = useState(null);
@@ -21,10 +19,10 @@ export function WaypointPopover({ waypoint, onClose }) {
   const hasControl = can(SCOPE_FLEET_CONTROL);
 
   const purchaseShipMutation = useMutation({
-    mutationFn: async (shipType) => agentService.purchaseShip(token, shipType, waypoint.symbol, await getToken()),
+    mutationFn: async (shipType) => agentService.purchaseShip(shipType, waypoint.symbol, await getToken()),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.ships(token) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.agent(token) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ships() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.agent() });
       setActiveType(null);
     },
     onError: (err) => pushAlert(err.message || "Purchase failed"),
@@ -37,7 +35,7 @@ export function WaypointPopover({ waypoint, onClose }) {
   const loadMarket = async () => {
     setLoading("market");
     try {
-      const market = await navigationService.getMarket(token, waypoint.symbol);
+      const market = await navigationService.getMarket(waypoint.symbol);
       setDetail({ kind: "market", data: market });
     } catch (err) {
       pushAlert(err.message || "Failed to load market");
@@ -49,7 +47,7 @@ export function WaypointPopover({ waypoint, onClose }) {
   const loadShipyard = async () => {
     setLoading("shipyard");
     try {
-      const shipyard = await navigationService.getShipyard(token, waypoint.symbol);
+      const shipyard = await navigationService.getShipyard(waypoint.symbol);
       setDetail({ kind: "shipyard", data: shipyard });
     } catch (err) {
       pushAlert(err.message || "Failed to load shipyard");

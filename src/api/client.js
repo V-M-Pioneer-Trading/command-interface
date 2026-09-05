@@ -49,27 +49,27 @@ export function withQuery(path, params) {
   return qs ? `${path}?${qs}` : path;
 }
 
-// Two different credentials travel on two different headers (auth-design.md
-// decision 18). `Authorization` is always the Clerk session — the identity
-// nav/agent/fleet-service gate on. `X-SpaceTraders-Token` is the pasted game
-// credential, still needed for the live upstream call until auth-service and
-// st-gateway injection remove it from the browser entirely. Neither is
-// required client-side: a call missing one simply gets whatever response the
-// server gives an unauthenticated or uncredentialed caller, rather than the
-// client refusing to even try.
-export async function request(baseUrl, path, { method = "GET", token, authToken, body } = {}) {
+// One credential: `authToken`, the operator's Clerk session. The backends
+// verify it locally and forward it to st-gateway, which injects the game token
+// (auth-design.md decision 5) and derives queue priority from the session it
+// just verified (decision 2) — so a human operator's traffic reaches the
+// interactive lane without this app asserting anything about itself.
+//
+// No `X-Priority`: the gateway ignores what a caller declares, which is the
+// point. No `X-SpaceTraders-Token`: the game credential never enters the
+// browser at all.
+//
+// `authToken` is optional. A call without it gets whatever the server gives an
+// anonymous caller — navigation-service's cache, automation-service's public
+// observability surface — rather than this client refusing to try.
+export async function request(baseUrl, path, { method = "GET", authToken, body } = {}) {
   const res = await fetch(`${baseUrl}${path}`, {
     method,
     headers: {
-      ...(token ? { "X-SpaceTraders-Token": token } : {}),
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-      // Every call from this UI is a user-initiated action — propagated by
-      // fleet/agent/navigation-service all the way to st-gateway's priority
-      // queue so browser traffic stays responsive alongside automation-service's
-      // background autopilot traffic (meta#37).
-      "X-Priority": "interactive",
       ...(body ? { "Content-Type": "application/json" } : {}),
     },
+
     body: body ? JSON.stringify(body) : undefined,
   });
 

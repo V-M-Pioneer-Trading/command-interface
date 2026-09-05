@@ -3,57 +3,51 @@ import { request } from "./client";
 
 const base = config.fleetServiceUrl;
 
-// Every route here mutates or reads live per-ship state, so every call needs
-// both credentials: `authToken` (Clerk, fleet:control) is what fleet-service
-// verifies; `token` (SpaceTraders) is what it forwards upstream. Neither
-// substitutes for the other.
+// One credential: `authToken`, the Clerk session. fleet-service verifies it
+// (fleet:control on every mutation, a signed-in operator on the two reads) and
+// forwards it to st-gateway, which injects the game token and derives queue
+// priority from the session it just verified — auth-design.md decisions 2 and 5.
 export const fleetService = {
-  orbit: (token, shipSymbol, authToken) =>
-    request(base, `/ships/${shipSymbol}/orbit`, { method: "POST", token, authToken }),
-  dock: (token, shipSymbol, authToken) =>
-    request(base, `/ships/${shipSymbol}/dock`, { method: "POST", token, authToken }),
-  navigate: (token, shipSymbol, waypointSymbol, authToken) =>
+  orbit: (shipSymbol, authToken) =>
+    request(base, `/ships/${shipSymbol}/orbit`, { method: "POST", authToken }),
+  dock: (shipSymbol, authToken) =>
+    request(base, `/ships/${shipSymbol}/dock`, { method: "POST", authToken }),
+  navigate: (shipSymbol, waypointSymbol, authToken) =>
     request(base, `/ships/${shipSymbol}/navigate`, {
       method: "POST",
-      token,
       authToken,
       body: { waypointSymbol },
     }),
-  extract: (token, shipSymbol, authToken) =>
-    request(base, `/ships/${shipSymbol}/extract`, { method: "POST", token, authToken }),
-  extractWithSurvey: (token, shipSymbol, survey, authToken) =>
+  extract: (shipSymbol, authToken) =>
+    request(base, `/ships/${shipSymbol}/extract`, { method: "POST", authToken }),
+  extractWithSurvey: (shipSymbol, survey, authToken) =>
     request(base, `/ships/${shipSymbol}/extract/survey`, {
       method: "POST",
-      token,
       authToken,
       body: survey,
     }),
-  survey: (token, shipSymbol, authToken) =>
-    request(base, `/ships/${shipSymbol}/survey`, { method: "POST", token, authToken }),
-  refuel: (token, shipSymbol, authToken) =>
-    request(base, `/ships/${shipSymbol}/refuel`, { method: "POST", token, authToken }),
-  getCooldown: (token, shipSymbol, authToken) =>
-    request(base, `/ships/${shipSymbol}/cooldown`, { token, authToken }),
-  getCargo: (token, shipSymbol, authToken) =>
-    request(base, `/ships/${shipSymbol}/cargo`, { token, authToken }),
-  deliverContract: (token, contractId, shipSymbol, tradeSymbol, units, authToken) =>
+  survey: (shipSymbol, authToken) =>
+    request(base, `/ships/${shipSymbol}/survey`, { method: "POST", authToken }),
+  refuel: (shipSymbol, authToken) =>
+    request(base, `/ships/${shipSymbol}/refuel`, { method: "POST", authToken }),
+  getCooldown: (shipSymbol, authToken) =>
+    request(base, `/ships/${shipSymbol}/cooldown`, { authToken }),
+  getCargo: (shipSymbol, authToken) => request(base, `/ships/${shipSymbol}/cargo`, { authToken }),
+  deliverContract: (contractId, shipSymbol, tradeSymbol, units, authToken) =>
     request(base, `/contracts/${contractId}/deliver`, {
       method: "POST",
-      token,
       authToken,
       body: { shipSymbol, tradeSymbol, units },
     }),
-  setFlightMode: (token, shipSymbol, flightMode, authToken) =>
+  setFlightMode: (shipSymbol, flightMode, authToken) =>
     request(base, `/ships/${shipSymbol}/nav`, {
       method: "PATCH",
-      token,
       authToken,
       body: { flightMode },
     }),
-  transferCargo: (token, shipSymbol, tradeSymbol, units, targetShipSymbol, authToken) =>
+  transferCargo: (shipSymbol, tradeSymbol, units, targetShipSymbol, authToken) =>
     request(base, `/ships/${shipSymbol}/transfer`, {
       method: "POST",
-      token,
       authToken,
       body: { tradeSymbol, units, shipSymbol: targetShipSymbol },
     }),

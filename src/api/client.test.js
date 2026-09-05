@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { ApiError, readResponse, withQuery } from "./client";
+import { describe, expect, it, vi } from "vitest";
+import { ApiError, readResponse, request, withQuery } from "./client";
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -56,5 +56,36 @@ describe("withQuery", () => {
   it("leaves the path alone when nothing was supplied", () => {
     expect(withQuery("/anomalies/digest", {})).toBe("/anomalies/digest");
     expect(withQuery("/anomalies/digest")).toBe("/anomalies/digest");
+  });
+});
+
+describe("request", () => {
+  const capture = () => {
+    const fetchMock = vi.fn().mockResolvedValue(json({ ok: true }));
+    global.fetch = fetchMock;
+    return () => fetchMock.mock.calls[0][1].headers;
+  };
+
+  it("sends the Clerk session as Authorization", async () => {
+    const headers = capture();
+    await request("http://svc", "/agent", { authToken: "clerk-jwt" });
+    expect(headers().Authorization).toBe("Bearer clerk-jwt");
+  });
+
+  // auth-design.md decisions 2 and 5: st-gateway injects the game token and
+  // derives priority from the session it verifies. Either header reappearing
+  // here would be a regression — one re-exposes a credential the browser is no
+  // longer trusted with, the other lets this app promote its own traffic.
+  it("sends neither the game token nor a priority hint", async () => {
+    const headers = capture();
+    await request("http://svc", "/agent", { authToken: "clerk-jwt" });
+    expect(headers()).not.toHaveProperty("X-SpaceTraders-Token");
+    expect(headers()).not.toHaveProperty("X-Priority");
+  });
+
+  it("omits Authorization entirely for an anonymous caller", async () => {
+    const headers = capture();
+    await request("http://svc", "/waypoints/X1-FQ86-B29");
+    expect(headers()).not.toHaveProperty("Authorization");
   });
 });

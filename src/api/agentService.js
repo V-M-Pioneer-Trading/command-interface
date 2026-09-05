@@ -3,41 +3,37 @@ import { request } from "./client";
 
 const base = config.agentServiceUrl;
 
-// Reads require only a signed-in Clerk session (no scope) plus the
-// SpaceTraders token to forward — decision 18 defers full public access here
-// until auth-service exists to serve anonymous callers with a credential of
-// its own. Writes require fleet:control, same as fleet-service.
+// Reads require a signed-in Clerk session and no particular scope: they are
+// reads about the one account the fleet plays, so not anonymous (auth-design.md
+// decision 3), but they move nothing. Writes require fleet:control, same as
+// fleet-service. No game credential travels — st-gateway injects it upstream
+// (decision 5).
 export const agentService = {
-  getCurrentAgent: (token, authToken) => request(base, "/current-agent", { token, authToken }),
-  getAgent: (token, authToken) => request(base, "/agent", { token, authToken }),
-  getShips: (token, authToken) => request(base, "/ships", { token, authToken }),
-  getShip: (token, shipSymbol, authToken) =>
-    request(base, `/ships/${shipSymbol}`, { token, authToken }),
-  getContracts: (token, authToken) => request(base, "/contracts", { token, authToken }),
-  getContract: (token, contractId, authToken) =>
-    request(base, `/contracts/${contractId}`, { token, authToken }),
-  acceptContract: (token, contractId, authToken) =>
-    request(base, `/contracts/${contractId}/accept`, { method: "POST", token, authToken }),
-  fulfillContract: (token, contractId, authToken) =>
-    request(base, `/contracts/${contractId}/fulfill`, { method: "POST", token, authToken }),
-  purchaseCargo: (token, shipSymbol, symbol, units, authToken) =>
+  getCurrentAgent: (authToken) => request(base, "/current-agent", { authToken }),
+  getAgent: (authToken) => request(base, "/agent", { authToken }),
+  getShips: (authToken) => request(base, "/ships", { authToken }),
+  getShip: (shipSymbol, authToken) => request(base, `/ships/${shipSymbol}`, { authToken }),
+  getContracts: (authToken) => request(base, "/contracts", { authToken }),
+  getContract: (contractId, authToken) => request(base, `/contracts/${contractId}`, { authToken }),
+  acceptContract: (contractId, authToken) =>
+    request(base, `/contracts/${contractId}/accept`, { method: "POST", authToken }),
+  fulfillContract: (contractId, authToken) =>
+    request(base, `/contracts/${contractId}/fulfill`, { method: "POST", authToken }),
+  purchaseCargo: (shipSymbol, symbol, units, authToken) =>
     request(base, `/ships/${shipSymbol}/purchase`, {
       method: "POST",
-      token,
       authToken,
       body: { symbol, units },
     }),
-  sell: (token, shipSymbol, symbol, units, authToken) =>
+  sell: (shipSymbol, symbol, units, authToken) =>
     request(base, `/ships/${shipSymbol}/sell`, {
       method: "POST",
-      token,
       authToken,
       body: { symbol, units },
     }),
-  purchaseShip: (token, shipType, waypointSymbol, authToken) =>
+  purchaseShip: (shipType, waypointSymbol, authToken) =>
     request(base, "/ships/purchase", {
       method: "POST",
-      token,
       authToken,
       body: { shipType, waypointSymbol },
     }),

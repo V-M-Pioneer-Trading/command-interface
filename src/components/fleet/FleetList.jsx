@@ -22,7 +22,7 @@ export function FleetList() {
 
   return (
     <Panel title="Fleet" accent="orange" className="lcars-fleet-list">
-      <QueryState query={shipsQuery} empty="Sign in and set a game token to see the fleet.">
+      <QueryState query={shipsQuery} empty="Sign in to see the fleet.">
         {(ships) =>
           ships.length === 0 ? (
             <div className="lcars-fleet-list__empty">No ships</div>

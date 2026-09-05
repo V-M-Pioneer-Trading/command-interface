@@ -10,7 +10,6 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AlertProvider } from "./context/AlertContext";
-import { AuthProvider } from "./context/AuthContext";
 import { OperatorContext } from "./context/OperatorContext";
 import { SelectionProvider } from "./context/SelectionContext";
 import { mulberry32 } from "./map/rand";
@@ -147,13 +146,13 @@ createRoot(document.getElementById("root")).render(
     <OperatorContext.Provider value={DEV_OPERATOR}>
       <QueryClientProvider client={new QueryClient()}>
         <AlertProvider>
-          <AuthProvider initialToken="dev">
+          <>
             <SelectionProvider>
               <div style={{ height: "100vh", padding: "1rem", background: "var(--lcars-bg)" }}>
                 <SystemMap systemSymbol="X1-DV" />
               </div>
             </SelectionProvider>
-          </AuthProvider>
+          </>
         </AlertProvider>
       </QueryClientProvider>
     </OperatorContext.Provider>

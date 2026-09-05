@@ -3,7 +3,6 @@ import { PANEL_ORDER } from "../../utils/togglePanelLayout";
 import { PillButton } from "../common/PillButton";
 import { SystemStatus } from "./SystemStatus";
 import { OperatorBadge } from "../operator/OperatorBadge";
-import { GameTokenBadge } from "../gameToken/GameTokenBadge";
 import "./AgentBar.css";
 
 // Keyed by the panel keys in utils/togglePanelLayout.js, which is what decides
@@ -43,9 +42,7 @@ export function AgentBar({ contractCount, openPanels, onTogglePanel }) {
         <Stat label="FACTION" value={pending ?? agent?.startingFaction} />
         <Stat label="SHIPS" value={pending ?? agent?.shipCount} />
       </div>
-      <div className="lcars-agent-bar__actions">
-        <GameTokenBadge />
-        <OperatorBadge />
+      <div className="lcars-agent-bar__actions">        <OperatorBadge />
         <SystemStatus />
         {PANEL_ORDER.map((key) => {
           const { label, accent } = PANEL_BUTTONS[key];
