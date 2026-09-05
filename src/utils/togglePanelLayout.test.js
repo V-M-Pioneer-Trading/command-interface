@@ -21,4 +21,14 @@ describe("computeTogglePanelOffsets", () => {
     expect(Object.values(offsets).every(Number.isFinite)).toBe(true);
     expect(new Set(Object.values(offsets)).size).toBe(PANEL_ORDER.length);
   });
+
+  // The case the old title claimed and never covered. A key that is not in
+  // PANEL_ORDER gets no offset at all — the panel would render
+  // `right: undefinedrem`. This is the half of the layout invariant the module
+  // can enforce; the other half, a PANEL_ORDER key with no PANEL_WIDTH_REM
+  // entry falling back to DEFAULT_WIDTH_REM, is only reachable by editing the
+  // module, so no test can reach it.
+  it("gives a key outside PANEL_ORDER no offset at all", () => {
+    expect(computeTogglePanelOffsets(new Set(["nonesuch"]))).toEqual({});
+  });
 });
