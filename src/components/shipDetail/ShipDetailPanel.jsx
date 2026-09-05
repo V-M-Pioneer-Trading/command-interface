@@ -1,8 +1,8 @@
-import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../../context/AuthContext";
 import { useSelection } from "../../context/SelectionContext";
 import { useAlerts } from "../../context/AlertContext";
-import { useOperator, SCOPE_FLEET_CONTROL } from "../../hooks/useOperator";
+import { useOperator, SCOPE_FLEET_CONTROL } from "../../context/OperatorContext";
 import {
   useShipsQuery,
   useCooldownQuery,
@@ -10,7 +10,10 @@ import {
   useSystemWaypointsQuery,
   useMarketQuery,
   useAgentQuery,
+  useContractsQuery,
 } from "../../hooks/queries";
+import { queryKeys } from "../../hooks/queryKeys";
+import { useShipSurveys } from "../../hooks/useShipSurveys";
 import { fleetService } from "../../api/fleetService";
 import { agentService } from "../../api/agentService";
 import { Panel } from "../common/Panel";
@@ -26,35 +29,37 @@ import "./ShipDetailPanel.css";
 
 const FLIGHT_MODES = ["CRUISE", "BURN", "DRIFT", "STEALTH"];
 
-export function ShipDetailPanel({ token, contracts }) {
+export function ShipDetailPanel() {
+  const { token } = useAuth();
   const { can, getToken } = useOperator();
   const hasControl = can(SCOPE_FLEET_CONTROL);
   const { selectedShipSymbol } = useSelection();
-  const { data: ships } = useShipsQuery(token);
+  const { data: ships } = useShipsQuery();
+  const { data: contracts } = useContractsQuery();
   const ship = ships?.find((s) => s.symbol === selectedShipSymbol);
 
-  const { data: cooldownResp } = useCooldownQuery(token, selectedShipSymbol);
-  const { data: cargo } = useCargoQuery(token, selectedShipSymbol);
-  const { data: waypointData } = useSystemWaypointsQuery(token, ship?.nav?.systemSymbol);
-  const { data: agent } = useAgentQuery(token);
+  const { data: cooldownResp } = useCooldownQuery(selectedShipSymbol);
+  const { data: cargo } = useCargoQuery(selectedShipSymbol);
+  const { data: waypointData } = useSystemWaypointsQuery(ship?.nav?.systemSymbol);
+  const { data: agent } = useAgentQuery();
   const cooldown = cooldownResp?.data;
 
   const status = ship?.nav?.status;
   const isDocked = status === "DOCKED";
   const currentWaypoint = waypointData?.data?.find((w) => w.symbol === ship?.nav?.waypointSymbol);
   const hasMarketplace = !!currentWaypoint?.traits?.some((t) => t.symbol === "MARKETPLACE");
-  const { data: market } = useMarketQuery(token, ship?.nav?.waypointSymbol, {
+  const { data: market } = useMarketQuery(ship?.nav?.waypointSymbol, {
     enabled: isDocked && hasMarketplace,
   });
 
-  const [surveys, setSurveys] = useState([]);
+  const { surveys, addSurveys } = useShipSurveys(selectedShipSymbol);
   const { pushAlert } = useAlerts();
   const queryClient = useQueryClient();
 
   const invalidateShip = () => {
-    queryClient.invalidateQueries({ queryKey: ["ships", token] });
-    queryClient.invalidateQueries({ queryKey: ["cooldown", token, selectedShipSymbol] });
-    queryClient.invalidateQueries({ queryKey: ["cargo", token, selectedShipSymbol] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.ships(token) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.cooldown(token, selectedShipSymbol) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.cargo(token, selectedShipSymbol) });
   };
 
   const onActionError = (err) => pushAlert(err.message || "Action failed");
@@ -87,7 +92,7 @@ export function ShipDetailPanel({ token, contracts }) {
         pushAlert(`Refueled ${units} units`, { severity: "info", timeoutMs: 3000 });
       }
       invalidateShip();
-      queryClient.invalidateQueries({ queryKey: ["agent", token] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.agent(token) });
     },
     onError: onActionError,
   });
@@ -107,7 +112,7 @@ export function ShipDetailPanel({ token, contracts }) {
       agentService.sell(token, selectedShipSymbol, symbol, units, await getToken()),
     onSuccess: () => {
       invalidateShip();
-      queryClient.invalidateQueries({ queryKey: ["agent", token] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.agent(token) });
     },
     onError: onActionError,
   });
@@ -116,14 +121,14 @@ export function ShipDetailPanel({ token, contracts }) {
       fleetService.deliverContract(token, contractId, selectedShipSymbol, symbol, units, await getToken()),
     onSuccess: () => {
       invalidateShip();
-      queryClient.invalidateQueries({ queryKey: ["contracts", token] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.contracts(token) });
     },
     onError: (err) => pushAlert(err.message || "Delivery failed"),
   });
   const surveyMutation = useMutation({
     mutationFn: async () => fleetService.survey(token, selectedShipSymbol, await getToken()),
     onSuccess: (data) => {
-      setSurveys((prev) => [...prev, ...(data?.data?.surveys || [])]);
+      addSurveys(data?.data?.surveys || []);
       invalidateShip();
     },
     onError: (err) => pushAlert(err.message || "Survey failed"),
@@ -139,7 +144,7 @@ export function ShipDetailPanel({ token, contracts }) {
       agentService.purchaseCargo(token, selectedShipSymbol, symbol, units, await getToken()),
     onSuccess: () => {
       invalidateShip();
-      queryClient.invalidateQueries({ queryKey: ["agent", token] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.agent(token) });
     },
     onError: onActionError,
   });
@@ -230,7 +235,6 @@ export function ShipDetailPanel({ token, contracts }) {
       </div>
 
       <NavigatePicker
-        token={token}
         systemSymbol={ship.nav?.systemSymbol}
         disabled={!isOrbiting || anyMutating || !hasControl}
         isNavigating={navigateMutation.isPending}

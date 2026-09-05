@@ -1,3 +1,4 @@
+import { hash32 } from "./rand";
 import { project } from "./viewport";
 
 /**
@@ -15,18 +16,9 @@ const RING_BASE_RADIUS = 19;
 const RING_RADIUS_PER_EXTRA_CHILD = 3.5;
 const RING_DEPTH_FALLOFF = 0.55;
 
-export function hashString(str) {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i += 1) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
 /** Stable per-symbol starting angle so a ring never reshuffles between renders. */
 export function seededAngle(symbol) {
-  return (hashString(symbol) / 0xffffffff) * Math.PI * 2;
+  return (hash32(symbol) / 0xffffffff) * Math.PI * 2;
 }
 
 /**
@@ -59,7 +51,7 @@ function ringRadius(childCount, depth) {
  * @param bodyRadius reports a waypoint's drawn radius at zoom 1, used to budget
  *                   click targets. Injected rather than imported so this module
  *                   stays free of sprite metrics.
- * @returns { nodes, index, rings, bounds } — nodes carry base-space x/y
+ * @returns { nodes, index, rings } — nodes carry base-space x/y
  */
 export function buildSystemLayout(waypoints, fit, { bodyRadius } = {}) {
   const list = Array.isArray(waypoints) ? waypoints : [];

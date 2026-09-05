@@ -1,9 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import { useAlerts } from "../../context/AlertContext";
-import { useOperator, SCOPE_FLEET_CONTROL } from "../../hooks/useOperator";
+import { useOperator, SCOPE_FLEET_CONTROL } from "../../context/OperatorContext";
+import { useContractsQuery } from "../../hooks/queries";
+import { queryKeys } from "../../hooks/queryKeys";
 import { agentService } from "../../api/agentService";
 import { PillButton } from "../common/PillButton";
+import { QueryState } from "../common/QueryState";
 import "./ContractsPanel.css";
 
 function ContractCard({ contract, onAccept, onFulfill, busy }) {
@@ -49,16 +52,17 @@ function ContractCard({ contract, onAccept, onFulfill, busy }) {
   );
 }
 
-export function ContractsPanel({ contracts, onClose, style }) {
+export function ContractsPanel({ onClose, style }) {
   const { token } = useAuth();
+  const contractsQuery = useContractsQuery();
   const { pushAlert } = useAlerts();
   const queryClient = useQueryClient();
   const { can, getToken } = useOperator();
   const hasControl = can(SCOPE_FLEET_CONTROL);
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["contracts", token] });
-    queryClient.invalidateQueries({ queryKey: ["agent", token] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.contracts(token) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.agent(token) });
   };
 
   const acceptMutation = useMutation({
@@ -82,20 +86,28 @@ export function ContractsPanel({ contracts, onClose, style }) {
           ×
         </button>
       </div>
-      {(!contracts || contracts.length === 0) && (
-        <div className="lcars-contracts-panel__empty">No contracts</div>
-      )}
-      <ul className="lcars-contracts-panel__list">
-        {contracts?.map((c) => (
-          <ContractCard
-            key={c.id}
-            contract={c}
-            busy={busy}
-            onAccept={acceptMutation.mutate}
-            onFulfill={fulfillMutation.mutate}
-          />
-        ))}
-      </ul>
+      <QueryState
+        query={contractsQuery}
+        empty="Sign in and set a game token to see contracts."
+      >
+        {(contracts) =>
+          contracts.length === 0 ? (
+            <div className="lcars-contracts-panel__empty">No contracts</div>
+          ) : (
+            <ul className="lcars-contracts-panel__list">
+              {contracts.map((c) => (
+                <ContractCard
+                  key={c.id}
+                  contract={c}
+                  busy={busy}
+                  onAccept={acceptMutation.mutate}
+                  onFulfill={fulfillMutation.mutate}
+                />
+              ))}
+            </ul>
+          )
+        }
+      </QueryState>
     </div>
   );
 }

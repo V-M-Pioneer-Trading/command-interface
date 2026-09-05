@@ -1,8 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAlerts } from "../../context/AlertContext";
 import { useKnobsQuery } from "../../hooks/queries";
-import { useOperator, SCOPE_FLEET_CONTROL } from "../../hooks/useOperator";
+import { useOperator, SCOPE_FLEET_CONTROL } from "../../context/OperatorContext";
+import { queryKeys } from "../../hooks/queryKeys";
 import { automationService } from "../../api/automationService";
+import { QueryState } from "../common/QueryState";
 import { KnobRow } from "./KnobRow";
 import "./KnobEditor.css";
 
@@ -35,7 +37,7 @@ const CLASS_SECTIONS = [
 export function KnobEditor({ onClose, style }) {
   const { pushAlert } = useAlerts();
   const queryClient = useQueryClient();
-  const { data: knobs, isLoading } = useKnobsQuery();
+  const knobsQuery = useKnobsQuery();
   const { isSignedIn, can, getToken } = useOperator();
 
   // Knob *values* stay public — reading what the planner believes is the most
@@ -45,10 +47,11 @@ export function KnobEditor({ onClose, style }) {
   const setMutation = useMutation({
     mutationFn: async ({ name, value }) => automationService.setKnob(name, value, await getToken()),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["knobs"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.knobs() });
       // A successful edit is logged as a knob_changed event server-side —
       // refresh the event feed so it shows up without waiting for its own poll.
-      queryClient.invalidateQueries({ queryKey: ["metricsContext"] });
+      // The bare prefix matches every parameterised metricsContext key.
+      queryClient.invalidateQueries({ queryKey: queryKeys.metricsContext() });
     },
     onError: (err) => pushAlert(err.message || "Failed to update knob"),
   });
@@ -68,34 +71,41 @@ export function KnobEditor({ onClose, style }) {
             : "Sign in as an operator to change knob values."}
         </p>
       )}
-      {isLoading && <div className="lcars-knob-editor__loading">Loading...</div>}
-      {!isLoading && (!knobs || knobs.length === 0) && (
-        <div className="lcars-knob-editor__empty">No knobs</div>
-      )}
-      {CLASS_SECTIONS.map((section) => {
-        // A knob with no class (an older automation-service) falls into Policy,
-        // matching the server's own default, rather than vanishing from the UI.
-        const inSection = knobs?.filter((knob) =>
-          section.key === "policy" ? (knob.class ?? "policy") === "policy" : knob.class === section.key
-        );
-        if (!inSection || inSection.length === 0) return null;
-        return (
-          <section key={section.key} className="lcars-knob-editor__section">
-            <h3 className="lcars-knob-editor__section-title">{section.title}</h3>
-            <p className="lcars-knob-editor__section-caption">{section.caption}</p>
-            <ul className="lcars-knob-editor__list">
-              {inSection.map((knob) => (
-                <KnobRow
-                  key={knob.name}
-                  knob={knob}
-                  busy={setMutation.isPending || !hasControl}
-                  onSave={(name, value) => setMutation.mutate({ name, value })}
-                />
-              ))}
-            </ul>
-          </section>
-        );
-      })}
+      <QueryState query={knobsQuery} empty="Knob values are unavailable.">
+        {(knobs) =>
+          knobs.length === 0 ? (
+            <div className="lcars-knob-editor__empty">No knobs</div>
+          ) : (
+            // A knob with no class (an older automation-service) falls into
+            // Policy, matching the server's own default, rather than vanishing
+            // from the UI.
+            CLASS_SECTIONS.map((section) => {
+              const inSection = knobs.filter((knob) =>
+                section.key === "policy"
+                  ? (knob.class ?? "policy") === "policy"
+                  : knob.class === section.key
+              );
+              if (inSection.length === 0) return null;
+              return (
+                <section key={section.key} className="lcars-knob-editor__section">
+                  <h3 className="lcars-knob-editor__section-title">{section.title}</h3>
+                  <p className="lcars-knob-editor__section-caption">{section.caption}</p>
+                  <ul className="lcars-knob-editor__list">
+                    {inSection.map((knob) => (
+                      <KnobRow
+                        key={knob.name}
+                        knob={knob}
+                        busy={setMutation.isPending || !hasControl}
+                        onSave={(name, value) => setMutation.mutate({ name, value })}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              );
+            })
+          )
+        }
+      </QueryState>
     </div>
   );
 }

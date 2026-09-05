@@ -7,6 +7,7 @@ import "./styles/theme.css";
 import "./styles/global.css";
 import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
+import { OperatorProvider } from "./context/OperatorContext";
 import { AlertProvider } from "./context/AlertContext";
 
 const queryClient = new QueryClient({
@@ -44,17 +45,19 @@ if (!clerkPublishableKey) {
   root.render(
     <React.StrictMode>
       <ClerkProvider publishableKey={clerkPublishableKey} afterSignOutUrl="/">
-        <QueryClientProvider client={queryClient}>
-          <AlertProvider>
-            {/* Two credentials coexist until increment 3. Clerk owns operator
-                identity — who may arm, abort or retune. AuthProvider still owns
-                the pasted SpaceTraders token, because agent/navigation/fleet
-                remain pass-throughs until st-gateway starts injecting it. */}
-            <AuthProvider>
-              <App />
-            </AuthProvider>
-          </AlertProvider>
-        </QueryClientProvider>
+        <OperatorProvider>
+          <QueryClientProvider client={queryClient}>
+            <AlertProvider>
+              {/* Two credentials coexist until increment 3. Clerk owns operator
+                  identity — who may arm, abort or retune. AuthProvider still owns
+                  the pasted SpaceTraders token, because agent/navigation/fleet
+                  remain pass-throughs until st-gateway starts injecting it. */}
+              <AuthProvider>
+                <App />
+              </AuthProvider>
+            </AlertProvider>
+          </QueryClientProvider>
+        </OperatorProvider>
       </ClerkProvider>
     </React.StrictMode>
   );

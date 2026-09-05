@@ -10,7 +10,10 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AlertProvider } from "./context/AlertContext";
+import { AuthProvider } from "./context/AuthContext";
+import { OperatorContext } from "./context/OperatorContext";
 import { SelectionProvider } from "./context/SelectionContext";
+import { mulberry32 } from "./map/rand";
 import { SystemMap } from "./components/map/SystemMap";
 import "./styles/fonts.css";
 import "./styles/theme.css";
@@ -18,20 +21,9 @@ import "./styles/global.css";
 
 const trait = (symbol) => ({ symbol });
 
-// Deterministic PRNG so the harness renders the same system every reload.
-function rng(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 function buildSystem() {
-  const rand = rng(20260809);
+  // Deterministic, so the harness renders the same system every reload.
+  const rand = mulberry32(20260809);
   const wps = [];
   const push = (w) => {
     wps.push({ traits: [], ...w });
@@ -136,16 +128,34 @@ window.fetch = async (input, init) => {
   return originalFetch(input, init);
 };
 
+// The harness runs with no Clerk instance, so it supplies the operator context
+// itself. `useOperator` outside a provider reports a signed-out observer, and
+// the gated reads (ships among them) would never fire — the whole point of this
+// page is ships on a dense map. There is no ClerkProvider to nest under: this
+// is also why the operator context exists at all, since Clerk's own `useAuth`
+// throws outside its provider and used to take this page down on render.
+const DEV_OPERATOR = {
+  isLoaded: true,
+  isSignedIn: true,
+  signOut: async () => {},
+  getToken: async () => "dev-operator-token",
+  can: () => true,
+};
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <QueryClientProvider client={new QueryClient()}>
-      <AlertProvider>
-        <SelectionProvider>
-          <div style={{ height: "100vh", padding: "1rem", background: "var(--lcars-bg)" }}>
-            <SystemMap token="dev" systemSymbol="X1-DV" />
-          </div>
-        </SelectionProvider>
-      </AlertProvider>
-    </QueryClientProvider>
+    <OperatorContext.Provider value={DEV_OPERATOR}>
+      <QueryClientProvider client={new QueryClient()}>
+        <AlertProvider>
+          <AuthProvider initialToken="dev">
+            <SelectionProvider>
+              <div style={{ height: "100vh", padding: "1rem", background: "var(--lcars-bg)" }}>
+                <SystemMap systemSymbol="X1-DV" />
+              </div>
+            </SelectionProvider>
+          </AuthProvider>
+        </AlertProvider>
+      </QueryClientProvider>
+    </OperatorContext.Provider>
   </StrictMode>,
 );

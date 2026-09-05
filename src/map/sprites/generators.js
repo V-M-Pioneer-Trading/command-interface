@@ -7,12 +7,12 @@
  * are composed from the same masks so everything shares one light direction.
  */
 
+import { mulberry32 } from "../rand";
 import {
   createPalette,
   makeAngularNoise,
   makeGrid,
   makeNoise,
-  mulberry32,
   rampChar,
   sphereShade,
 } from "./pixel";
@@ -373,8 +373,14 @@ export function makeTank({ size = 16, ramp, accent }) {
     grid[top + 2][px] = rampChar(pal, ramp, 0.2);
     grid[bottom - 2][px] = rampChar(pal, ramp, 0.2);
   }
-  grid[top - 1][c] = pal.key(accent);
-  grid[top - 1][c + 1] = pal.key(accent);
+  // `c` is fractional on an even-sized grid (7.5 at size 16), and
+  // `grid[y][7.5] = ...` writes a string-keyed property onto the row array
+  // instead of a cell — so the valve was silently dropped and FUEL_STATION
+  // rendered with no accent at all. Every write into the grid must land on an
+  // integer column.
+  const valveX = Math.floor(c);
+  grid[top - 1][valveX] = pal.key(accent);
+  grid[top - 1][valveX + 1] = pal.key(accent);
   grid[bottom + 1][left + 1] = rampChar(pal, ramp, 0.25);
   grid[bottom + 1][right - 1] = rampChar(pal, ramp, 0.25);
 

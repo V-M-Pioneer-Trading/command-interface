@@ -1,66 +1,69 @@
 import { useAgentQuery, useAutopilotStatusQuery } from "../../hooks/queries";
-import { useAuth } from "../../context/AuthContext";
+import { PANEL_ORDER } from "../../utils/togglePanelLayout";
 import { PillButton } from "../common/PillButton";
 import { SystemStatus } from "./SystemStatus";
 import { OperatorBadge } from "../operator/OperatorBadge";
 import { GameTokenBadge } from "../gameToken/GameTokenBadge";
 import "./AgentBar.css";
 
-export function AgentBar({
-  contractCount,
-  onToggleContracts,
-  contractsOpen,
-  onToggleAutopilot,
-  autopilotOpen,
-  onToggleObservability,
-  observabilityOpen,
-  onToggleKnobs,
-  knobsOpen,
-}) {
-  const { token } = useAuth();
-  const { data: agent, isLoading } = useAgentQuery(token);
+// Keyed by the panel keys in utils/togglePanelLayout.js, which is what decides
+// where each open panel is drawn — a button here with no entry there would open
+// a panel at an undefined offset.
+const PANEL_BUTTONS = {
+  contracts: { label: "Contracts", accent: "lavender" },
+  autopilot: { label: "Autopilot", accent: "orange" },
+  observability: { label: "Observability", accent: "blue" },
+  knobs: { label: "Knobs", accent: "tan" },
+};
+
+/** An unavailable stat reads as "—", never as a blank space that looks broken. */
+function Stat({ label, value }) {
+  return (
+    <span className="lcars-agent-bar__stat">
+      {label} <strong>{value ?? "—"}</strong>
+    </span>
+  );
+}
+
+export function AgentBar({ contractCount, openPanels, onTogglePanel }) {
+  const { data: agent, isLoading } = useAgentQuery();
   const { data: autopilotStatus } = useAutopilotStatusQuery();
+
+  // An anonymous visitor's agent query is disabled, not loading — react-query
+  // reports isLoading false with no data, so keying the placeholder off
+  // isLoading alone left the bar rendering four blank stats.
+  const pending = isLoading ? "…" : null;
 
   return (
     <div className="lcars-agent-bar">
       <div className="lcars-agent-bar__elbow" />
       <div className="lcars-agent-bar__content">
-        <span className="lcars-agent-bar__symbol">
-          {isLoading ? "..." : agent?.symbol}
-        </span>
-        <span className="lcars-agent-bar__stat">
-          CREDITS <strong>{isLoading ? "..." : agent?.credits?.toLocaleString()}</strong>
-        </span>
-        <span className="lcars-agent-bar__stat">
-          FACTION <strong>{isLoading ? "..." : agent?.startingFaction}</strong>
-        </span>
-        <span className="lcars-agent-bar__stat">
-          SHIPS <strong>{isLoading ? "..." : agent?.shipCount}</strong>
-        </span>
+        <span className="lcars-agent-bar__symbol">{pending ?? agent?.symbol ?? "NO AGENT"}</span>
+        <Stat label="CREDITS" value={pending ?? agent?.credits?.toLocaleString()} />
+        <Stat label="FACTION" value={pending ?? agent?.startingFaction} />
+        <Stat label="SHIPS" value={pending ?? agent?.shipCount} />
       </div>
       <div className="lcars-agent-bar__actions">
         <GameTokenBadge />
         <OperatorBadge />
         <SystemStatus />
-        <PillButton accent="lavender" onClick={onToggleContracts}>
-          Contracts{contractCount ? ` (${contractCount})` : ""}
-          {contractsOpen ? " ▲" : " ▼"}
-        </PillButton>
-        <PillButton
-          accent={autopilotStatus?.status === "armed" ? "green" : "orange"}
-          onClick={onToggleAutopilot}
-        >
-          Autopilot{autopilotStatus?.status ? ` (${autopilotStatus.status})` : ""}
-          {autopilotOpen ? " ▲" : " ▼"}
-        </PillButton>
-        <PillButton accent="blue" onClick={onToggleObservability}>
-          Observability
-          {observabilityOpen ? " ▲" : " ▼"}
-        </PillButton>
-        <PillButton accent="tan" onClick={onToggleKnobs}>
-          Knobs
-          {knobsOpen ? " ▲" : " ▼"}
-        </PillButton>
+        {PANEL_ORDER.map((key) => {
+          const { label, accent } = PANEL_BUTTONS[key];
+          const isAutopilot = key === "autopilot";
+          const status = isAutopilot ? autopilotStatus?.status : null;
+          return (
+            <PillButton
+              key={key}
+              accent={isAutopilot && status === "armed" ? "green" : accent}
+              onClick={() => onTogglePanel(key)}
+            >
+              {label}
+              {key === "contracts" && contractCount ? ` (${contractCount})` : ""}
+              {status ? ` (${status})` : ""}
+              {openPanels[key] ? " ▲" : " ▼"}
+            </PillButton>
+          );
+        })}
       </div>
     </div>
   );

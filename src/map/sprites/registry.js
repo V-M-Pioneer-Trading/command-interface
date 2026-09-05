@@ -7,7 +7,8 @@
  * around them: labels, orbit rings, transit paths, selection and badges.
  */
 
-import { compileSprite, hash32 } from "./pixel";
+import { compileSprite } from "./pixel";
+import { hash32 } from "../rand";
 import {
   makeCluster,
   makeNebula,

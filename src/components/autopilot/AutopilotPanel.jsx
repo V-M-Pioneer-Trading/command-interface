@@ -3,7 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import { useAlerts } from "../../context/AlertContext";
 import { useAutopilotStatusQuery } from "../../hooks/queries";
-import { useOperator, SCOPE_FLEET_CONTROL } from "../../hooks/useOperator";
+import { useOperator, SCOPE_FLEET_CONTROL } from "../../context/OperatorContext";
+import { queryKeys } from "../../hooks/queryKeys";
 import { automationService } from "../../api/automationService";
 import { PillButton } from "../common/PillButton";
 import "./AutopilotPanel.css";
@@ -27,7 +28,8 @@ export function AutopilotPanel({ onClose, style }) {
   const [armToken, setArmToken] = useState(sessionToken || "");
   const [mode, setMode] = useState("live");
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["autopilotStatus"] });
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.autopilotStatus() });
 
   const armMutation = useMutation({
     mutationFn: async () => automationService.arm(armToken, mode, await getToken()),

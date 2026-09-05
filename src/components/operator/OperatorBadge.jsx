@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useSignIn, useSignUp, useUser } from "@clerk/clerk-react";
-import { useOperator, SCOPE_FLEET_CONTROL } from "../../hooks/useOperator";
+import { useAlerts } from "../../context/AlertContext";
+import { useOperator, SCOPE_FLEET_CONTROL } from "../../context/OperatorContext";
 import { PillButton } from "../common/PillButton";
 import "./OperatorBadge.css";
 
@@ -19,6 +20,7 @@ export function OperatorBadge() {
   const { signIn, isLoaded: signInLoaded } = useSignIn();
   const { signUp, setActive, isLoaded: signUpLoaded } = useSignUp();
   const { user } = useUser();
+  const { pushAlert } = useAlerts();
   const transferAttempted = useRef(false);
 
   useEffect(() => {
@@ -32,10 +34,19 @@ export function OperatorBadge() {
     if (signIn?.firstFactorVerification?.status !== "transferable") return;
 
     transferAttempted.current = true;
-    signUp.create({ transfer: true }).then((attempt) => {
-      if (attempt.status === "complete") setActive({ session: attempt.createdSessionId });
-    });
-  }, [signInLoaded, signUpLoaded, isSignedIn, signIn, signUp, setActive]);
+    signUp
+      .create({ transfer: true })
+      .then((attempt) => {
+        if (attempt.status === "complete") {
+          return setActive({ session: attempt.createdSessionId });
+        }
+        // Anything other than "complete" means Clerk wants a step this headless
+        // flow does not render. Saying so beats the redirect quietly landing
+        // back here with no session and no explanation.
+        throw new Error(`Sign-up needs another step (${attempt.status})`);
+      })
+      .catch((err) => pushAlert(err?.errors?.[0]?.message || err?.message || "Sign-in failed"));
+  }, [signInLoaded, signUpLoaded, isSignedIn, signIn, signUp, setActive, pushAlert]);
 
   if (!isLoaded) return <span className="lcars-operator lcars-operator--loading">…</span>;
 
@@ -47,11 +58,13 @@ export function OperatorBadge() {
           accent="orange"
           title="Sign in to arm, pause, abort or retune the autopilot"
           onClick={() =>
-            signIn?.authenticateWithRedirect({
-              strategy: "oauth_google",
-              redirectUrl: window.location.href,
-              redirectUrlComplete: window.location.href,
-            })
+            signIn
+              ?.authenticateWithRedirect({
+                strategy: "oauth_google",
+                redirectUrl: window.location.href,
+                redirectUrlComplete: window.location.href,
+              })
+              .catch((err) => pushAlert(err?.errors?.[0]?.message || "Could not start sign-in"))
           }
         >
           Operator sign-in
