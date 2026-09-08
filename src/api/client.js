@@ -69,7 +69,6 @@ export async function request(baseUrl, path, { method = "GET", authToken, body }
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(body ? { "Content-Type": "application/json" } : {}),
     },
-
     body: body ? JSON.stringify(body) : undefined,
   });
 
