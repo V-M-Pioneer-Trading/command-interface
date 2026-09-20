@@ -13,8 +13,15 @@ on:
 jobs:
   # Not gated to pull requests: it runs for every event that can reach the
   # deploy job below, because a push to main previously went straight to the S3
-  # sync with the 81 vitest tests never having run anywhere in CI.
+  # sync with the vitest suite never having run anywhere in CI.
+  #
+  # Node 24 in both jobs, deliberately the same: jsdom 30 (the test environment)
+  # refuses to load below Node 22.22, and a suite that passes on one runtime says
+  # little about a bundle built on another. Both jobs also install with `npm ci`,
+  # so what is deployed is the dependency tree that was tested.
   test:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -23,7 +30,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install dependencies
         run: npm ci
@@ -65,10 +72,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build project
         run: npm run build
