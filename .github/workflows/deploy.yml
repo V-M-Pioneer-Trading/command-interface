@@ -3,10 +3,46 @@ name: Deploy Website
 on:
   push:
     branches: [main]
+  # No branch filter: a pull request stacked on another branch needs the same
+  # checks as one targeting main. There was no pull_request trigger at all, so
+  # a PR ran nothing and read as green by default — the suite only ever ran on
+  # a developer's own machine, if at all.
+  pull_request:
   workflow_dispatch:
 
 jobs:
+  # Not gated to pull requests: it runs for every event that can reach the
+  # deploy job below, because a push to main previously went straight to the S3
+  # sync with the vitest suite never having run anywhere in CI.
+  #
+  # Node 24 in both jobs, deliberately the same: jsdom 30 (the test environment)
+  # refuses to load below Node 22.22, and a suite that passes on one runtime says
+  # little about a bundle built on another. Both jobs also install with `npm ci`,
+  # so what is deployed is the dependency tree that was tested.
+  test:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
   deploy:
+    # A pull request must not sync to S3 or invalidate the distribution; only a
+    # push to main or a manual dispatch deploys.
+    if: github.event_name != 'pull_request'
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -36,10 +72,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build project
         run: npm run build

@@ -16,10 +16,12 @@ stay true, and what breaks if you change it.
 | `npm run build` | Static bundle to `dist/`. Only `index.html` is an entry, so `dev-map.html` never ships. |
 | `npm run preview` | Serve the built bundle. |
 
-There is no linter, formatter, typechecker or CI test job. `npm run build` is
-the only automated gate, and it runs in `.github/workflows/deploy.yml` on push
-to `main` — which means **a broken test reaches production**. Run `npm test`
-yourself.
+There is no linter, formatter or typechecker. CI (`.github/workflows/deploy.yml`)
+runs `npm test` on every pull request and on every push to `main`, and the S3
+deploy `needs` it, so a broken test blocks the deploy rather than reaching
+production. Both jobs run Node 24 and install with `npm ci`; jsdom 30 will not load
+below Node 22.22. `main` has no branch protection, so a red pull request can still be
+merged: the gate stops the deploy, not the merge.
 
 ## Module map
 
