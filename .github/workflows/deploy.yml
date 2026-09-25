@@ -46,6 +46,9 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
+    # The concurrency group spans the whole workflow, so a hung test job holds
+    # the deploy slot too. The suite takes a minute or two.
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
