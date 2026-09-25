@@ -67,6 +67,10 @@ jobs:
     if: github.event_name != 'pull_request'
     needs: test
     runs-on: ubuntu-latest
+    # A hung job would hold the deploy concurrency slot and block every later
+    # deploy, so it must not get GitHub's six-hour default. A deploy takes a
+    # couple of minutes.
+    timeout-minutes: 15
     permissions:
       id-token: write
       contents: read
