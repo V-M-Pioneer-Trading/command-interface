@@ -10,6 +10,25 @@ on:
   pull_request:
   workflow_dispatch:
 
+# One deploy at a time, in the order the runs were triggered. Without it two
+# merges seconds apart ran overlapping deploys and whichever S3 sync finished
+# last won, which could be the older commit's bundle (auth-service #5 and #6
+# did exactly this to its container on 2026-09-25).
+#
+# At workflow level rather than on the deploy job: a job-level group is entered
+# only when the job starts, i.e. when the test job finishes, so a slower test
+# run on the older commit could still take the slot second and deploy last.
+#
+# A push to main and a manual dispatch both sync the same bucket, so they share
+# one group. cancel-in-progress stays false so a run is never killed halfway
+# through a sync, which would leave the bucket half old, half new. GitHub keeps
+# at most one run pending per group and a newer one replaces it, so a burst of
+# merges still ends with the newest commit deployed. Pull request runs deploy
+# nothing and each get a group of their own: no queueing.
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.run_id) || format('deploy-{0}-main', github.repository) }}
+  cancel-in-progress: false
+
 jobs:
   # Not gated to pull requests: it runs for every event that can reach the
   # deploy job below, because a push to main previously went straight to the S3
