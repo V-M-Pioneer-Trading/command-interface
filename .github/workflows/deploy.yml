@@ -10,23 +10,24 @@ on:
   pull_request:
   workflow_dispatch:
 
-# One deploy at a time, in the order the runs were triggered. Without it two
-# merges seconds apart ran overlapping deploys and whichever S3 sync finished
-# last won, which could be the older commit's bundle (auth-service #5 and #6
-# did exactly this to its container on 2026-09-25).
+# One deploy at a time. Without it two merges seconds apart ran overlapping
+# deploys and whichever S3 sync finished last won, which could be the older
+# commit's bundle (auth-service #5 and #6 did exactly this to its container on
+# 2026-09-25).
 #
-# At workflow level rather than on the deploy job: a job-level group is entered
-# only when the job starts, i.e. when the test job finishes, so a slower test
-# run on the older commit could still take the slot second and deploy last.
+# Only runs on main can deploy (the deploy role trusts refs/heads/main alone),
+# so only they share the group. Everything else, pull requests and dispatches
+# from other branches included, gets a group of its own and never queues or
+# displaces a main run. cancel-in-progress stays false so a sync is never cut
+# off halfway, leaving the bucket half old, half new. GitHub keeps one run
+# pending per group and a newer one replaces it, so a burst of merges skips
+# straight to the newest.
 #
-# A push to main and a manual dispatch both sync the same bucket, so they share
-# one group. cancel-in-progress stays false so a run is never killed halfway
-# through a sync, which would leave the bucket half old, half new. GitHub keeps
-# at most one run pending per group and a newer one replaces it, so a burst of
-# merges still ends with the newest commit deployed. Pull request runs deploy
-# nothing and each get a group of their own: no queueing.
+# GitHub does not promise the queue runs in push order, and a re-run of an old
+# run joins it too. The tip-of-main check in the deploy job covers both: a run
+# whose commit is no longer the tip of main does not sync.
 concurrency:
-  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.run_id) || format('deploy-{0}-main', github.repository) }}
+  group: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && format('deploy-{0}', github.repository) || format('run-{0}', github.run_id) }}
   cancel-in-progress: false
 
 jobs:
@@ -88,6 +89,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Deploys only if this commit is still the tip of main. The group above
+      # serializes runs but does not order them, so without this an older run
+      # that got the slot second, or a re-run of an old run, would sync its
+      # bundle over a newer one. Dispatches from other branches stop here too:
+      # the deploy role would refuse them anyway.
+      - name: Check this commit is still the tip of main
+        id: tip
+        run: |
+          tip=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [ "$GITHUB_REF" = refs/heads/main ] && [ "$tip" = "$GITHUB_SHA" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Not deploying: $GITHUB_REF at $GITHUB_SHA, main is at $tip."
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -100,15 +117,18 @@ jobs:
         run: npm run build
 
       - name: Configure AWS credentials
+        if: steps.tip.outputs.deploy == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::543292785457:role/command-interface-deploy
           aws-region: eu-central-1
 
       - name: Deploy to S3
+        if: steps.tip.outputs.deploy == 'true'
         run: |
           aws s3 sync ./dist s3://spacetraders-radomskyi-com --delete
 
       - name: Invalidate CloudFront
+        if: steps.tip.outputs.deploy == 'true'
         run: |
           aws cloudfront create-invalidation --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
