@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { probeableServices } from "./healthService";
+import { SERVICE_DEFINITIONS, probeableServices } from "./healthService";
 
 const services = [
   { key: "agent", url: "https://spacetraders.example.com/api/agent/v1" },
@@ -27,5 +27,13 @@ describe("probeableServices", () => {
 
   it("drops a target whose URL does not parse rather than throwing mid-poll", () => {
     expect(probeableServices(services, "https:").some((s) => s.key === "broken")).toBe(false);
+  });
+});
+
+describe("SERVICE_DEFINITIONS", () => {
+  it("lists auth-service ahead of st-gateway, on its scoped public health path", () => {
+    const keys = SERVICE_DEFINITIONS.map((s) => s.key);
+    expect(keys).toEqual(["agent", "navigation", "fleet", "automation", "auth", "stGateway", "ai"]);
+    expect(SERVICE_DEFINITIONS.find((s) => s.key === "auth").healthPath).toBe("/api/auth/health");
   });
 });

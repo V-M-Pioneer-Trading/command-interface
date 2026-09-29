@@ -28,6 +28,7 @@ export const SERVICE_DEFINITIONS = [
     url: config.automationServiceUrl,
     healthPath: "/api/automation/health",
   },
+  { key: "auth", label: "Auth", url: config.authServiceUrl, healthPath: "/api/auth/health" },
   {
     key: "stGateway",
     label: "ST Gateway",
