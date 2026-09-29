@@ -83,6 +83,7 @@ jobs:
       VITE_NAVIGATION_SERVICE_URL: https://spacetraders.radomskyi.com/api/navigation/v1
       VITE_FLEET_SERVICE_URL: https://spacetraders.radomskyi.com/api/fleet/v1
       VITE_AUTOMATION_SERVICE_URL: https://spacetraders.radomskyi.com/api/automation/v1
+      VITE_AUTH_SERVICE_URL: https://spacetraders.radomskyi.com
       VITE_ST_GATEWAY_URL: https://spacetraders.radomskyi.com
       # VITE_AI_SERVICE_URL is deliberately absent: ai-service has no CloudFront
       # origin, so there is no URL a browser on this domain could reach. The app

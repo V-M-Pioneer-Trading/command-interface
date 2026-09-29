@@ -4,7 +4,7 @@ The bridge display for the V&M SpaceTraders mining POC: a React/Vite single-page
 app, styled after LCARS, that shows one star system as a live map and lets an
 operator fly the fleet by hand or watch the autopilot fly it for them.
 
-It has no server of its own. It is a browser client for five sibling backends,
+It has no server of its own. It is a browser client for six sibling backends,
 deployed as static files to S3 behind CloudFront.
 
 **The part that actually matters is the map**, and the reason it is unusual is
@@ -40,6 +40,7 @@ flowchart LR
     agent & nav & fleet & auto --> gw["st-gateway :3002<br/>rate limit + priority queue"]
     gw --> st["SpaceTraders API"]
     app -. "health probe only" .-> gw
+    app -. "health probe only" .-> auth["auth-service :8082<br/>token verification"]
     app -. "health probe, local only" .-> ai["ai-service :3004"]
 ```
 
@@ -52,6 +53,7 @@ on screen is polled and thrown away.
 | **navigation-service** `:8081` | System waypoints, market and shipyard data | Yes — serves its SQLite cache; a session upgrades it to a live fetch-on-miss |
 | **fleet-service** `:3001` | Orbit, dock, navigate, survey, extract, refuel, transfer, flight mode, contract delivery | No — needs `fleet:control` |
 | **automation-service** `:3003` | Autopilot arm/pause/abort, per-ship task state, planner knobs, metrics rollups, anomaly digest | Reads yes, writes need `fleet:control` |
+| **auth-service** `:8082` | Nothing directly — health probe only. Every authenticated request to the services above is verified through it | Health probe is public |
 | **st-gateway** `:3002` | Nothing directly — health probe only. It is the rate-limited chokepoint the four services above share | Health probe is public |
 | **ai-service** `:3004` | Nothing yet — health probe only, and only in local development | See [known limitations](#known-limitations) |
 
@@ -101,7 +103,7 @@ this bundle to re-enable a control earns a 403, not an armed autopilot.
 ```
 npm install
 npm run dev      # http://localhost:3000
-npm test         # vitest, 81 tests
+npm test         # vitest, 82 tests
 npm run build    # static bundle into dist/
 ```
 
@@ -115,6 +117,7 @@ origin. Copy `.env.example` to `.env.local` to point at non-default URLs.
 | `VITE_NAVIGATION_SERVICE_URL` | `http://localhost:8081/api/navigation/v1` | |
 | `VITE_FLEET_SERVICE_URL` | `http://localhost:3001/api/fleet/v1` | |
 | `VITE_AUTOMATION_SERVICE_URL` | `http://localhost:3003/api/automation/v1` | |
+| `VITE_AUTH_SERVICE_URL` | `http://localhost:8082` | Health probe only |
 | `VITE_ST_GATEWAY_URL` | `http://localhost:3002` | Health probe only |
 | `VITE_AI_SERVICE_URL` | `http://localhost:3004` | Health probe only, and only locally |
 
