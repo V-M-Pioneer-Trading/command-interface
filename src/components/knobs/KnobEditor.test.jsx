@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AlertProvider } from "../../context/AlertContext";
-import { OperatorContext, SCOPE_FLEET_CONTROL, SCOPE_PLANNER_ADVISE } from "../../context/OperatorContext";
+import { OperatorContext } from "../../context/OperatorContext";
 import { automationService } from "../../api/automationService";
 import { KnobEditor } from "./KnobEditor";
 
@@ -31,13 +31,13 @@ describe("KnobEditor scope gating", () => {
   });
 
   it("lets planner:advise without fleet:control edit", async () => {
-    const input = await show([SCOPE_PLANNER_ADVISE]);
+    const input = await show(["planner:advise"]);
     expect(input.disabled).toBe(false);
     expect(screen.queryByText(/read-only/)).toBeNull();
   });
 
   it("is read-only with fleet:control alone", async () => {
-    const input = await show([SCOPE_FLEET_CONTROL]);
+    const input = await show(["fleet:control"]);
     expect(input.disabled).toBe(true);
     expect(screen.getByText("This account has no planner:advise scope. Values are read-only.")).toBeTruthy();
   });

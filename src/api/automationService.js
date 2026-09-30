@@ -6,8 +6,8 @@ const base = config.automationServiceUrl;
 // Reads are public: the observability surface — status, event log, metrics,
 // knob values, per-ship task state — is meant to be watchable without
 // credentials. Mutating calls carry a **Clerk** session token, not the
-// SpaceTraders one: automation-service verifies it locally and requires the
-// `fleet:control` scope (autopilot, contracts), or `planner:advise` for
+// SpaceTraders one: automation-service verifies it through auth-service and requires the
+// `fleet:control` scope (autopilot arm/pause/abort), or `planner:advise` for
 // `PUT /planner/knobs/:name`.
 //
 // The Clerk token is passed in per call rather than held here, because Clerk
