@@ -7,7 +7,8 @@ const base = config.automationServiceUrl;
 // knob values, per-ship task state — is meant to be watchable without
 // credentials. Mutating calls carry a **Clerk** session token, not the
 // SpaceTraders one: automation-service verifies it locally and requires the
-// `fleet:control` scope.
+// `fleet:control` scope (autopilot, contracts), or `planner:advise` for
+// `PUT /planner/knobs/:name`.
 //
 // The Clerk token is passed in per call rather than held here, because Clerk
 // tokens are short-lived and refreshed by the SDK; caching one in this module
