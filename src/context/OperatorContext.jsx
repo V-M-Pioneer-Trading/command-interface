@@ -103,7 +103,7 @@ export function OperatorProvider({ children }) {
       /** Fresh token for an authenticated call. Clerk tokens are short-lived,
        *  so this is called per request rather than cached. */
       getToken,
-      can: (scope) => scopes.includes(scope),
+      can: (scope) => Boolean(isSignedIn) && scopes.includes(scope),
     }),
     [isLoaded, isSignedIn, signOut, getToken, scopes],
   );

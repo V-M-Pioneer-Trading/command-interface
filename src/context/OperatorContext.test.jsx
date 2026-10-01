@@ -178,4 +178,76 @@ describe("OperatorProvider scope refresh", () => {
     expect(result.current.can(SCOPE_FLEET_CONTROL)).toBe(false);
     expect(vi.getTimerCount()).toBe(0);
   });
+
+  it("ignores a token that resolves after sign-out", async () => {
+    let resolve;
+    clerk.getToken.mockReturnValue(new Promise((r) => (resolve = r)));
+    const { result, rerender } = renderHook(() => useOperator(), { wrapper });
+    await flush();
+
+    clerk.isSignedIn = false;
+    rerender();
+    await flush();
+    await act(async () => resolve(jwtWith({ scope: "fleet:control" })));
+    expect(result.current.can(SCOPE_FLEET_CONTROL)).toBe(false);
+
+    // Signing back in must not surface the late token while the new one is pending.
+    clerk.getToken = vi.fn(() => new Promise(() => {}));
+    clerk.isSignedIn = true;
+    rerender();
+    await flush();
+    expect(result.current.can(SCOPE_FLEET_CONTROL)).toBe(false);
+  });
+
+  it("keeps the last known scopes when a refresh fails", async () => {
+    clerk.getToken
+      .mockResolvedValueOnce(jwtWith({ scope: "fleet:control" }))
+      .mockRejectedValue(new Error("network"));
+    const { result } = renderHook(() => useOperator(), { wrapper });
+    await flush();
+    expect(result.current.can(SCOPE_FLEET_CONTROL)).toBe(true);
+
+    await tick(60_000);
+
+    expect(clerk.getToken.mock.calls.length).toBeGreaterThan(1);
+    expect(result.current.can(SCOPE_FLEET_CONTROL)).toBe(true);
+  });
+
+  it("does not re-read when the tab becomes hidden", async () => {
+    clerk.getToken.mockResolvedValue(jwtWith({ scope: "fleet:control" }));
+    renderHook(() => useOperator(), { wrapper });
+    await flush();
+    const calls = clerk.getToken.mock.calls.length;
+
+    const spy = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    spy.mockRestore();
+
+    expect(clerk.getToken.mock.calls.length).toBe(calls);
+  });
+
+  it("never reports a scope on a render where the operator is signed out", async () => {
+    clerk.getToken.mockResolvedValue(jwtWith({ scope: "fleet:control" }));
+    const seen = [];
+    const { rerender } = renderHook(
+      () => {
+        const op = useOperator();
+        seen.push({ signedIn: op.isSignedIn, can: op.can(SCOPE_FLEET_CONTROL) });
+        return op;
+      },
+      { wrapper },
+    );
+    await flush();
+    expect(seen.some((r) => r.signedIn && r.can)).toBe(true);
+
+    clerk.isSignedIn = false;
+    rerender();
+    await flush();
+
+    const signedOut = seen.filter((r) => !r.signedIn);
+    expect(signedOut.length).toBeGreaterThan(0);
+    expect(signedOut.every((r) => r.can === false)).toBe(true);
+  });
 });
