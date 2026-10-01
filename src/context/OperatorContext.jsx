@@ -19,8 +19,13 @@ import { useAuth as useClerkAuth } from "@clerk/clerk-react";
  *    render. The default context value below is the anonymous observer, so a
  *    tree with no provider degrades to "signed out" instead of white-screening.
  * 2. The token decode ran once per consumer (eleven of them, counting the
- *    query hooks). It now runs once per session token, here.
+ *    query hooks). It now runs once, here, and re-runs every minute and on
+ *    window focus so scope changes in Clerk metadata reach an open tab
+ *    without a reload.
  */
+
+/** How often scopes are re-read: about Clerk's session-token lifetime. */
+const SCOPE_REFRESH_MS = 60_000;
 
 export const SCOPE_FLEET_CONTROL = "fleet:control";
 export const SCOPE_PLANNER_ADVISE = "planner:advise";
@@ -59,18 +64,34 @@ export function OperatorProvider({ children }) {
   useEffect(() => {
     let cancelled = false;
     if (!isSignedIn) {
-      setScopes([]);
+      setScopes((prev) => (prev.length === 0 ? prev : []));
       return undefined;
     }
-    getToken()
-      .then((token) => {
-        if (!cancelled) setScopes(scopesFromToken(token));
-      })
-      .catch(() => {
-        if (!cancelled) setScopes([]);
-      });
+    // `getToken()` returns Clerk's cached token or a refreshed one. Keep the
+    // previous state when the scope set is unchanged so consumers don't
+    // re-render on every poll. A failed refresh keeps the last known scopes.
+    const refresh = () =>
+      getToken()
+        .then((token) => {
+          if (cancelled) return;
+          const next = scopesFromToken(token).sort();
+          setScopes((prev) =>
+            prev.length === next.length && prev.every((s, i) => s === next[i]) ? prev : next,
+          );
+        })
+        .catch(() => {});
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    refresh();
+    const timer = setInterval(refresh, SCOPE_REFRESH_MS);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
+      clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [isSignedIn, getToken]);
 
@@ -82,7 +103,7 @@ export function OperatorProvider({ children }) {
       /** Fresh token for an authenticated call. Clerk tokens are short-lived,
        *  so this is called per request rather than cached. */
       getToken,
-      can: (scope) => scopes.includes(scope),
+      can: (scope) => Boolean(isSignedIn) && scopes.includes(scope),
     }),
     [isLoaded, isSignedIn, signOut, getToken, scopes],
   );

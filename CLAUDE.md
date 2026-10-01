@@ -34,7 +34,7 @@ merged: the gate stops the deploy, not the merge.
 | `src/api/{agent,navigation,fleet}Service.js` | One function per backend route | `client`, `config` |
 | `src/api/automationService.js` | automation-service routes **and its own header policy** | `client` (`readResponse`, `withQuery`), `config` |
 | `src/api/healthService.js` | Service list, probeability filter, `checkAll` | `config` |
-| `src/context/OperatorContext.jsx` | Clerk identity, scope decode, the anonymous default | Clerk, react |
+| `src/context/OperatorContext.jsx` | Clerk identity, scope decode (re-read every 60 s and on focus/visibility), the anonymous default | Clerk, react |
 | `src/context/AlertContext.jsx` | Toast stack and its dismiss timers | react |
 | `src/context/SelectionContext.jsx` | Which ship is selected | react |
 | `src/hooks/queryKeys.js` | **Every** react-query cache key | nothing |
