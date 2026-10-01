@@ -23,6 +23,7 @@ import { useAuth as useClerkAuth } from "@clerk/clerk-react";
  */
 
 export const SCOPE_FLEET_CONTROL = "fleet:control";
+export const SCOPE_PLANNER_ADVISE = "planner:advise";
 
 /** What a tree with no OperatorProvider sees: a signed-out observer. */
 export const ANONYMOUS_OPERATOR = {

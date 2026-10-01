@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAlerts } from "../../context/AlertContext";
 import { useKnobsQuery } from "../../hooks/queries";
-import { useOperator, SCOPE_FLEET_CONTROL } from "../../context/OperatorContext";
+import { useOperator, SCOPE_PLANNER_ADVISE } from "../../context/OperatorContext";
 import { queryKeys } from "../../hooks/queryKeys";
 import { automationService } from "../../api/automationService";
 import { QueryState } from "../common/QueryState";
@@ -42,7 +42,7 @@ export function KnobEditor({ onClose, style }) {
 
   // Knob *values* stay public — reading what the planner believes is the most
   // useful thing on this panel and needs no credential. Only writing is gated.
-  const hasControl = can(SCOPE_FLEET_CONTROL);
+  const canAdvise = can(SCOPE_PLANNER_ADVISE);
 
   const setMutation = useMutation({
     mutationFn: async ({ name, value }) => automationService.setKnob(name, value, await getToken()),
@@ -64,10 +64,10 @@ export function KnobEditor({ onClose, style }) {
           ×
         </button>
       </div>
-      {!hasControl && (
+      {!canAdvise && (
         <p className="lcars-knob-editor__gated">
           {isSignedIn
-            ? "This account has no fleet:control scope. Values are read-only."
+            ? "This account has no planner:advise scope. Values are read-only."
             : "Sign in as an operator to change knob values."}
         </p>
       )}
@@ -95,7 +95,7 @@ export function KnobEditor({ onClose, style }) {
                       <KnobRow
                         key={knob.name}
                         knob={knob}
-                        busy={setMutation.isPending || !hasControl}
+                        busy={setMutation.isPending || !canAdvise}
                         onSave={(name, value) => setMutation.mutate({ name, value })}
                       />
                     ))}

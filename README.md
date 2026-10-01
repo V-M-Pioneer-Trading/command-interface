@@ -52,7 +52,7 @@ on screen is polled and thrown away.
 | **agent-service** `:8080` | Agent stats, ship list, contracts, cargo purchase/sale, ship purchase | No — needs a Clerk session |
 | **navigation-service** `:8081` | System waypoints, market and shipyard data | Yes — serves its SQLite cache; a session upgrades it to a live fetch-on-miss |
 | **fleet-service** `:3001` | Orbit, dock, navigate, survey, extract, refuel, transfer, flight mode, contract delivery | No — needs `fleet:control` |
-| **automation-service** `:3003` | Autopilot arm/pause/abort, per-ship task state, planner knobs, metrics rollups, anomaly digest | Reads yes, writes need `fleet:control` |
+| **automation-service** `:3003` | Autopilot arm/pause/abort, per-ship task state, planner knobs, metrics rollups, anomaly digest | Reads yes, autopilot writes need `fleet:control`, knob writes need `planner:advise` |
 | **auth-service** `:8082` | Nothing directly — health probe only. Every authenticated request to the services above is verified through it | Health probe is public |
 | **st-gateway** `:3002` | Nothing directly — health probe only. It is the rate-limited chokepoint the four services above share | Health probe is public |
 | **ai-service** `:3004` | Nothing yet — health probe only, and only in local development | See [known limitations](#known-limitations) |
@@ -67,7 +67,7 @@ One credential, and it is not a login wall.
 | Travels as | `Authorization: Bearer …` |
 | Obtained by | Google sign-in, from the agent bar |
 | Held in | Clerk's SDK, refreshed automatically |
-| Grants | `fleet:control` → every write in the UI |
+| Grants | `fleet:control` → every write except knob edits; `planner:advise` → knob edits |
 
 The SpaceTraders game token used to travel beside it on `X-SpaceTraders-Token`,
 pasted by the operator and kept in `sessionStorage`. It is gone: st-gateway
@@ -150,7 +150,7 @@ hardcoded offsets.
 | **Contracts** | `GET /contracts` | Accept, fulfill | `fleet:control` |
 | **Autopilot** | `GET /autopilot/status` | Arm, pause, abort | `fleet:control` |
 | **Observability** | `GET /metrics/context`, `GET /anomalies/digest` | — | nothing; public |
-| **Knobs** | `GET /planner/knobs` | `PUT /planner/knobs/:name` | reads public, writes `fleet:control` |
+| **Knobs** | `GET /planner/knobs` | `PUT /planner/knobs/:name` | reads public, writes `planner:advise` |
 
 ### Autopilot
 
