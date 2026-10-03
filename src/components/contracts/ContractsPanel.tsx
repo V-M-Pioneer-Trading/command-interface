@@ -21,7 +21,7 @@ function ContractCard({
   onFulfill: (contractId: string) => void;
   busy: boolean;
 }) {
-  const deliverTerms = contract.terms.deliver;
+  const deliverTerms = contract.terms.deliver ?? [];
   const allDelivered = deliverTerms.every((d) => d.unitsFulfilled >= d.unitsRequired);
 
   return (

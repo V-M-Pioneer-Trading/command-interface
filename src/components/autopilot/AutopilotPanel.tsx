@@ -1,3 +1,4 @@
+import { nonEmpty } from "../../utils/nonEmpty";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAlerts } from "../../context/AlertContext";
@@ -27,8 +28,9 @@ export function AutopilotPanel({ onClose, style }: TogglePanelProps) {
   // session in the header is what proves you may arm at all.
   const [mode, setMode] = useState<AutopilotMode>("live");
 
-  const invalidate = () =>
-    void queryClient.invalidateQueries({ queryKey: queryKeys.autopilotStatus() });
+  // Returned, not voided: react-query awaits it, so the mutation stays pending
+  // until the status refetch lands and a second click cannot hit a stale state.
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.autopilotStatus() });
 
   const armMutation = useMutation({
     mutationFn: async () => automationService.arm(mode, await getToken()),
@@ -65,8 +67,8 @@ export function AutopilotPanel({ onClose, style }: TogglePanelProps) {
 
       <div className="lcars-autopilot-panel__status">
         <span className="lcars-autopilot-panel__status-label">STATUS</span>
-        <span className={`lcars-autopilot-panel__status-value status-${currentStatus ?? "unknown"}`}>
-          {isLoading ? "..." : currentStatus?.toUpperCase() ?? "UNKNOWN"}
+        <span className={`lcars-autopilot-panel__status-value status-${nonEmpty(currentStatus) ?? "unknown"}`}>
+          {isLoading ? "..." : nonEmpty(currentStatus?.toUpperCase()) ?? "UNKNOWN"}
         </span>
         {status?.mode && (
           <span className={`lcars-autopilot-panel__mode-value mode-${status.mode}`}>

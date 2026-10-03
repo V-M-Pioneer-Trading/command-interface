@@ -48,8 +48,9 @@ export async function readResponse<T>(
   if (res.status === 204) return null;
   if (!res.ok) throw new ApiError(res.status, await parseErrorMessage(res));
   // Boundary: the body is not validated, `T` is the caller's claim about it.
-  // A 204 yields null above; no route this app calls answers one, so the
-  // non-null overload is the honest signature for them.
+  // A 204 yields null above. The non-null overload is only honest for a route
+  // that never answers one; fleet-service's cooldown does (a ship with none),
+  // so callers of such a route type it `request<T | null>`.
   return (await res.json()) as T;
 }
 

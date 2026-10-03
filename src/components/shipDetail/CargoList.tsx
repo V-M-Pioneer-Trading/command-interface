@@ -53,7 +53,7 @@ export function CargoList({
     <ul className="lcars-cargo-list">
       {inventory.map((item) => {
         const deliverableContracts = activeContracts.filter((c) =>
-          c.terms.deliver.some(
+          (c.terms.deliver ?? []).some(
             (d) =>
               d.tradeSymbol === item.symbol &&
               d.destinationSymbol === currentWaypointSymbol &&

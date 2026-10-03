@@ -91,7 +91,7 @@ export function ShipDetailPanel() {
   const refuelMutation = useMutation({
     mutationFn: async () => fleetService.refuel(selectedSymbol(), await getToken()),
     onSuccess: (res) => {
-      const units = res.data?.transaction?.units;
+      const units = res?.data?.transaction?.units;
       if (units === 0) {
         pushAlert("Tank already full (or ship has no fuel tank) — nothing to refuel", {
           severity: "info",
@@ -144,7 +144,7 @@ export function ShipDetailPanel() {
   const surveyMutation = useMutation({
     mutationFn: async () => fleetService.survey(selectedSymbol(), await getToken()),
     onSuccess: (data) => {
-      addSurveys(data.data?.surveys ?? []);
+      addSurveys(data?.data?.surveys ?? []);
       invalidateShip();
     },
     onError: (err: Error) => pushAlert(err.message || "Survey failed"),
@@ -188,7 +188,7 @@ export function ShipDetailPanel() {
   }
 
   // eslint-disable-next-line react-hooks/purity -- a render-time snapshot of the clock is the point: the cooldown query polls every 5 s and re-renders this panel, and an expired cooldown only re-enables a button. Moving it into state or an effect would add a render and a timer for no visible gain.
-  const hasCooldown = !!cooldown && new Date(cooldown.expiration).getTime() > Date.now();
+  const hasCooldown = !!cooldown?.expiration && new Date(cooldown.expiration).getTime() > Date.now();
   const isOrbiting = status === "IN_ORBIT";
   const otherShipsAtWaypoint = (ships ?? []).filter(
     (s) => s.symbol !== ship.symbol && s.nav.waypointSymbol === ship.nav.waypointSymbol

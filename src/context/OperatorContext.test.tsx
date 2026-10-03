@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { StrictMode, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import {
@@ -209,6 +209,35 @@ describe("OperatorProvider scope refresh", () => {
     expect(result.current.can(SCOPE_FLEET_CONTROL)).toBe(false);
 
     // Signing back in must not surface the late token while the new one is pending.
+    clerk.getToken = vi.fn(() => new Promise(() => undefined));
+    clerk.isSignedIn = true;
+    rerender();
+    await flush();
+    expect(result.current.can(SCOPE_FLEET_CONTROL)).toBe(false);
+  });
+
+  // The scopes read for one account must not outlive its session: after a
+  // sign-out and a sign-in as someone else, can() is false until the new token
+  // has actually been read.
+  const strictWrapper = ({ children }: { children: ReactNode }) => (
+    <StrictMode>
+      <OperatorProvider>{children}</OperatorProvider>
+    </StrictMode>
+  );
+  it.each([
+    ["plain", wrapper],
+    ["StrictMode", strictWrapper],
+  ])("forgets the previous session's scopes on sign-out (%s)", async (_name, w) => {
+    clerk.getToken.mockResolvedValue(jwtWith({ scope: "fleet:control" }));
+    const { result, rerender } = renderHook(() => useOperator(), { wrapper: w });
+    await flush();
+    expect(result.current.can(SCOPE_FLEET_CONTROL)).toBe(true);
+
+    clerk.isSignedIn = false;
+    rerender();
+    await flush();
+
+    // Signed back in, but the new token is still pending.
     clerk.getToken = vi.fn(() => new Promise(() => undefined));
     clerk.isSignedIn = true;
     rerender();

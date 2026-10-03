@@ -77,7 +77,8 @@ export interface Contract {
   fulfilled: boolean;
   terms: {
     payment: { onAccepted: number; onFulfilled: number };
-    deliver: ContractDeliverGood[];
+    /** SpaceTraders marks it optional, and agent-service sends `null` for a contract with nothing to deliver. */
+    deliver: ContractDeliverGood[] | null;
   };
 }
 
@@ -85,7 +86,7 @@ export interface Contract {
 // Upstream SpaceTraders bodies, passed through inside `{ data }`.
 
 export interface CooldownResponse {
-  data: { shipSymbol: string; totalSeconds: number; remainingSeconds: number; expiration: string };
+  data: { shipSymbol: string; totalSeconds: number; remainingSeconds: number; expiration?: string };
 }
 
 // The `{ data }` envelopes below are free-form upstream bodies that fleet-service

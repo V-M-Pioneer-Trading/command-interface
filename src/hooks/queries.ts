@@ -128,7 +128,7 @@ export function useCargoQuery(shipSymbol: string | null | undefined) {
     key: () => queryKeys.cargo(shipSymbol),
     queryFn: (authToken) => fleetService.getCargo(requireSymbol(shipSymbol), authToken),
     enabled: !!shipSymbol,
-    select: (res) => res.data ?? null,
+    select: (res) => res?.data ?? null,
   });
 }
 
