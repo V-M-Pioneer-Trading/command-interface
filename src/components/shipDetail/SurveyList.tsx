@@ -24,7 +24,7 @@ function SurveyCard({ survey, disabled, onExtract }: SurveyActions & { survey: S
       <PillButton
         accent="tan"
         disabled={disabled || expired}
-        onClick={() => onExtract(survey)}
+        onClick={() => { onExtract(survey); }}
       >
         Extract
       </PillButton>

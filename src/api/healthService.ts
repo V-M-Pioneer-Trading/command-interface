@@ -80,7 +80,7 @@ export function probeableServices<T extends { url: string }>(
 
 export const MONITORED_SERVICES = probeableServices(
   SERVICE_DEFINITIONS,
-  globalThis.location?.protocol,
+  globalThis.location.protocol,
 );
 
 // A health check that never settles would stall the 10s poll forever and leave

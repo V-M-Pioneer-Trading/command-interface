@@ -100,7 +100,8 @@ export function buildSystemLayout<W extends LayoutWaypoint>(
   fit: Fit,
   { bodyRadius }: BodyRadiusOptions<LayoutNode<W>> = {},
 ): SystemLayout<W> {
-  const list = Array.isArray(waypoints) ? waypoints : [];
+  // `Array.isArray` narrows a readonly array to `any[]`; the cast puts `W` back.
+  const list: readonly W[] = Array.isArray(waypoints) ? (waypoints as readonly W[]) : [];
   const radiusOf = (node: LayoutNode<W>) => {
     return finiteOr(bodyRadius ? bodyRadius(node) : null, DEFAULT_BODY_RADIUS);
   };
@@ -175,7 +176,7 @@ export function buildSystemLayout<W extends LayoutWaypoint>(
     nodes.push(node);
     index.set(node.symbol, node);
 
-    const kids = childrenOf.get(waypoint.symbol) || [];
+    const kids = childrenOf.get(waypoint.symbol) ?? [];
     if (kids.length === 0) return;
 
     const radius = ringRadius(kids.length, depth);
@@ -304,7 +305,10 @@ export function shipRenderState(
 ): ShipPosition | null {
   if (!nav) return null;
 
-  const destSymbol = nav.route?.destination?.symbol || nav.waypointSymbol;
+  const routeDestination = nav.route?.destination?.symbol;
+  // An empty destination symbol is as good as none, so `??` would not do.
+  let destSymbol = nav.waypointSymbol;
+  if (routeDestination) destSymbol = routeDestination;
   const dest = destSymbol ? index.get(destSymbol) : null;
 
   if (nav.status !== "IN_TRANSIT" || !nav.route) {
@@ -378,9 +382,11 @@ export function placeShips<S extends PlaceableShip>(
     }
 
     const at = ship.nav?.waypointSymbol;
-    const peers = (at === undefined ? undefined : idleByWaypoint.get(at)) || [ship];
+    const peers = (at === undefined ? undefined : idleByWaypoint.get(at)) ?? [ship];
     const slot = Math.max(0, peers.indexOf(ship));
-    const angle = seededAngle(at || ship.symbol) + (slot * Math.PI * 2) / peers.length;
+    let seedKey = ship.symbol;
+    if (at) seedKey = at;
+    const angle = seededAngle(seedKey) + (slot * Math.PI * 2) / peers.length;
     const radius = radiusOf(at);
     placed.push({
       ship,

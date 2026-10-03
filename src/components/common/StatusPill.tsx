@@ -7,6 +7,6 @@ const STATUS_CLASS: Record<string, string> = {
 };
 
 export function StatusPill({ status }: { status: string | undefined }) {
-  const cls = (status !== undefined && STATUS_CLASS[status]) || "status-unknown";
+  const cls = (status === undefined ? undefined : STATUS_CLASS[status]) ?? "status-unknown";
   return <span className={`lcars-status-pill ${cls}`}>{status}</span>;
 }

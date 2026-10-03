@@ -35,7 +35,7 @@ export function useMapViewport({ width, height }: { width: number; height: numbe
   const [view, setView] = useState<View>(IDENTITY_VIEW);
   const [isDragging, setIsDragging] = useState(false);
   const [node, setNode] = useState<SVGSVGElement | null>(null);
-  const svgRef = useCallback((el: SVGSVGElement | null) => setNode(el), []);
+  const svgRef = useCallback((el: SVGSVGElement | null) => { setNode(el); }, []);
 
   // Only the container size is mirrored into a ref. The view itself is always
   // updated functionally — several zoom or pan events can fire between two
@@ -56,10 +56,14 @@ export function useMapViewport({ width, height }: { width: number; height: numbe
     moved: 0,
   });
 
-  // Resizing changes how far the content can be panned.
-  useEffect(() => {
+  // Resizing changes how far the content can be panned. Re-clamped while
+  // rendering, when the size differs from the one last clamped for: React
+  // re-renders at once with the clamped view, before anything is painted.
+  const [clampedFor, setClampedFor] = useState({ width, height });
+  if (clampedFor.width !== width || clampedFor.height !== height) {
+    setClampedFor({ width, height });
     setView((v) => ({ ...v, ...clampPan(v.tx, v.ty, v.scale, width, height) }));
-  }, [width, height]);
+  }
 
   const toLocal = useCallback(
     (clientX: number, clientY: number) => {
@@ -83,7 +87,7 @@ export function useMapViewport({ width, height }: { width: number; height: numbe
       setView((v) => zoomAt(v, x, y, factor, w, h));
     }
     node.addEventListener("wheel", onWheel, { passive: false });
-    return () => node.removeEventListener("wheel", onWheel);
+    return () => { node.removeEventListener("wheel", onWheel); };
   }, [node, toLocal]);
 
   const zoomBy = useCallback((factor: number) => {
@@ -91,7 +95,7 @@ export function useMapViewport({ width, height }: { width: number; height: numbe
     setView((v) => zoomCentered(v, factor, w, h));
   }, []);
 
-  const reset = useCallback(() => setView(IDENTITY_VIEW), []);
+  const reset = useCallback(() => { setView(IDENTITY_VIEW); }, []);
 
   const centerOnPoint = useCallback((x: number, y: number) => {
     const { width: w, height: h } = sizeRef.current;

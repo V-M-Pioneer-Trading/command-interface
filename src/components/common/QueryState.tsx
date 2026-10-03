@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import "./QueryState.css";
+import { nonEmpty } from "../../utils/nonEmpty";
 
 /**
  * The slice of react-query's result this component reads. Structural, so a
@@ -47,7 +48,7 @@ export function QueryState<T>({
   if (isError) {
     return (
       <p className="lcars-query-state lcars-query-state--error">
-        {error?.message || "Request failed"}
+        {nonEmpty(error?.message) ?? "Request failed"}
       </p>
     );
   }

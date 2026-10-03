@@ -16,7 +16,7 @@ export function SpriteDefs({ ids }: { ids: string[] }) {
           <symbol
             key={id}
             id={id}
-            viewBox={`0 0 ${sprite.size} ${sprite.size}`}
+            viewBox={`0 0 ${String(sprite.size)} ${String(sprite.size)}`}
             shapeRendering="crispEdges"
           >
             {sprite.rects.map((r, i) => (

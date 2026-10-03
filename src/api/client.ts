@@ -1,3 +1,4 @@
+import { nonEmpty } from "../utils/nonEmpty";
 export class ApiError extends Error {
   readonly status: number;
 
@@ -18,10 +19,10 @@ async function parseErrorMessage(res: Response): Promise<string> {
   try {
     // Boundary: an error body is whatever the server sent, so this shape is a
     // claim narrowed by hand below, not something parsed.
-    const body: { error?: string | { message?: string } | null; message?: string } = await res.json();
+    const body = (await res.json()) as { error?: string | { message?: string } | null; message?: string };
     const error = body.error;
     const message = typeof error === "object" && error !== null ? error.message : error;
-    return message || body.message || res.statusText;
+    return nonEmpty(message) ?? nonEmpty(body.message) ?? res.statusText;
   } catch {
     return res.statusText;
   }
@@ -47,9 +48,10 @@ export async function readResponse<T>(
   if (res.status === 204) return null;
   if (!res.ok) throw new ApiError(res.status, await parseErrorMessage(res));
   // Boundary: the body is not validated, `T` is the caller's claim about it.
-  // A 204 yields null above; no route this app calls answers one, so the
-  // non-null overload is the honest signature for them.
-  return res.json();
+  // A 204 yields null above. The non-null overload is only honest for a route
+  // that never answers one; fleet-service's cooldown does (a ship with none),
+  // so callers of such a route type it `request<T | null>`.
+  return (await res.json()) as T;
 }
 
 /** Appends only the params that were actually supplied. */
@@ -58,7 +60,7 @@ export function withQuery(
   params?: Record<string, string | number | null | undefined>,
 ): string {
   const search = new URLSearchParams();
-  for (const [key, value] of Object.entries(params || {})) {
+  for (const [key, value] of Object.entries(params ?? {})) {
     if (value !== undefined && value !== null && value !== "") search.set(key, String(value));
   }
   const qs = search.toString();

@@ -124,7 +124,7 @@ export const SHIP_FAMILY_SIZE: Record<ShipFamily, number> = {
 };
 
 export function shipFamily(frameSymbol: string | undefined): ShipFamily {
-  return (frameSymbol !== undefined && FRAME_FAMILY[frameSymbol]) || "utility";
+  return (frameSymbol === undefined ? undefined : FRAME_FAMILY[frameSymbol]) ?? "utility";
 }
 
 export const SHIP_SPRITES: Sprite[] = Object.entries(SHIP_FAMILY_ROWS).map(([family, rows]) =>

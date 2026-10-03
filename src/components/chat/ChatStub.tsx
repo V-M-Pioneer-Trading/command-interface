@@ -54,7 +54,7 @@ export function ChatStub() {
           <input
             type="text"
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => { setDraft(e.target.value); }}
             placeholder="Enter command..."
           />
           <PillButton type="submit" accent="violet" disabled={!draft.trim()}>

@@ -54,7 +54,7 @@ const TRANSPARENT = ".";
  */
 export function at<T>(array: readonly T[], index: number): T {
   const value = array[index];
-  if (value === undefined) throw new RangeError(`index ${index} is outside 0..${array.length - 1}`);
+  if (value === undefined) throw new RangeError(`index ${String(index)} is outside 0..${String(array.length - 1)}`);
   return value;
 }
 
@@ -92,7 +92,7 @@ export function createPalette(): Palette {
   return {
     palette,
     key(color: string, opacity = 1) {
-      const id = `${color}|${opacity}`;
+      const id = `${color}|${String(opacity)}`;
       const existing = seen.get(id);
       if (existing) return existing;
       const char = PALETTE_CHARS[seen.size];
@@ -131,7 +131,7 @@ export function gridToRects(grid: Grid, palette: PaletteMap): Rect[] {
       }
       let w = 1;
       while (x + w < row.length && row[x + w] === char) w += 1;
-      const id = `${x}:${w}:${char}`;
+      const id = `${String(x)}:${String(w)}:${char}`;
       const above = open.get(id);
       if (above && above.y + above.h === y) {
         above.h += 1;

@@ -90,7 +90,7 @@ describe("registry", () => {
   it("picks a stable variant per symbol", () => {
     expect(waypointSpriteId("X1-AA-P1", "PLANET")).toBe(waypointSpriteId("X1-AA-P1", "PLANET"));
     const used = new Set(
-      Array.from({ length: 40 }, (_, i) => waypointSpriteId(`X1-AA-P${i}`, "PLANET")),
+      Array.from({ length: 40 }, (_, i) => waypointSpriteId(`X1-AA-P${String(i)}`, "PLANET")),
     );
     expect(used.size).toBeGreaterThan(1);
   });

@@ -13,6 +13,9 @@ type AuthToken = string | null;
 
 const base = config.fleetServiceUrl;
 
+// These four bodies can be null: a 204 (fleet-service answers one for a ship
+// with no cooldown) reads as null, so their result is typed `| null`.
+
 // One credential: `authToken`, the Clerk session. fleet-service verifies it
 // (fleet:control on every mutation, a signed-in operator on the two reads) and
 // forwards it to st-gateway, which injects the game token and derives queue
@@ -37,13 +40,13 @@ export const fleetService = {
       body: survey,
     }),
   survey: (shipSymbol: string, authToken: AuthToken) =>
-    request<SurveyResponse>(base, `/ships/${shipSymbol}/survey`, { method: "POST", authToken }),
+    request<SurveyResponse | null>(base, `/ships/${shipSymbol}/survey`, { method: "POST", authToken }),
   refuel: (shipSymbol: string, authToken: AuthToken) =>
-    request<RefuelResponse>(base, `/ships/${shipSymbol}/refuel`, { method: "POST", authToken }),
+    request<RefuelResponse | null>(base, `/ships/${shipSymbol}/refuel`, { method: "POST", authToken }),
   getCooldown: (shipSymbol: string, authToken: AuthToken) =>
-    request<CooldownResponse>(base, `/ships/${shipSymbol}/cooldown`, { authToken }),
+    request<CooldownResponse | null>(base, `/ships/${shipSymbol}/cooldown`, { authToken }),
   getCargo: (shipSymbol: string, authToken: AuthToken) =>
-    request<CargoResponse>(base, `/ships/${shipSymbol}/cargo`, { authToken }),
+    request<CargoResponse | null>(base, `/ships/${shipSymbol}/cargo`, { authToken }),
   deliverContract: (
     contractId: string,
     shipSymbol: string,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SelectionProvider } from "../../context/SelectionContext";
+import { SelectionProvider } from "../../context/SelectionProvider";
 import { useAgentQuery, useContractsQuery } from "../../hooks/queries";
 import { systemSymbolFromWaypoint } from "../../utils/spaceTraders";
 import { PANEL_ORDER, computeTogglePanelOffsets, type PanelKey } from "../../utils/togglePanelLayout";
@@ -19,15 +19,15 @@ export function Dashboard() {
   const { data: agent } = useAgentQuery();
   const { data: contracts } = useContractsQuery();
   const [openPanels, setOpenPanels] = useState<Partial<Record<PanelKey, boolean>>>({});
-  const togglePanel = (key: PanelKey) => setOpenPanels((prev) => ({ ...prev, [key]: !prev[key] }));
+  const togglePanel = (key: PanelKey) => { setOpenPanels((prev) => ({ ...prev, [key]: !prev[key] })); };
 
   const systemSymbol = systemSymbolFromWaypoint(agent?.headquarters);
   const activeContractCount = contracts?.filter((c) => c.accepted && !c.fulfilled).length ?? 0;
 
   const offsets = computeTogglePanelOffsets(new Set(PANEL_ORDER.filter((k) => openPanels[k])));
   const panelProps = (key: PanelKey) => ({
-    onClose: () => togglePanel(key),
-    style: { right: `${offsets[key]}rem` },
+    onClose: () => { togglePanel(key); },
+    style: { right: `${String(offsets[key])}rem` },
   });
 
   return (

@@ -14,14 +14,14 @@ export function NavigatePicker({
   isNavigating: boolean;
 }) {
   const { data } = useSystemWaypointsQuery(systemSymbol);
-  const waypoints = data?.data || [];
+  const waypoints = data?.data ?? [];
   const [target, setTarget] = useState("");
 
   return (
     <div className="lcars-navigate-picker">
       <select
         value={target}
-        onChange={(e) => setTarget(e.target.value)}
+        onChange={(e) => { setTarget(e.target.value); }}
         disabled={disabled}
       >
         <option value="">Select waypoint...</option>
@@ -34,7 +34,7 @@ export function NavigatePicker({
       <PillButton
         accent="blue"
         disabled={disabled || !target || isNavigating}
-        onClick={() => onNavigate(target)}
+        onClick={() => { onNavigate(target); }}
       >
         {isNavigating ? "Navigating..." : "Navigate"}
       </PillButton>

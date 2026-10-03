@@ -1,6 +1,7 @@
 import { useCountdown } from "../../hooks/useCountdown";
 import { formatCountdown } from "../../utils/spaceTraders";
 import type { Ship } from "../../api/types";
+import { nonEmpty } from "../../utils/nonEmpty";
 
 const STATUS_LABEL: Record<string, string> = {
   DOCKED: "Docked",
@@ -23,10 +24,10 @@ function Bar({
     <div className="lcars-map-popover__meter">
       <span className="lcars-map-popover__meter-label">{label}</span>
       <span className="lcars-map-popover__meter-track">
-        <span className="lcars-map-popover__meter-fill" style={{ width: `${pct}%` }} />
+        <span className="lcars-map-popover__meter-fill" style={{ width: `${String(pct)}%` }} />
       </span>
       <span className="lcars-map-popover__meter-value">
-        {current ?? 0}/{capacity}
+        {current}/{capacity}
       </span>
     </div>
   );
@@ -38,11 +39,11 @@ function Bar({
  * right is already showing cargo, actions and everything else.
  */
 export function ShipPopover({ ship, onClose }: { ship: Ship; onClose: () => void }) {
-  const arrival = ship.nav?.status === "IN_TRANSIT" ? ship.nav?.route?.arrival : null;
+  const arrival = ship.nav.status === "IN_TRANSIT" ? ship.nav.route.arrival : null;
   const remaining = useCountdown(arrival);
 
-  const status = STATUS_LABEL[ship.nav?.status] || ship.nav?.status || "Unknown";
-  const destination = ship.nav?.route?.destination?.symbol;
+  const status = STATUS_LABEL[ship.nav.status] ?? nonEmpty(ship.nav.status) ?? "Unknown";
+  const destination = ship.nav.route.destination.symbol;
 
   return (
     <div className="lcars-map-popover">
@@ -51,15 +52,15 @@ export function ShipPopover({ ship, onClose }: { ship: Ship; onClose: () => void
       </button>
       <h3>{ship.symbol}</h3>
       <div className="lcars-map-popover__type">
-        {ship.registration?.role || "—"} · {ship.frame?.name || ship.frame?.symbol || "—"}
+        {ship.registration.role || "—"} · {ship.frame.name || ship.frame.symbol || "—"}
       </div>
 
       <dl className="lcars-map-popover__facts">
         <dt>Status</dt>
-        <dd className={`is-${(ship.nav?.status || "").toLowerCase()}`}>{status}</dd>
+        <dd className={`is-${(ship.nav.status || "").toLowerCase()}`}>{status}</dd>
 
-        <dt>{ship.nav?.status === "IN_TRANSIT" ? "Bound for" : "Location"}</dt>
-        <dd>{destination || ship.nav?.waypointSymbol || "—"}</dd>
+        <dt>{ship.nav.status === "IN_TRANSIT" ? "Bound for" : "Location"}</dt>
+        <dd>{destination || ship.nav.waypointSymbol || "—"}</dd>
 
         {arrival && remaining > 0 && (
           <>
@@ -68,7 +69,7 @@ export function ShipPopover({ ship, onClose }: { ship: Ship; onClose: () => void
           </>
         )}
 
-        {ship.nav?.flightMode && (
+        {ship.nav.flightMode && (
           <>
             <dt>Flight mode</dt>
             <dd>{ship.nav.flightMode}</dd>
@@ -76,8 +77,8 @@ export function ShipPopover({ ship, onClose }: { ship: Ship; onClose: () => void
         )}
       </dl>
 
-      <Bar label="Fuel" current={ship.fuel?.current} capacity={ship.fuel?.capacity} />
-      <Bar label="Cargo" current={ship.cargo?.units} capacity={ship.cargo?.capacity} />
+      <Bar label="Fuel" current={ship.fuel.current} capacity={ship.fuel.capacity} />
+      <Bar label="Cargo" current={ship.cargo.units} capacity={ship.cargo.capacity} />
     </div>
   );
 }

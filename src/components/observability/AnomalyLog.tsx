@@ -19,7 +19,7 @@ export function AnomalyLog({ anomalies }: { anomalies: Anomaly[] | undefined }) 
             <div className="lcars-anomaly-log__detail">{formatEventDetail(a.detail)}</div>
           )}
           <span className={`lcars-anomaly-log__delivery ${a.deliveredAt ? "is-delivered" : "is-pending"}`}>
-            {a.deliveredAt ? "Delivered" : `Pending (${a.deliveryAttempts} attempt${a.deliveryAttempts === 1 ? "" : "s"})`}
+            {a.deliveredAt ? "Delivered" : `Pending (${String(a.deliveryAttempts)} attempt${a.deliveryAttempts === 1 ? "" : "s"})`}
           </span>
         </li>
       ))}

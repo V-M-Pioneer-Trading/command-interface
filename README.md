@@ -352,7 +352,7 @@ Things this implementation deliberately does not do, or does not do yet.
   so its URL falls back to `http://localhost:3004`, which an https page cannot
   fetch. Rather than show a permanently red dot about a service it cannot reach,
   the app drops any target it cannot probe from the current page.
-- **No linter or formatter is configured.** Style is by convention and review.
+- **ESLint, no formatter.** `npm run lint` uses the shared `@v-m-pioneer-trading/eslint-config` (React variant, type-aware, `--max-warnings 0`; meta#105), and CI runs it. There is no formatter: style beyond the lint rules is by convention and review.
 - **The map re-renders wholesale while a ship is in transit**, at rAF rate. Fine
   at this scale — ~100 waypoints, <20 ships — and the clock stops entirely when
   nothing is moving, but it is not a budget that survives a much bigger system.

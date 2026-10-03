@@ -10,7 +10,7 @@ import { useCallback, useEffect, useState } from "react";
  */
 export function useElementSize() {
   const [node, setNode] = useState<HTMLElement | null>(null);
-  const ref = useCallback((el: HTMLElement | null) => setNode(el), []);
+  const ref = useCallback((el: HTMLElement | null) => { setNode(el); }, []);
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export function useElementSize() {
     update();
     const observer = new ResizeObserver(update);
     observer.observe(node);
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); };
   }, [node]);
 
   return { ref, node, size };

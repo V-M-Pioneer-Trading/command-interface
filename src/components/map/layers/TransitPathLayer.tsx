@@ -28,7 +28,7 @@ export function TransitPathLayer({ transits, scale }: { transits: Transit[]; sca
           x2={to.x}
           y2={to.y}
           strokeWidth={stroke}
-          strokeDasharray={`${screenToLocal(4, scale)} ${screenToLocal(3, scale)}`}
+          strokeDasharray={`${String(screenToLocal(4, scale))} ${String(screenToLocal(3, scale))}`}
         />
       ))}
     </g>

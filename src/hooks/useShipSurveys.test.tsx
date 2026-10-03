@@ -15,8 +15,8 @@ describe("useShipSurveys", () => {
   it("accumulates surveys found by the same ship", () => {
     const { result } = renderHook(() => useShipSurveys("SHIP-A"));
 
-    act(() => result.current.addSurveys([survey("A1")]));
-    act(() => result.current.addSurveys([survey("A2")]));
+    act(() => { result.current.addSurveys([survey("A1")]); });
+    act(() => { result.current.addSurveys([survey("A2")]); });
 
     expect(result.current.surveys.map((s) => s.signature)).toEqual(["A1", "A2"]);
   });
@@ -30,7 +30,7 @@ describe("useShipSurveys", () => {
       initialProps: { symbol: "SHIP-A" },
     });
 
-    act(() => result.current.addSurveys([survey("A1")]));
+    act(() => { result.current.addSurveys([survey("A1")]); });
     expect(result.current.surveys).toHaveLength(1);
 
     rerender({ symbol: "SHIP-B" });
@@ -43,9 +43,9 @@ describe("useShipSurveys", () => {
       initialProps: { symbol: "SHIP-A" },
     });
 
-    act(() => result.current.addSurveys([survey("A1")]));
+    act(() => { result.current.addSurveys([survey("A1")]); });
     rerender({ symbol: "SHIP-B" });
-    act(() => result.current.addSurveys([survey("B1")]));
+    act(() => { result.current.addSurveys([survey("B1")]); });
 
     expect(result.current.surveys.map((s) => s.signature)).toEqual(["B1"]);
   });

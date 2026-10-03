@@ -21,7 +21,7 @@ const HIT_PAD_SCREEN = 5;
 
 /** Trait/status badges, corner-mounted, only once there's room to read them. */
 function badgesFor(waypoint: Waypoint) {
-  const traits = (waypoint.traits || []).map((t) => t.symbol);
+  const traits = (waypoint.traits ?? []).map((t) => t.symbol);
   const out: { id: string | null; corner: [number, number] }[] = [];
   if (traits.includes("MARKETPLACE")) out.push({ id: traitBadgeId("MARKETPLACE"), corner: [-1, 1] });
   if (traits.includes("SHIPYARD")) out.push({ id: traitBadgeId("SHIPYARD"), corner: [1, 1] });
@@ -56,7 +56,7 @@ export function WaypointLayer({
         const half = size / 2;
         // Circular rather than a square: a square's corners reach 1.41x its
         // half-width, which is exactly where a neighbour tends to be.
-        const budget = node.clearance ?? Infinity;
+        const budget = node.clearance;
         const hitRadius = Math.max(half, Math.min(half + screenToLocal(HIT_PAD_SCREEN, scale), budget));
         const isSelected = node.symbol === selectedSymbol;
 
@@ -64,13 +64,13 @@ export function WaypointLayer({
           <g
             key={node.symbol}
             className="lcars-map__waypoint"
-            transform={`translate(${node.x}, ${node.y})`}
+            transform={`translate(${String(node.x)}, ${String(node.y)})`}
             onClick={(e) => {
               e.stopPropagation();
               onSelect(node);
             }}
-            onPointerEnter={() => onHover(node.symbol)}
-            onPointerLeave={() => onHover(null)}
+            onPointerEnter={() => { onHover(node.symbol); }}
+            onPointerLeave={() => { onHover(null); }}
           >
             <circle r={hitRadius} fill="transparent" />
             {isSelected && (
@@ -79,7 +79,7 @@ export function WaypointLayer({
                 r={half + screenToLocal(5, scale)}
                 fill="none"
                 strokeWidth={screenToLocal(1.25, scale)}
-                strokeDasharray={`${screenToLocal(3, scale)} ${screenToLocal(2.5, scale)}`}
+                strokeDasharray={`${String(screenToLocal(3, scale))} ${String(screenToLocal(2.5, scale))}`}
               />
             )}
             <use
@@ -102,8 +102,8 @@ export function WaypointLayer({
                     y={by - badgeSize / 2}
                     width={badgeSize}
                     height={badgeSize}
-                    onPointerEnter={() => onBadgeHover({ id: badge.id, x: node.x + bx, y: node.y + by })}
-                    onPointerLeave={() => onBadgeHover(null)}
+                    onPointerEnter={() => { onBadgeHover({ id: badge.id, x: node.x + bx, y: node.y + by }); }}
+                    onPointerLeave={() => { onBadgeHover(null); }}
                   />
                 );
               })}

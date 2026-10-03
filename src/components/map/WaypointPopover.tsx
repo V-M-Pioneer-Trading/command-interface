@@ -24,14 +24,14 @@ export function WaypointPopover({ waypoint, onClose }: { waypoint: Waypoint; onC
   const purchaseShipMutation = useMutation({
     mutationFn: async (shipType: string) => agentService.purchaseShip(shipType, waypoint.symbol, await getToken()),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.ships() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.agent() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ships() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.agent() });
       setActiveType(null);
     },
     onError: (err: Error) => pushAlert(err.message || "Purchase failed"),
   });
 
-  const traitSymbols = (waypoint.traits || []).map((t) => t.symbol);
+  const traitSymbols = (waypoint.traits ?? []).map((t) => t.symbol);
   const hasMarket = traitSymbols.includes("MARKETPLACE");
   const hasShipyard = traitSymbols.includes("SHIPYARD");
 
@@ -71,19 +71,19 @@ export function WaypointPopover({ waypoint, onClose }: { waypoint: Waypoint; onC
       )}
       <div className="lcars-waypoint-popover__actions">
         {hasMarket && (
-          <PillButton accent="blue" onClick={loadMarket} disabled={loading === "market"}>
+          <PillButton accent="blue" onClick={() => { void loadMarket(); }} disabled={loading === "market"}>
             {loading === "market" ? "Loading..." : "Market"}
           </PillButton>
         )}
         {hasShipyard && (
-          <PillButton accent="violet" onClick={loadShipyard} disabled={loading === "shipyard"}>
+          <PillButton accent="violet" onClick={() => { void loadShipyard(); }} disabled={loading === "shipyard"}>
             {loading === "shipyard" ? "Loading..." : "Shipyard"}
           </PillButton>
         )}
       </div>
       {detail?.kind === "market" && (
         <ul className="lcars-waypoint-popover__list">
-          {(detail.data.tradeGoods || []).map((g) => (
+          {(detail.data.tradeGoods ?? []).map((g) => (
             <li key={g.symbol}>
               {g.symbol} — sell {g.sellPrice} / buy {g.purchasePrice}
             </li>
@@ -92,8 +92,8 @@ export function WaypointPopover({ waypoint, onClose }: { waypoint: Waypoint; onC
       )}
       {detail?.kind === "shipyard" && (
         <ul className="lcars-waypoint-popover__list">
-          {(detail.data.shipTypes || []).map((s) => {
-            const priced = (detail.data.ships || []).find((sh) => sh.type === s.type);
+          {(detail.data.shipTypes ?? []).map((s) => {
+            const priced = (detail.data.ships ?? []).find((sh) => sh.type === s.type);
             const cost = priced?.purchasePrice;
             const canAfford = agent?.credits === undefined || cost === undefined || agent.credits >= cost;
 
@@ -101,7 +101,7 @@ export function WaypointPopover({ waypoint, onClose }: { waypoint: Waypoint; onC
               <li key={s.type} className="lcars-waypoint-popover__shipyard-row">
                 <div className="lcars-waypoint-popover__shipyard-main">
                   <span>{s.type}</span>
-                  <span>{cost !== undefined ? `${cost}cr` : "—"}</span>
+                  <span>{cost !== undefined ? `${String(cost)}cr` : "—"}</span>
                   <PillButton
                     accent="orange"
                     disabled={cost === undefined || purchaseShipMutation.isPending || !hasControl}
@@ -112,7 +112,7 @@ export function WaypointPopover({ waypoint, onClose }: { waypoint: Waypoint; onC
                           ? "Sign in with fleet:control to buy ships"
                           : undefined
                     }
-                    onClick={() => setActiveType(activeType === s.type ? null : s.type)}
+                    onClick={() => { setActiveType(activeType === s.type ? null : s.type); }}
                   >
                     Buy
                   </PillButton>
@@ -123,9 +123,9 @@ export function WaypointPopover({ waypoint, onClose }: { waypoint: Waypoint; onC
                       accent="red"
                       disabled={!canAfford || purchaseShipMutation.isPending || !hasControl}
                       title={!canAfford ? "Not enough credits" : undefined}
-                      onClick={() => purchaseShipMutation.mutate(s.type)}
+                      onClick={() => { purchaseShipMutation.mutate(s.type); }}
                     >
-                      {purchaseShipMutation.isPending ? "Purchasing..." : `Confirm (${cost}cr)`}
+                      {purchaseShipMutation.isPending ? "Purchasing..." : `Confirm (${String(cost)}cr)`}
                     </PillButton>
                   </div>
                 )}

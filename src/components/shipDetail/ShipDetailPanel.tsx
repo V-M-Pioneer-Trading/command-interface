@@ -39,15 +39,15 @@ export function ShipDetailPanel() {
 
   const { data: cooldownResp } = useCooldownQuery(selectedShipSymbol);
   const { data: cargo } = useCargoQuery(selectedShipSymbol);
-  const { data: waypointData } = useSystemWaypointsQuery(ship?.nav?.systemSymbol);
+  const { data: waypointData } = useSystemWaypointsQuery(ship?.nav.systemSymbol);
   const { data: agent } = useAgentQuery();
   const cooldown = cooldownResp?.data;
 
-  const status = ship?.nav?.status;
+  const status = ship?.nav.status;
   const isDocked = status === "DOCKED";
-  const currentWaypoint = waypointData?.data?.find((w) => w.symbol === ship?.nav?.waypointSymbol);
+  const currentWaypoint = waypointData?.data?.find((w) => w.symbol === ship?.nav.waypointSymbol);
   const hasMarketplace = !!currentWaypoint?.traits?.some((t) => t.symbol === "MARKETPLACE");
-  const { data: market } = useMarketQuery(ship?.nav?.waypointSymbol, {
+  const { data: market } = useMarketQuery(ship?.nav.waypointSymbol, {
     enabled: isDocked && hasMarketplace,
   });
 
@@ -65,9 +65,9 @@ export function ShipDetailPanel() {
   };
 
   const invalidateShip = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.ships() });
-    queryClient.invalidateQueries({ queryKey: queryKeys.cooldown(selectedShipSymbol) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.cargo(selectedShipSymbol) });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.ships() });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.cooldown(selectedShipSymbol) });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.cargo(selectedShipSymbol) });
   };
 
   const onActionError = (err: Error) => pushAlert(err.message || "Action failed");
@@ -96,11 +96,11 @@ export function ShipDetailPanel() {
         pushAlert("Tank already full (or ship has no fuel tank) — nothing to refuel", {
           severity: "info",
         });
-      } else if (units > 0) {
-        pushAlert(`Refueled ${units} units`, { severity: "info", timeoutMs: 3000 });
+      } else if (units !== undefined && units > 0) {
+        pushAlert(`Refueled ${String(units)} units`, { severity: "info", timeoutMs: 3000 });
       }
       invalidateShip();
-      queryClient.invalidateQueries({ queryKey: queryKeys.agent() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.agent() });
     },
     onError: onActionError,
   });
@@ -120,7 +120,7 @@ export function ShipDetailPanel() {
       agentService.sell(selectedSymbol(), symbol, units, await getToken()),
     onSuccess: () => {
       invalidateShip();
-      queryClient.invalidateQueries({ queryKey: queryKeys.agent() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.agent() });
     },
     onError: onActionError,
   });
@@ -137,14 +137,14 @@ export function ShipDetailPanel() {
       fleetService.deliverContract(contractId, selectedSymbol(), symbol, units, await getToken()),
     onSuccess: () => {
       invalidateShip();
-      queryClient.invalidateQueries({ queryKey: queryKeys.contracts() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.contracts() });
     },
     onError: (err: Error) => pushAlert(err.message || "Delivery failed"),
   });
   const surveyMutation = useMutation({
     mutationFn: async () => fleetService.survey(selectedSymbol(), await getToken()),
     onSuccess: (data) => {
-      addSurveys(data?.data?.surveys || []);
+      addSurveys(data?.data?.surveys ?? []);
       invalidateShip();
     },
     onError: (err: Error) => pushAlert(err.message || "Survey failed"),
@@ -160,7 +160,7 @@ export function ShipDetailPanel() {
       agentService.purchaseCargo(selectedSymbol(), symbol, units, await getToken()),
     onSuccess: () => {
       invalidateShip();
-      queryClient.invalidateQueries({ queryKey: queryKeys.agent() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.agent() });
     },
     onError: onActionError,
   });
@@ -187,10 +187,11 @@ export function ShipDetailPanel() {
     );
   }
 
-  const hasCooldown = !!cooldown && new Date(cooldown.expiration).getTime() > Date.now();
+  // eslint-disable-next-line react-hooks/purity -- a render-time snapshot of the clock is the point: the cooldown query polls every 5 s and re-renders this panel, and an expired cooldown only re-enables a button. Moving it into state or an effect would add a render and a timer for no visible gain.
+  const hasCooldown = !!cooldown?.expiration && new Date(cooldown.expiration).getTime() > Date.now();
   const isOrbiting = status === "IN_ORBIT";
-  const otherShipsAtWaypoint = (ships || []).filter(
-    (s) => s.symbol !== ship.symbol && s.nav?.waypointSymbol === ship.nav?.waypointSymbol
+  const otherShipsAtWaypoint = (ships ?? []).filter(
+    (s) => s.symbol !== ship.symbol && s.nav.waypointSymbol === ship.nav.waypointSymbol
   );
   const anyMutating =
     orbitMutation.isPending ||
@@ -210,13 +211,13 @@ export function ShipDetailPanel() {
     <Panel title={ship.symbol} accent="tan" className="lcars-ship-detail">
       <div className="lcars-ship-detail__status-row">
         <StatusPill status={status} />
-        <span>{ship.nav?.waypointSymbol}</span>
+        <span>{ship.nav.waypointSymbol}</span>
         <CooldownTimer cooldown={cooldown} />
         <TransitTimer nav={ship.nav} />
         <select
-          value={ship.nav?.flightMode || "CRUISE"}
+          value={ship.nav.flightMode || "CRUISE"}
           disabled={anyMutating || !hasControl}
-          onChange={(e) => flightModeMutation.mutate(e.target.value)}
+          onChange={(e) => { flightModeMutation.mutate(e.target.value); }}
         >
           {FLIGHT_MODES.map((mode) => (
             <option key={mode} value={mode}>
@@ -227,9 +228,9 @@ export function ShipDetailPanel() {
       </div>
 
       <div className="lcars-ship-detail__stats">
-        <span>FUEL {ship.fuel?.current}/{ship.fuel?.capacity}</span>
+        <span>FUEL {ship.fuel.current}/{ship.fuel.capacity}</span>
         <span>
-          CARGO {cargo?.units ?? ship.cargo?.units}/{cargo?.capacity ?? ship.cargo?.capacity}
+          CARGO {cargo?.units ?? ship.cargo.units}/{cargo?.capacity ?? ship.cargo.capacity}
         </span>
       </div>
 
@@ -237,46 +238,46 @@ export function ShipDetailPanel() {
         <PillButton
           accent="blue"
           disabled={!isDocked || anyMutating || !hasControl}
-          onClick={() => orbitMutation.mutate()}
+          onClick={() => { orbitMutation.mutate(); }}
         >
           Orbit
         </PillButton>
         <PillButton
           accent="green"
           disabled={!isOrbiting || anyMutating || !hasControl}
-          onClick={() => dockMutation.mutate()}
+          onClick={() => { dockMutation.mutate(); }}
         >
           Dock
         </PillButton>
         <PillButton
           accent="orange"
-          disabled={!isDocked || anyMutating || ship.fuel?.capacity === 0 || !hasControl}
-          title={ship.fuel?.capacity === 0 ? "This ship has no fuel tank" : undefined}
-          onClick={() => refuelMutation.mutate()}
+          disabled={!isDocked || anyMutating || ship.fuel.capacity === 0 || !hasControl}
+          title={ship.fuel.capacity === 0 ? "This ship has no fuel tank" : undefined}
+          onClick={() => { refuelMutation.mutate(); }}
         >
           Refuel
         </PillButton>
       </div>
 
       <NavigatePicker
-        systemSymbol={ship.nav?.systemSymbol}
+        systemSymbol={ship.nav.systemSymbol}
         disabled={!isOrbiting || anyMutating || !hasControl}
         isNavigating={navigateMutation.isPending}
-        onNavigate={(waypointSymbol) => navigateMutation.mutate(waypointSymbol)}
+        onNavigate={(waypointSymbol) => { navigateMutation.mutate(waypointSymbol); }}
       />
 
       <div className="lcars-ship-detail__actions">
         <PillButton
           accent="tan"
           disabled={!isOrbiting || hasCooldown || anyMutating || !hasControl}
-          onClick={() => surveyMutation.mutate()}
+          onClick={() => { surveyMutation.mutate(); }}
         >
           Survey
         </PillButton>
         <PillButton
           accent="violet"
           disabled={!isOrbiting || hasCooldown || anyMutating || !hasControl}
-          onClick={() => extractMutation.mutate()}
+          onClick={() => { extractMutation.mutate(); }}
         >
           Extract
         </PillButton>
@@ -285,7 +286,7 @@ export function ShipDetailPanel() {
       <SurveyList
         surveys={surveys}
         disabled={!isOrbiting || hasCooldown || anyMutating || !hasControl}
-        onExtract={(survey) => extractSurveyMutation.mutate(survey)}
+        onExtract={(survey) => { extractSurveyMutation.mutate(survey); }}
       />
 
       <h3 className="lcars-ship-detail__subheading">Cargo</h3>
@@ -293,17 +294,17 @@ export function ShipDetailPanel() {
         cargo={cargo}
         docked={isDocked}
         hasMarketplace={hasMarketplace}
-        currentWaypointSymbol={ship.nav?.waypointSymbol}
+        currentWaypointSymbol={ship.nav.waypointSymbol}
         contracts={contracts}
         otherShipsAtWaypoint={otherShipsAtWaypoint}
         busy={anyMutating || !hasControl}
-        onSell={(symbol, units) => sellMutation.mutate({ symbol, units })}
-        onDeliver={(contractId, symbol, units) =>
-          deliverMutation.mutate({ contractId, symbol, units })
-        }
-        onTransfer={(targetShipSymbol, symbol, units) =>
-          transferMutation.mutate({ targetShipSymbol, symbol, units })
-        }
+        onSell={(symbol, units) => { sellMutation.mutate({ symbol, units }); }}
+        onDeliver={(contractId, symbol, units) => {
+          deliverMutation.mutate({ contractId, symbol, units });
+        }}
+        onTransfer={(targetShipSymbol, symbol, units) => {
+          transferMutation.mutate({ targetShipSymbol, symbol, units });
+        }}
       />
 
       {isDocked && hasMarketplace && (
@@ -314,7 +315,7 @@ export function ShipDetailPanel() {
             docked={isDocked}
             credits={agent?.credits}
             busy={anyMutating || !hasControl}
-            onBuy={(symbol, units) => purchaseMutation.mutate({ symbol, units })}
+            onBuy={(symbol, units) => { purchaseMutation.mutate({ symbol, units }); }}
           />
         </>
       )}

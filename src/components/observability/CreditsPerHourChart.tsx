@@ -29,7 +29,7 @@ export function CreditsPerHourChart({ rollups }: { rollups: MetricsRollup[] | un
 
   // Rollups arrive newest-first from the API; the chart reads left-to-right
   // chronologically.
-  const chronological = useMemo(() => [...(rollups || [])].reverse(), [rollups]);
+  const chronological = useMemo(() => [...(rollups ?? [])].reverse(), [rollups]);
 
   const plot = useMemo(() => {
     const drawWidth = VIEW_WIDTH - PADDING.left - PADDING.right;
@@ -59,7 +59,7 @@ export function CreditsPerHourChart({ rollups }: { rollups: MetricsRollup[] | un
     return <div className="lcars-credits-chart__empty">No rollups yet</div>;
   }
 
-  const linePath = plot.points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
+  const linePath = plot.points.map((p, i) => `${i === 0 ? "M" : "L"}${String(p.x)},${String(p.y)}`).join(" ");
   const lastPoint = plot.points.at(-1);
   const hovered = hoverIndex !== null ? plot.points[hoverIndex] : null;
 
@@ -82,10 +82,10 @@ export function CreditsPerHourChart({ rollups }: { rollups: MetricsRollup[] | un
   return (
     <div className="lcars-credits-chart">
       <svg
-        viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+        viewBox={`0 0 ${String(VIEW_WIDTH)} ${String(VIEW_HEIGHT)}`}
         className="lcars-credits-chart__svg"
         onMouseMove={handleMove}
-        onMouseLeave={() => setHoverIndex(null)}
+        onMouseLeave={() => { setHoverIndex(null); }}
       >
         {/* Recessive gridlines at max/zero/min */}
         <line x1={PADDING.left} x2={VIEW_WIDTH - PADDING.right} y1={PADDING.top} y2={PADDING.top} className="lcars-credits-chart__gridline" />
@@ -138,7 +138,7 @@ export function CreditsPerHourChart({ rollups }: { rollups: MetricsRollup[] | un
         {hovered && <circle cx={hovered.x} cy={hovered.y} r={5} className="lcars-credits-chart__hover-dot" />}
       </svg>
       {hovered && (
-        <div className="lcars-credits-chart__tooltip" style={{ left: `${(hovered.x / VIEW_WIDTH) * 100}%` }}>
+        <div className="lcars-credits-chart__tooltip" style={{ left: `${String((hovered.x / VIEW_WIDTH) * 100)}%` }}>
           <strong>{formatCredits(hovered.rollup.creditsPerHour)}/hr</strong>
           <span>{formatTime(hovered.rollup.windowEnd)}</span>
         </div>

@@ -49,11 +49,11 @@ export function KnobEditor({ onClose, style }: TogglePanelProps) {
   const setMutation = useMutation({
     mutationFn: async ({ name, value }: { name: string; value: number }) => automationService.setKnob(name, value, await getToken()),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.knobs() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.knobs() });
       // A successful edit is logged as a knob_changed event server-side —
       // refresh the event feed so it shows up without waiting for its own poll.
       // The bare prefix matches every parameterised metricsContext key.
-      queryClient.invalidateQueries({ queryKey: queryKeys.metricsContext() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.metricsContext() });
     },
     onError: (err: Error) => pushAlert(err.message || "Failed to update knob"),
   });
@@ -98,7 +98,7 @@ export function KnobEditor({ onClose, style }: TogglePanelProps) {
                         key={knob.name}
                         knob={knob}
                         busy={setMutation.isPending || !canAdvise}
-                        onSave={(name, value) => setMutation.mutate({ name, value })}
+                        onSave={(name, value) => { setMutation.mutate({ name, value }); }}
                       />
                     ))}
                   </ul>

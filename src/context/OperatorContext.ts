@@ -1,5 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { createContext, useContext } from "react";
 
 /**
  * The signed-in operator's identity and permissions, for deciding what the UI
@@ -24,9 +23,6 @@ import { useAuth as useClerkAuth } from "@clerk/clerk-react";
  *    without a reload.
  */
 
-/** How often scopes are re-read: about Clerk's session-token lifetime. */
-const SCOPE_REFRESH_MS = 60_000;
-
 export const SCOPE_FLEET_CONTROL = "fleet:control";
 export const SCOPE_PLANNER_ADVISE = "planner:advise";
 
@@ -43,8 +39,8 @@ export interface Operator {
 export const ANONYMOUS_OPERATOR: Operator = {
   isLoaded: true,
   isSignedIn: false,
-  signOut: async () => {},
-  getToken: async () => null,
+  signOut: () => Promise.resolve(),
+  getToken: () => Promise.resolve(null),
   can: () => false,
 };
 
@@ -57,7 +53,7 @@ export function scopesFromToken(token: string | null | undefined): string[] {
     const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
     const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
     // Boundary: unverified JSON from the token, narrowed by hand below.
-    const claims: { scope?: unknown } = JSON.parse(atob(padded));
+    const claims = JSON.parse(atob(padded)) as { scope?: unknown };
     const scope = claims.scope;
     if (typeof scope === "string") return scope.split(/\s+/).filter(Boolean);
     if (Array.isArray(scope)) return scope.filter((s): s is string => typeof s === "string");
@@ -65,60 +61,6 @@ export function scopesFromToken(token: string | null | undefined): string[] {
   } catch {
     return [];
   }
-}
-
-export function OperatorProvider({ children }: { children: ReactNode }) {
-  const { isLoaded, isSignedIn, getToken, signOut } = useClerkAuth();
-  const [scopes, setScopes] = useState<string[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!isSignedIn) {
-      setScopes((prev) => (prev.length === 0 ? prev : []));
-      return undefined;
-    }
-    // `getToken()` returns Clerk's cached token or a refreshed one. Keep the
-    // previous state when the scope set is unchanged so consumers don't
-    // re-render on every poll. A failed refresh keeps the last known scopes.
-    const refresh = () =>
-      getToken()
-        .then((token) => {
-          if (cancelled) return;
-          const next = scopesFromToken(token).sort();
-          setScopes((prev) =>
-            prev.length === next.length && prev.every((s, i) => s === next[i]) ? prev : next,
-          );
-        })
-        .catch(() => {});
-    const onVisible = () => {
-      if (document.visibilityState === "visible") refresh();
-    };
-    refresh();
-    const timer = setInterval(refresh, SCOPE_REFRESH_MS);
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [isSignedIn, getToken]);
-
-  const value = useMemo(
-    () => ({
-      isLoaded,
-      isSignedIn: Boolean(isSignedIn),
-      signOut,
-      /** Fresh token for an authenticated call. Clerk tokens are short-lived,
-       *  so this is called per request rather than cached. */
-      getToken,
-      can: (scope: string) => Boolean(isSignedIn) && scopes.includes(scope),
-    }),
-    [isLoaded, isSignedIn, signOut, getToken, scopes],
-  );
-
-  return <OperatorContext.Provider value={value}>{children}</OperatorContext.Provider>;
 }
 
 export function useOperator() {
