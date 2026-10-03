@@ -66,8 +66,17 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      # always(): a type error must not hide a test failure (or vice versa). The
-      # job still fails if either step does, so the deploy gate is unchanged.
+      # Shared ESLint config (meta#105), type-aware, --max-warnings 0. A step in
+      # this job rather than a job of its own, so the required checks and the
+      # deploy's `needs: test` are unchanged.
+      #
+      # always(): a type error must not hide a lint or test failure (or vice
+      # versa). The job still fails if any step does, so the deploy gate is
+      # unchanged.
+      - name: Lint
+        if: always()
+        run: npm run lint
+
       - name: Run tests
         if: always()
         run: npm test
