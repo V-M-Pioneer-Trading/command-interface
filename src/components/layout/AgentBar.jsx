@@ -5,7 +5,7 @@ import { SystemStatus } from "./SystemStatus";
 import { OperatorBadge } from "../operator/OperatorBadge";
 import "./AgentBar.css";
 
-// Keyed by the panel keys in utils/togglePanelLayout.js, which is what decides
+// Keyed by the panel keys in utils/togglePanelLayout.ts, which is what decides
 // where each open panel is drawn — a button here with no entry there would open
 // a panel at an undefined offset.
 const PANEL_BUTTONS = {
