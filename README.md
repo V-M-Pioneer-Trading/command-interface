@@ -107,7 +107,7 @@ npm test         # vitest, 82 tests
 npm run build    # static bundle into dist/
 ```
 
-Port 3000 is pinned in `vite.config.js` because it is the backends' default CORS
+Port 3000 is pinned in `vite.config.ts` because it is the backends' default CORS
 origin. Copy `.env.example` to `.env.local` to point at non-default URLs.
 
 | Variable | Default | Notes |
@@ -139,7 +139,7 @@ The dashboard is one screen: an agent bar across the top, three columns beneath
 it — fleet list, system map, ship detail — and the command-console stub below.
 Four overlay panels toggle in from the agent bar on top of that.
 
-All four overlay panels can be open at once. `src/utils/togglePanelLayout.js`
+All four overlay panels can be open at once. `src/utils/togglePanelLayout.ts`
 computes each open panel's `right` offset from *only the panels currently open*,
 so one open panel always sits at the base offset no matter how many panel types
 exist. Adding a fifth means adding one entry there, not re-deriving four
@@ -337,7 +337,7 @@ above that — every hit-testing and overlap number quoted here was measured the
 Things this implementation deliberately does not do, or does not do yet.
 
 - **One system.** The map draws the agent's headquarters system and nothing else.
-  `src/map/viewport.js` is deliberately free of any system knowledge so a future
+  `src/map/viewport.ts` is deliberately free of any system knowledge so a future
   sector map can reuse it, but no such map exists.
 - **Anonymous visitors see the map, not the fleet.** navigation-service serves
   waypoints without credentials, but agent-service holds no game credential of

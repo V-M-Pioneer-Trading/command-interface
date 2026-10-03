@@ -11,15 +11,16 @@ stay true, and what breaks if you change it.
 | `npm install` | Deps. No postinstall, no codegen, no native builds. |
 | `npm run dev` | Vite dev server on port 3000 — **pinned**, `strictPort: true`, because it is the backends' default CORS origin. `/dev-map.html` is served alongside `/`. |
 | `npm test` | vitest, single run, jsdom. |
+| `npm run typecheck` | `tsc --noEmit`. Vite compiles with esbuild, which strips types without checking them, so this is the only thing that does. |
 | `npx vitest` | Watch mode. |
 | `npx vitest run src/map` | One directory. |
 | `npm run build` | Static bundle to `dist/`. Only `index.html` is an entry, so `dev-map.html` never ships. |
 | `npm run preview` | Serve the built bundle. |
 
-There is no linter, formatter or typechecker. CI (`.github/workflows/deploy.yml`)
-runs `npm test` on every pull request and on every push to `main`, and the S3
-deploy `needs` it, so a broken test blocks the deploy rather than reaching
-production. Both jobs run Node 24 and install with `npm ci`; jsdom 30 will not load
+There is no linter or formatter. CI (`.github/workflows/deploy.yml`) runs
+`npm run typecheck` and `npm test` on every pull request and on every push to
+`main`, and the S3 deploy `needs` it, so a type error or a broken test blocks
+the deploy rather than reaching production. Both jobs run Node 24 and install with `npm ci`; jsdom 30 will not load
 below Node 22.22. `main` has no branch protection, so a red pull request can still be
 merged: the gate stops the deploy, not the merge.
 
@@ -27,36 +28,37 @@ merged: the gate stops the deploy, not the merge.
 
 | Path | Owns | Depends on |
 | --- | --- | --- |
-| `src/main.jsx` | Root render, provider nesting, the missing-Clerk-key screen | Clerk, react-query, all four contexts |
-| `src/App.jsx` | Nothing but rendering `Dashboard` | — |
-| `src/api/config.js` | Env vars → service base URLs, with localhost defaults | `import.meta.env` |
-| `src/api/client.js` | `ApiError`, error-body parsing, `readResponse`, `withQuery`, `request` | nothing |
-| `src/api/{agent,navigation,fleet}Service.js` | One function per backend route | `client`, `config` |
-| `src/api/automationService.js` | automation-service routes **and its own header policy** | `client` (`readResponse`, `withQuery`), `config` |
-| `src/api/healthService.js` | Service list, probeability filter, `checkAll` | `config` |
-| `src/context/OperatorContext.jsx` | Clerk identity, scope decode (re-read every 60 s and on focus/visibility), the anonymous default | Clerk, react |
-| `src/context/AlertContext.jsx` | Toast stack and its dismiss timers | react |
-| `src/context/SelectionContext.jsx` | Which ship is selected | react |
-| `src/hooks/queryKeys.js` | **Every** react-query cache key | nothing |
-| `src/hooks/queries.js` | Every query hook, poll intervals, the gated-read rule | api clients, `OperatorContext`, `queryKeys` |
-| `src/hooks/useShipSurveys.js` | Surveys, scoped to the ship that found them | react |
-| `src/hooks/useMapViewport.js` | React binding for viewport math: wheel, drag, keyboard, resize | `map/viewport` |
-| `src/hooks/useElementSize.js` | Live content-box size via `ResizeObserver` | react |
-| `src/hooks/useAnimationClock.js` | One rAF clock for the whole map, stopped when idle | react |
-| `src/hooks/useCountdown.js` | 1s ticking remainder from an ISO expiry | react |
-| `src/map/rand.js` | `hash32` (FNV-1a) and `mulberry32` — the map's determinism | nothing |
-| `src/map/viewport.js` | Zoom/pan/fit/project math and the scale constants | nothing |
-| `src/map/systemLayout.js` | Waypoints → positioned nodes, orbit rings, clearance, ship placement | `map/rand`, `map/viewport` |
-| `src/map/sprites/pixel.js` | Grids, palettes, grid→rect compilation, noise, shading | nothing |
-| `src/map/sprites/generators.js` | Procedural body/structure generators | `pixel`, `rand` |
-| `src/map/sprites/ships.js` | Hand-drawn ship + badge sprites, frame→family map, badge labels | `pixel` |
-| `src/map/sprites/registry.js` | Compiled sprite registry, id scheme, per-type base sizes | `pixel`, `rand`, `generators`, `ships` |
-| `src/components/common/QueryState.jsx` | The four things a panel says when it has no data | nothing |
+| `src/main.tsx` | Root render, provider nesting, the missing-Clerk-key screen | Clerk, react-query, all four contexts |
+| `src/App.tsx` | Nothing but rendering `Dashboard` | — |
+| `src/api/config.ts` | Env vars → service base URLs, with localhost defaults | `import.meta.env` |
+| `src/api/types.ts` | Hand-written types for the backend bodies this UI reads (a subset, not the full schemas) | nothing |
+| `src/api/client.ts` | `ApiError`, error-body parsing, `readResponse`, `withQuery`, `request` | nothing |
+| `src/api/{agent,navigation,fleet}Service.ts` | One function per backend route | `client`, `config` |
+| `src/api/automationService.ts` | automation-service routes **and its own header policy** | `client` (`readResponse`, `withQuery`), `config` |
+| `src/api/healthService.ts` | Service list, probeability filter, `checkAll` | `config` |
+| `src/context/OperatorContext.tsx` | Clerk identity, scope decode (re-read every 60 s and on focus/visibility), the anonymous default | Clerk, react |
+| `src/context/AlertContext.tsx` | Toast stack and its dismiss timers | react |
+| `src/context/SelectionContext.tsx` | Which ship is selected | react |
+| `src/hooks/queryKeys.ts` | **Every** react-query cache key | nothing |
+| `src/hooks/queries.ts` | Every query hook, poll intervals, the gated-read rule | api clients, `OperatorContext`, `queryKeys` |
+| `src/hooks/useShipSurveys.ts` | Surveys, scoped to the ship that found them | react |
+| `src/hooks/useMapViewport.ts` | React binding for viewport math: wheel, drag, keyboard, resize | `map/viewport` |
+| `src/hooks/useElementSize.ts` | Live content-box size via `ResizeObserver` | react |
+| `src/hooks/useAnimationClock.ts` | One rAF clock for the whole map, stopped when idle | react |
+| `src/hooks/useCountdown.ts` | 1s ticking remainder from an ISO expiry | react |
+| `src/map/rand.ts` | `hash32` (FNV-1a) and `mulberry32` — the map's determinism | nothing |
+| `src/map/viewport.ts` | Zoom/pan/fit/project math and the scale constants | nothing |
+| `src/map/systemLayout.ts` | Waypoints → positioned nodes, orbit rings, clearance, ship placement | `map/rand`, `map/viewport` |
+| `src/map/sprites/pixel.ts` | Grids, palettes, grid→rect compilation, noise, shading | nothing |
+| `src/map/sprites/generators.ts` | Procedural body/structure generators | `pixel`, `rand` |
+| `src/map/sprites/ships.ts` | Hand-drawn ship + badge sprites, frame→family map, badge labels | `pixel` |
+| `src/map/sprites/registry.ts` | Compiled sprite registry, id scheme, per-type base sizes | `pixel`, `rand`, `generators`, `ships` |
+| `src/components/common/QueryState.tsx` | The four things a panel says when it has no data | nothing |
 | `src/components/map/*` | Thin SVG layers that draw what `src/map` produced | `src/map`, hooks |
-| `src/utils/togglePanelLayout.js` | Panel order, widths, computed `right` offsets | nothing |
-| `src/utils/eventLog.js` | Formatting for event/anomaly `detail` blobs | nothing |
-| `src/utils/spaceTraders.js` | Symbol parsing, countdown formatting | nothing |
-| `src/devMap.jsx` | Dev-only harness: generated system, stubbed `fetch`, stub operator | everything below it |
+| `src/utils/togglePanelLayout.ts` | Panel order, widths, computed `right` offsets | nothing |
+| `src/utils/eventLog.ts` | Formatting for event/anomaly `detail` blobs | nothing |
+| `src/utils/spaceTraders.ts` | Symbol parsing, countdown formatting | nothing |
+| `src/devMap.tsx` | Dev-only harness: generated system, stubbed `fetch`, stub operator | everything below it |
 
 ### Dependency rules
 
@@ -65,18 +67,18 @@ These hold today. Breaking one is a design change, not a refactor.
 1. **`src/map/**` imports nothing outside `src/map/**`.** No React, no hooks, no
    API clients, no components. It is pure math and data, which is what makes it
    testable without a DOM and reusable by a future sector map.
-2. **`src/map/systemLayout.js` knows no sprite metrics.** A body's drawn radius
-   arrives as an injected `bodyRadius(node)` callback. Importing `registry.js`
+2. **`src/map/systemLayout.ts` knows no sprite metrics.** A body's drawn radius
+   arrives as an injected `bodyRadius(node)` callback. Importing `registry.ts`
    here would make the layout depend on the art.
 3. **`src/api/**` imports no React and no context.** Credentials are arguments.
-4. **Only `main.jsx`, `context/OperatorContext.jsx` and
-   `components/operator/OperatorBadge.jsx` may import `@clerk/clerk-react`.**
+4. **Only `main.tsx`, `context/OperatorContext.tsx` and
+   `components/operator/OperatorBadge.tsx` may import `@clerk/clerk-react`.**
    Everything else goes through `useOperator()`. This is what lets a tree with
    no Clerk provider — `dev-map.html`, or a Clerk outage — render as an
    anonymous observer instead of throwing.
 5. **Components do not take credentials as props.** The Clerk session is read
    from context at the point of use.
-6. **Cache keys come from `hooks/queryKeys.js`.** Never write an array literal
+6. **Cache keys come from `hooks/queryKeys.ts`.** Never write an array literal
    into `useQuery` or `invalidateQueries`.
 
 ## Invariants
@@ -131,7 +133,7 @@ Stated so you can recognise a violation.
   `undefined` = the query never ran, `null` = the route 404'd because the feature
   is not enabled on this deployment, a rejection = it failed. Rendering any of
   them as the panel's own "none found" line states as fact something nobody
-  checked. `components/common/QueryState.jsx` is the one place that decides.
+  checked. `components/common/QueryState.tsx` is the one place that decides.
 - Cache keys carry no credential. They used to include the pasted game token so
   that changing it could not show the previous agent's ships; the Clerk session
   that replaced it rotates on its own schedule, and keying on a rotating value
@@ -140,19 +142,36 @@ Stated so you can recognise a violation.
   send no headers at all; adding a blanket custom header (`X-Priority`, say)
   turns them into preflighted requests and needs a matching
   `Access-Control-Allow-Headers` on that service first. This is why
-  `automationService.js` does not use `client.js`'s `request`.
+  `automationService.ts` does not use `client.ts`'s `request`.
+
+**Types**
+
+- `tsconfig.json` is `strict` plus `noUncheckedIndexedAccess` and
+  `exactOptionalPropertyTypes`, the same flags as ts-introspection-client. No
+  `any` outside a commented boundary, no `@ts-ignore`, and `@ts-expect-error`
+  only with a reason. The one real boundary is the JSON body: `readResponse<T>`
+  hands back whatever the server sent as `T`, and nothing validates it.
+- `api/types.ts` is hand-written and deliberately a subset: the fields a
+  component reads, not the service's whole schema. When a component starts
+  reading another field, add it there and check it against the service's
+  OpenAPI document or source. There is no codegen.
+- `import.meta.env.VITE_*` is declared in `src/vite-env.d.ts`; a new variable
+  needs a line there too (see "An env var" below).
+- Code indexes arrays and records through `at()`, `lookup()` and `setCell()`
+  (`map/sprites/pixel.ts`) where the index is known to be in range, rather than
+  asserting with `!`.
 
 **Layout**
 
 - Every key in `PANEL_ORDER` needs an entry in `PANEL_WIDTH_REM`
-  (`utils/togglePanelLayout.js`), a button in `PANEL_BUTTONS`
-  (`components/layout/AgentBar.jsx`), and a render branch in `Dashboard.jsx`.
+  (`utils/togglePanelLayout.ts`), a button in `PANEL_BUTTONS`
+  (`components/layout/AgentBar.tsx`), and a render branch in `Dashboard.tsx`.
 - A panel's own CSS `width` must equal its `PANEL_WIDTH_REM` entry. Nothing
   enforces this; a mismatch shows up as overlapping panels.
 
 ## Critical sequences
 
-**Provider nesting in `main.jsx`** — the order is load-bearing:
+**Provider nesting in `main.tsx`** — the order is load-bearing:
 
 ```
 ClerkProvider            → OperatorProvider needs Clerk's useAuth
@@ -162,7 +181,7 @@ ClerkProvider            → OperatorProvider needs Clerk's useAuth
         App
 ```
 
-`dev-map.html` (`src/devMap.jsx`) supplies `OperatorContext.Provider` directly
+`dev-map.html` (`src/devMap.tsx`) supplies `OperatorContext.Provider` directly
 in place of the top two, because it runs with no Clerk instance.
 
 **Map paint order** inside the scaled `<g>` — SVG has no `z-index`, so document
@@ -221,7 +240,7 @@ SpaceTraders shape passed through, except automation-service's:
 | `PUT /planner/knobs/:name` | `{ knob }` |
 | `GET /metrics/context` | `{ rollups: [{ creditsPerHour, windowEnd }], events: [{ id, type, occurredAt, detail }] }`, or 404 |
 | `GET /anomalies/digest` | `{ anomalies: [{ id, type, detectedAt, detail, deliveredAt, deliveryAttempts }], events: [...] }`, or 404 |
-| any error | agent/nav/fleet: `{ error }` or `{ message }`. automation-service: `{ error: { message } }`. `client.js` handles both. |
+| any error | agent/nav/fleet: `{ error }` or `{ message }`. automation-service: `{ error: { message } }`. `client.ts` handles both. |
 
 ## Domain facts that are not obvious from the code
 
@@ -248,7 +267,7 @@ SpaceTraders shape passed through, except automation-service's:
 ## Testing
 
 vitest under **jsdom** with `@testing-library/react`. Everything matching
-`src/**/*.test.{js,jsx}` runs; `restoreMocks: true` is on.
+`src/**/*.test.{ts,tsx}` runs; `restoreMocks: true` is on.
 
 Two levels:
 
@@ -277,27 +296,27 @@ The manual level above the suite is `/dev-map.html`.
 
 ## Extending each moving part
 
-**A backend call** → add one function to the matching `src/api/*Service.js`. Use
+**A backend call** → add one function to the matching `src/api/*Service.ts`. Use
 `request()` unless the route must stay CORS-simple (see the automation-service
 invariant). Never call `fetch` from a component.
 
-**A query** → add its key to `hooks/queryKeys.js`, then the hook to
-`hooks/queries.js` with a named `*_POLL_MS` constant. If it needs a signed-in
+**A query** → add its key to `hooks/queryKeys.ts`, then the hook to
+`hooks/queries.ts` with a named `*_POLL_MS` constant. If it needs a signed-in
 operator, build it with `useGatedQuery` rather than re-writing
 `enabled: isSignedIn`.
 
 **A toggle panel** → four edits, all required: `PANEL_ORDER` and
-`PANEL_WIDTH_REM` in `utils/togglePanelLayout.js`, `PANEL_BUTTONS` in
-`AgentBar.jsx`, a render branch in `Dashboard.jsx`. The panel's CSS `width` must
+`PANEL_WIDTH_REM` in `utils/togglePanelLayout.ts`, `PANEL_BUTTONS` in
+`AgentBar.tsx`, a render branch in `Dashboard.tsx`. The panel's CSS `width` must
 match its `PANEL_WIDTH_REM`. Offsets are computed from the open set, so nothing
 else needs re-deriving.
 
 **A waypoint type** → a variant list in `WAYPOINT_VARIANTS` and a size in
-`WAYPOINT_BASE_SIZE` (`sprites/registry.js`), plus `MAJOR_TYPES` if it should
+`WAYPOINT_BASE_SIZE` (`sprites/registry.ts`), plus `MAJOR_TYPES` if it should
 keep its label below 2× zoom. Add the type to `WAYPOINT_TYPES` in
-`sprites/pixel.test.js`.
+`sprites/pixel.test.ts`.
 
-**A ship frame** → one line in `FRAME_FAMILY` (`sprites/ships.js`) and the frame
+**A ship frame** → one line in `FRAME_FAMILY` (`sprites/ships.ts`) and the frame
 in `FRAMES` in the test. Only add a family if the silhouette genuinely differs.
 
 **A badge** → a 5×5 glyph, a colour, **and** a `BADGE_LABEL` entry. A glyph with
@@ -307,8 +326,9 @@ no label is unreadable by design.
 drawing in a thin component under `components/map/layers/`. Counter-scale every
 size, and insert it in the paint order deliberately.
 
-**An env var** → `api/config.js`, `.env.example`, **and**
-`.github/workflows/deploy.yml`. Two of the three is a production bug.
+**An env var** → `api/config.ts`, `src/vite-env.d.ts`, `.env.example`, **and**
+`.github/workflows/deploy.yml`. Missing the workflow is a production bug; missing
+the `.d.ts` is a type error.
 
 ---
 

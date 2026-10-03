@@ -1,9 +1,9 @@
 .lcars-autopilot-panel {
   position: absolute;
   top: 4.5rem;
-  /* Fallback only — Dashboard.jsx computes and overrides this via inline
+  /* Fallback only — Dashboard.tsx computes and overrides this via inline
      style whenever another toggle panel could be open at the same time, so
-     the two never overlap (see src/utils/togglePanelLayout.js). */
+     the two never overlap (see src/utils/togglePanelLayout.ts). */
   right: 1rem;
   width: 22rem;
   background: var(--lcars-panel-bg);
