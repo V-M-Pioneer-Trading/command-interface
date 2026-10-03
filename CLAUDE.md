@@ -28,8 +28,8 @@ merged: the gate stops the deploy, not the merge.
 
 | Path | Owns | Depends on |
 | --- | --- | --- |
-| `src/main.jsx` | Root render, provider nesting, the missing-Clerk-key screen | Clerk, react-query, all four contexts |
-| `src/App.jsx` | Nothing but rendering `Dashboard` | — |
+| `src/main.tsx` | Root render, provider nesting, the missing-Clerk-key screen | Clerk, react-query, all four contexts |
+| `src/App.tsx` | Nothing but rendering `Dashboard` | — |
 | `src/api/config.ts` | Env vars → service base URLs, with localhost defaults | `import.meta.env` |
 | `src/api/types.ts` | Hand-written types for the backend bodies this UI reads (a subset, not the full schemas) | nothing |
 | `src/api/client.ts` | `ApiError`, error-body parsing, `readResponse`, `withQuery`, `request` | nothing |
@@ -53,12 +53,12 @@ merged: the gate stops the deploy, not the merge.
 | `src/map/sprites/generators.ts` | Procedural body/structure generators | `pixel`, `rand` |
 | `src/map/sprites/ships.ts` | Hand-drawn ship + badge sprites, frame→family map, badge labels | `pixel` |
 | `src/map/sprites/registry.ts` | Compiled sprite registry, id scheme, per-type base sizes | `pixel`, `rand`, `generators`, `ships` |
-| `src/components/common/QueryState.jsx` | The four things a panel says when it has no data | nothing |
+| `src/components/common/QueryState.tsx` | The four things a panel says when it has no data | nothing |
 | `src/components/map/*` | Thin SVG layers that draw what `src/map` produced | `src/map`, hooks |
 | `src/utils/togglePanelLayout.ts` | Panel order, widths, computed `right` offsets | nothing |
 | `src/utils/eventLog.ts` | Formatting for event/anomaly `detail` blobs | nothing |
 | `src/utils/spaceTraders.ts` | Symbol parsing, countdown formatting | nothing |
-| `src/devMap.jsx` | Dev-only harness: generated system, stubbed `fetch`, stub operator | everything below it |
+| `src/devMap.tsx` | Dev-only harness: generated system, stubbed `fetch`, stub operator | everything below it |
 
 ### Dependency rules
 
@@ -71,8 +71,8 @@ These hold today. Breaking one is a design change, not a refactor.
    arrives as an injected `bodyRadius(node)` callback. Importing `registry.ts`
    here would make the layout depend on the art.
 3. **`src/api/**` imports no React and no context.** Credentials are arguments.
-4. **Only `main.jsx`, `context/OperatorContext.tsx` and
-   `components/operator/OperatorBadge.jsx` may import `@clerk/clerk-react`.**
+4. **Only `main.tsx`, `context/OperatorContext.tsx` and
+   `components/operator/OperatorBadge.tsx` may import `@clerk/clerk-react`.**
    Everything else goes through `useOperator()`. This is what lets a tree with
    no Clerk provider — `dev-map.html`, or a Clerk outage — render as an
    anonymous observer instead of throwing.
@@ -133,7 +133,7 @@ Stated so you can recognise a violation.
   `undefined` = the query never ran, `null` = the route 404'd because the feature
   is not enabled on this deployment, a rejection = it failed. Rendering any of
   them as the panel's own "none found" line states as fact something nobody
-  checked. `components/common/QueryState.jsx` is the one place that decides.
+  checked. `components/common/QueryState.tsx` is the one place that decides.
 - Cache keys carry no credential. They used to include the pasted game token so
   that changing it could not show the previous agent's ships; the Clerk session
   that replaced it rotates on its own schedule, and keying on a rotating value
@@ -165,13 +165,13 @@ Stated so you can recognise a violation.
 
 - Every key in `PANEL_ORDER` needs an entry in `PANEL_WIDTH_REM`
   (`utils/togglePanelLayout.ts`), a button in `PANEL_BUTTONS`
-  (`components/layout/AgentBar.jsx`), and a render branch in `Dashboard.jsx`.
+  (`components/layout/AgentBar.tsx`), and a render branch in `Dashboard.tsx`.
 - A panel's own CSS `width` must equal its `PANEL_WIDTH_REM` entry. Nothing
   enforces this; a mismatch shows up as overlapping panels.
 
 ## Critical sequences
 
-**Provider nesting in `main.jsx`** — the order is load-bearing:
+**Provider nesting in `main.tsx`** — the order is load-bearing:
 
 ```
 ClerkProvider            → OperatorProvider needs Clerk's useAuth
@@ -181,7 +181,7 @@ ClerkProvider            → OperatorProvider needs Clerk's useAuth
         App
 ```
 
-`dev-map.html` (`src/devMap.jsx`) supplies `OperatorContext.Provider` directly
+`dev-map.html` (`src/devMap.tsx`) supplies `OperatorContext.Provider` directly
 in place of the top two, because it runs with no Clerk instance.
 
 **Map paint order** inside the scaled `<g>` — SVG has no `z-index`, so document
@@ -267,7 +267,7 @@ SpaceTraders shape passed through, except automation-service's:
 ## Testing
 
 vitest under **jsdom** with `@testing-library/react`. Everything matching
-`src/**/*.test.{js,jsx,ts,tsx}` runs; `restoreMocks: true` is on.
+`src/**/*.test.{ts,tsx}` runs; `restoreMocks: true` is on.
 
 Two levels:
 
@@ -307,7 +307,7 @@ operator, build it with `useGatedQuery` rather than re-writing
 
 **A toggle panel** → four edits, all required: `PANEL_ORDER` and
 `PANEL_WIDTH_REM` in `utils/togglePanelLayout.ts`, `PANEL_BUTTONS` in
-`AgentBar.jsx`, a render branch in `Dashboard.jsx`. The panel's CSS `width` must
+`AgentBar.tsx`, a render branch in `Dashboard.tsx`. The panel's CSS `width` must
 match its `PANEL_WIDTH_REM`. Offsets are computed from the open set, so nothing
 else needs re-deriving.
 

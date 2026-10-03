@@ -13,7 +13,7 @@ export default defineConfig({
   // everything runs under jsdom — the pure tests neither notice nor care.
   test: {
     environment: "jsdom",
-    include: ["src/**/*.test.{js,jsx,ts,tsx}"],
+    include: ["src/**/*.test.{ts,tsx}"],
     restoreMocks: true,
   },
 });
