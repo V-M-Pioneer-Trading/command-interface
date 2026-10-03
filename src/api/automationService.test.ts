@@ -1,0 +1,37 @@
+import { describe, expect, it, vi } from "vitest";
+import { automationService } from "./automationService";
+
+const json = (body: unknown) =>
+  new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
+
+function capture() {
+  const fetchMock = vi.fn<typeof fetch>().mockImplementation(async () => json({ knob: {}, status: "armed" }));
+  globalThis.fetch = fetchMock;
+  return () => {
+    const init = fetchMock.mock.calls[0]?.[1];
+    // call() builds its headers as a plain object, or omits them entirely.
+    return init?.headers as Record<string, string> | undefined;
+  };
+}
+
+describe("automationService Authorization", () => {
+  const writes: [string, (token: string) => Promise<unknown>][] = [
+    ["arm", (t) => automationService.arm("live", t)],
+    ["pause", (t) => automationService.pause(t)],
+    ["abort", (t) => automationService.abort(t)],
+    ["setKnob", (t) => automationService.setKnob("minMargin", 3, t)],
+  ];
+
+  it.each(writes)("%s sends the Clerk session as a Bearer token", async (_name, run) => {
+    const headers = capture();
+    await run("clerk-jwt");
+    expect(headers()?.Authorization).toBe("Bearer clerk-jwt");
+  });
+
+  // Public reads must stay CORS-simple: no headers at all.
+  it("sends no headers on a public read", async () => {
+    const headers = capture();
+    await automationService.getStatus();
+    expect(headers()).toBeUndefined();
+  });
+});

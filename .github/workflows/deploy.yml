@@ -66,7 +66,10 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # always(): a type error must not hide a test failure (or vice versa). The
+      # job still fails if either step does, so the deploy gate is unchanged.
       - name: Run tests
+        if: always()
         run: npm test
 
   deploy:

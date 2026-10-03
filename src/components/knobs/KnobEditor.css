@@ -52,7 +52,7 @@
   gap: 0.5rem;
 }
 
-/* Knobs are grouped by class — see KnobEditor.jsx for why the distinction
+/* Knobs are grouped by class — see KnobEditor.tsx for why the distinction
    is worth surfacing rather than presenting one flat list. */
 .lcars-knob-editor__section {
   padding-top: 0.25rem;
