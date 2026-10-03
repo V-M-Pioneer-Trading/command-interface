@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AlertProvider } from "../../context/AlertContext";
+import { AlertProvider } from "../../context/AlertProvider";
 import { OperatorContext, type Operator } from "../../context/OperatorContext";
 import { automationService } from "../../api/automationService";
 import type { Knob } from "../../api/types";
@@ -15,15 +15,15 @@ function show(scopes: string[]) {
   const operator: Operator = {
     isLoaded: true,
     isSignedIn: true,
-    signOut: async () => {},
-    getToken: async () => "t",
+    signOut: () => Promise.resolve(),
+    getToken: () => Promise.resolve("t"),
     can: (s) => scopes.includes(s),
   };
   render(
     <QueryClientProvider client={client}>
       <AlertProvider>
         <OperatorContext.Provider value={operator}>
-          <KnobEditor onClose={() => {}} />
+          <KnobEditor onClose={() => undefined} />
         </OperatorContext.Provider>
       </AlertProvider>
     </QueryClientProvider>,

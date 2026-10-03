@@ -88,12 +88,16 @@ export interface CooldownResponse {
   data: { shipSymbol: string; totalSeconds: number; remainingSeconds: number; expiration: string };
 }
 
+// The `{ data }` envelopes below are free-form upstream bodies that fleet-service
+// and navigation-service pass through without a schema, so every level the UI
+// reads past the top is optional: the code already tolerates a body without it,
+// and the types say so instead of claiming a shape nobody checks.
 export interface CargoResponse {
-  data: ShipCargo;
+  data?: ShipCargo;
 }
 
 export interface RefuelResponse {
-  data: { transaction: { units: number } };
+  data?: { transaction?: { units?: number } };
 }
 
 export interface SurveyDeposit {
@@ -109,7 +113,7 @@ export interface Survey {
 }
 
 export interface SurveyResponse {
-  data: { surveys: Survey[] };
+  data?: { surveys?: Survey[] };
 }
 
 /** Mutations whose response body the UI never reads. */
@@ -132,7 +136,7 @@ export interface Waypoint {
 }
 
 export interface SystemWaypointsResponse {
-  data: Waypoint[];
+  data?: Waypoint[];
 }
 
 export interface MarketTradeGood {

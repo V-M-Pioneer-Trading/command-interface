@@ -3,12 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import {
   OperatorContext,
-  OperatorProvider,
   SCOPE_FLEET_CONTROL,
   SCOPE_PLANNER_ADVISE,
   scopesFromToken,
   useOperator,
 } from "./OperatorContext";
+import { OperatorProvider } from "./OperatorProvider";
 
 const clerk = {
   isLoaded: true,
@@ -47,8 +47,8 @@ describe("useOperator", () => {
         value={{
           isLoaded: true,
           isSignedIn: true,
-          signOut: async () => {},
-          getToken: async () => null,
+          signOut: () => Promise.resolve(),
+          getToken: () => Promise.resolve(null),
           can: (s) => s === SCOPE_FLEET_CONTROL,
         }}
       >
@@ -89,7 +89,7 @@ describe("OperatorProvider scope refresh", () => {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <OperatorProvider>{children}</OperatorProvider>
   );
-  const flush = () => act(async () => {});
+  const flush = () => act(() => Promise.resolve());
   const tick = (ms: number) => act(async () => vi.advanceTimersByTimeAsync(ms));
 
   beforeEach(() => {
@@ -121,9 +121,10 @@ describe("OperatorProvider scope refresh", () => {
     await flush();
     expect(result.current.can(SCOPE_PLANNER_ADVISE)).toBe(false);
 
-    await act(async () => {
+    act(() => {
       window.dispatchEvent(new Event("focus"));
     });
+    await flush();
     expect(result.current.can(SCOPE_PLANNER_ADVISE)).toBe(true);
   });
 
@@ -133,9 +134,10 @@ describe("OperatorProvider scope refresh", () => {
     await flush();
     expect(result.current.can(SCOPE_PLANNER_ADVISE)).toBe(false);
 
-    await act(async () => {
+    act(() => {
       document.dispatchEvent(new Event("visibilitychange"));
     });
+    await flush();
     expect(result.current.can(SCOPE_PLANNER_ADVISE)).toBe(true);
   });
 
@@ -194,7 +196,7 @@ describe("OperatorProvider scope refresh", () => {
   });
 
   it("ignores a token that resolves after sign-out", async () => {
-    let resolve: (token: string) => void = () => {};
+    let resolve: (token: string) => void = () => undefined;
     clerk.getToken.mockReturnValue(new Promise<string>((r) => (resolve = r)));
     const { result, rerender } = renderHook(() => useOperator(), { wrapper });
     await flush();
@@ -202,11 +204,12 @@ describe("OperatorProvider scope refresh", () => {
     clerk.isSignedIn = false;
     rerender();
     await flush();
-    await act(async () => resolve(jwtWith({ scope: "fleet:control" })));
+    act(() => { resolve(jwtWith({ scope: "fleet:control" })); });
+    await flush();
     expect(result.current.can(SCOPE_FLEET_CONTROL)).toBe(false);
 
     // Signing back in must not surface the late token while the new one is pending.
-    clerk.getToken = vi.fn(() => new Promise(() => {}));
+    clerk.getToken = vi.fn(() => new Promise(() => undefined));
     clerk.isSignedIn = true;
     rerender();
     await flush();
@@ -234,9 +237,10 @@ describe("OperatorProvider scope refresh", () => {
     const calls = clerk.getToken.mock.calls.length;
 
     const spy = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
-    await act(async () => {
+    act(() => {
       document.dispatchEvent(new Event("visibilitychange"));
     });
+    await flush();
     spy.mockRestore();
 
     expect(clerk.getToken.mock.calls.length).toBe(calls);
@@ -262,6 +266,6 @@ describe("OperatorProvider scope refresh", () => {
 
     const signedOut = seen.filter((r) => !r.signedIn);
     expect(signedOut.length).toBeGreaterThan(0);
-    expect(signedOut.every((r) => r.can === false)).toBe(true);
+    expect(signedOut.every((r) => !r.can)).toBe(true);
   });
 });

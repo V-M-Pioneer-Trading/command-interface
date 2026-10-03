@@ -28,7 +28,7 @@ export function AutopilotPanel({ onClose, style }: TogglePanelProps) {
   const [mode, setMode] = useState<AutopilotMode>("live");
 
   const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: queryKeys.autopilotStatus() });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.autopilotStatus() });
 
   const armMutation = useMutation({
     mutationFn: async () => automationService.arm(mode, await getToken()),
@@ -65,8 +65,8 @@ export function AutopilotPanel({ onClose, style }: TogglePanelProps) {
 
       <div className="lcars-autopilot-panel__status">
         <span className="lcars-autopilot-panel__status-label">STATUS</span>
-        <span className={`lcars-autopilot-panel__status-value status-${currentStatus || "unknown"}`}>
-          {isLoading ? "..." : currentStatus?.toUpperCase() || "UNKNOWN"}
+        <span className={`lcars-autopilot-panel__status-value status-${currentStatus ?? "unknown"}`}>
+          {isLoading ? "..." : currentStatus?.toUpperCase() ?? "UNKNOWN"}
         </span>
         {status?.mode && (
           <span className={`lcars-autopilot-panel__mode-value mode-${status.mode}`}>
@@ -85,7 +85,7 @@ export function AutopilotPanel({ onClose, style }: TogglePanelProps) {
         <select
           value={mode}
           // The select offers exactly these two options.
-          onChange={(e) => setMode(e.target.value === "shadow" ? "shadow" : "live")}
+          onChange={(e) => { setMode(e.target.value === "shadow" ? "shadow" : "live"); }}
           disabled={busy || !hasControl}
           className="lcars-autopilot-panel__mode-select"
         >
@@ -106,10 +106,10 @@ export function AutopilotPanel({ onClose, style }: TogglePanelProps) {
       )}
 
       <div className="lcars-autopilot-panel__actions">
-        <PillButton accent="yellow" disabled={!canPause || busy} onClick={() => pauseMutation.mutate()}>
+        <PillButton accent="yellow" disabled={!canPause || busy} onClick={() => { pauseMutation.mutate(); }}>
           Pause
         </PillButton>
-        <PillButton accent="red" disabled={!canAbort || busy} onClick={() => abortMutation.mutate()}>
+        <PillButton accent="red" disabled={!canAbort || busy} onClick={() => { abortMutation.mutate(); }}>
           Abort
         </PillButton>
       </div>

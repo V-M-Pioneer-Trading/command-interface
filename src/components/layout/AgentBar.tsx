@@ -48,7 +48,7 @@ export function AgentBar({
       <div className="lcars-agent-bar__elbow" />
       <div className="lcars-agent-bar__content">
         <span className="lcars-agent-bar__symbol">{pending ?? agent?.symbol ?? "NO AGENT"}</span>
-        <Stat label="CREDITS" value={pending ?? agent?.credits?.toLocaleString()} />
+        <Stat label="CREDITS" value={pending ?? agent?.credits.toLocaleString()} />
         <Stat label="FACTION" value={pending ?? agent?.startingFaction} />
         <Stat label="SHIPS" value={pending ?? agent?.shipCount} />
       </div>
@@ -62,10 +62,10 @@ export function AgentBar({
             <PillButton
               key={key}
               accent={isAutopilot && status === "armed" ? "green" : accent}
-              onClick={() => onTogglePanel(key)}
+              onClick={() => { onTogglePanel(key); }}
             >
               {label}
-              {key === "contracts" && contractCount ? ` (${contractCount})` : ""}
+              {key === "contracts" && contractCount ? ` (${String(contractCount)})` : ""}
               {status ? ` (${status})` : ""}
               {openPanels[key] ? " ▲" : " ▼"}
             </PillButton>

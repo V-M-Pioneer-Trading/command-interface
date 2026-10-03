@@ -21,7 +21,7 @@ function ContractCard({
   onFulfill: (contractId: string) => void;
   busy: boolean;
 }) {
-  const deliverTerms = contract.terms?.deliver || [];
+  const deliverTerms = contract.terms.deliver;
   const allDelivered = deliverTerms.every((d) => d.unitsFulfilled >= d.unitsRequired);
 
   return (
@@ -31,8 +31,8 @@ function ContractCard({
         <span className="lcars-contract-card__type">{contract.type}</span>
       </div>
       <div className="lcars-contract-card__payment">
-        Payment: {contract.terms?.payment?.onAccepted ?? 0} accepted /{" "}
-        {contract.terms?.payment?.onFulfilled ?? 0} fulfilled
+        Payment: {contract.terms.payment.onAccepted} accepted /{" "}
+        {contract.terms.payment.onFulfilled} fulfilled
       </div>
       <ul className="lcars-contract-card__deliveries">
         {deliverTerms.map((d) => (
@@ -43,7 +43,7 @@ function ContractCard({
       </ul>
       <div className="lcars-contract-card__actions">
         {!contract.accepted && (
-          <PillButton accent="green" disabled={busy} onClick={() => onAccept(contract.id)}>
+          <PillButton accent="green" disabled={busy} onClick={() => { onAccept(contract.id); }}>
             Accept
           </PillButton>
         )}
@@ -51,7 +51,7 @@ function ContractCard({
           <PillButton
             accent="orange"
             disabled={busy || !allDelivered}
-            onClick={() => onFulfill(contract.id)}
+            onClick={() => { onFulfill(contract.id); }}
             title={allDelivered ? undefined : "Deliver all required cargo first"}
           >
             Fulfill
@@ -71,8 +71,8 @@ export function ContractsPanel({ onClose, style }: TogglePanelProps) {
   const hasControl = can(SCOPE_FLEET_CONTROL);
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.contracts() });
-    queryClient.invalidateQueries({ queryKey: queryKeys.agent() });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.contracts() });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.agent() });
   };
 
   const acceptMutation = useMutation({

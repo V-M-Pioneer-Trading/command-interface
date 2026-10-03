@@ -5,7 +5,7 @@ const json = (body: unknown) =>
   new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
 
 function capture() {
-  const fetchMock = vi.fn<typeof fetch>().mockImplementation(async () => json({ knob: {}, status: "armed" }));
+  const fetchMock = vi.fn<typeof fetch>().mockImplementation(() => Promise.resolve(json({ knob: {}, status: "armed" })));
   globalThis.fetch = fetchMock;
   return () => {
     const init = fetchMock.mock.calls[0]?.[1];

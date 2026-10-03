@@ -9,10 +9,10 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AlertProvider } from "./context/AlertContext";
+import { AlertProvider } from "./context/AlertProvider";
 import { OperatorContext, type Operator } from "./context/OperatorContext";
 import type { Waypoint } from "./api/types";
-import { SelectionProvider } from "./context/SelectionContext";
+import { SelectionProvider } from "./context/SelectionProvider";
 import { mulberry32 } from "./map/rand";
 import { SystemMap } from "./components/map/SystemMap";
 import "./styles/fonts.css";
@@ -41,7 +41,7 @@ function buildSystem(): Waypoint[] {
     if (p % 2 === 0) traits.push(trait("MARKETPLACE"));
     if (p === 1 || p === 4) traits.push(trait("SHIPYARD"));
     const parent = push({
-      symbol: `X1-DV-P${p}`,
+      symbol: `X1-DV-P${String(p)}`,
       type: p === 3 ? "GAS_GIANT" : "PLANET",
       x,
       y,
@@ -50,7 +50,7 @@ function buildSystem(): Waypoint[] {
     const kids = Math.floor(rand() * 5);
     for (let k = 0; k < kids; k += 1) {
       push({
-        symbol: `X1-DV-P${p}M${k}`,
+        symbol: `X1-DV-P${String(p)}M${String(k)}`,
         type: ORBITAL_TYPES[Math.floor(rand() * ORBITAL_TYPES.length)] ?? "MOON", // never the fallback: rand() < 1
         x,
         y,
@@ -65,7 +65,7 @@ function buildSystem(): Waypoint[] {
     const angle = rand() * Math.PI * 2;
     const dist = 300 + rand() * 140;
     push({
-      symbol: `X1-DV-A${i}`,
+      symbol: `X1-DV-A${String(i)}`,
       type: i === 0 ? "ENGINEERED_ASTEROID" : i < 3 ? "ASTEROID_BASE" : "ASTEROID",
       x: Math.round(Math.cos(angle) * dist),
       y: Math.round(Math.sin(angle) * dist),
@@ -117,7 +117,7 @@ const SHIPS = [
   }),
 ];
 
-const originalFetch = window.fetch;
+const originalFetch = window.fetch.bind(window);
 window.fetch = async (input, init) => {
   // `URL` has no `.url` (it is `.href`), so a `fetch(new URL(...))` used to throw here.
   const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
@@ -138,8 +138,8 @@ window.fetch = async (input, init) => {
 const DEV_OPERATOR: Operator = {
   isLoaded: true,
   isSignedIn: true,
-  signOut: async () => {},
-  getToken: async () => "dev-operator-token",
+  signOut: () => Promise.resolve(),
+  getToken: () => Promise.resolve("dev-operator-token"),
   can: () => true,
 };
 

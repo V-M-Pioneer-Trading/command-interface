@@ -20,7 +20,7 @@ export function useAnimationClock(active: boolean): number {
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    return () => { cancelAnimationFrame(frame); };
   }, [active]);
 
   return now;

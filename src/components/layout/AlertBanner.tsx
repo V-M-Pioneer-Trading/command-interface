@@ -14,7 +14,7 @@ export function AlertBanner() {
           <button
             type="button"
             className="lcars-alert__dismiss"
-            onClick={() => dismiss(alert.id)}
+            onClick={() => { dismiss(alert.id); }}
             aria-label="Dismiss"
           >
             ×

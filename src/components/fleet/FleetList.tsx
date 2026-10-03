@@ -35,14 +35,14 @@ export function FleetList() {
                     className={`lcars-fleet-list__row ${
                       ship.symbol === selectedShipSymbol ? "is-selected" : ""
                     }`}
-                    onClick={() => setSelectedShipSymbol(ship.symbol)}
+                    onClick={() => { setSelectedShipSymbol(ship.symbol); }}
                   >
                     <span className="lcars-fleet-list__symbol">{ship.symbol}</span>
-                    <StatusPill status={ship.nav?.status} />
+                    <StatusPill status={ship.nav.status} />
                     <span className="lcars-fleet-list__waypoint">
-                      {ship.nav?.status === "IN_TRANSIT"
-                        ? `→ ${ship.nav?.route?.destination?.symbol}`
-                        : ship.nav?.waypointSymbol}
+                      {ship.nav.status === "IN_TRANSIT"
+                        ? `→ ${ship.nav.route.destination.symbol}`
+                        : ship.nav.waypointSymbol}
                     </span>
                     <TaskBadge shipSymbol={ship.symbol} />
                   </button>

@@ -18,7 +18,7 @@ export function MarketList({
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
   const [units, setUnits] = useState(1);
 
-  const tradeGoods = market?.tradeGoods || [];
+  const tradeGoods = market?.tradeGoods ?? [];
 
   if (tradeGoods.length === 0) {
     return <div className="lcars-market-list__empty">No goods for sale here</div>;
@@ -45,7 +45,7 @@ export function MarketList({
                 accent="blue"
                 disabled={!docked || busy}
                 title={!docked ? "Ship must be docked to buy" : undefined}
-                onClick={() => openRow(good.symbol)}
+                onClick={() => { openRow(good.symbol); }}
               >
                 Buy
               </PillButton>
@@ -56,7 +56,7 @@ export function MarketList({
                   type="number"
                   min={1}
                   value={units}
-                  onChange={(e) => setUnits(Number(e.target.value))}
+                  onChange={(e) => { setUnits(Number(e.target.value)); }}
                 />
                 <PillButton
                   accent="orange"

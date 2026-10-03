@@ -20,10 +20,14 @@ const METRICS_CONTEXT_POLL_MS = 15_000;
 const ANOMALIES_DIGEST_POLL_MS = 15_000;
 const KNOBS_POLL_MS = 15_000;
 
-// Where a hook below passes its symbol argument to the API as `symbol as string`:
-// the hook also sets `enabled: !!symbol`, so the query function only ever runs
-// with a real value. The argument is typed nullable because callers pass the
-// selection, which starts out empty.
+// Where a hook below passes its symbol argument to the API through
+// `requireSymbol`: the hook also sets `enabled: !!symbol`, so the query function
+// only ever runs with a real value. The argument is typed nullable because
+// callers pass the selection, which starts out empty.
+function requireSymbol(symbol: string | null | undefined): string {
+  if (!symbol) throw new Error("query function ran without a symbol; `enabled` should have prevented it");
+  return symbol;
+}
 
 /**
  * A read that agent-service or fleet-service will only answer for a signed-in
@@ -99,7 +103,7 @@ export function useSystemWaypointsQuery(systemSymbol: string | null | undefined)
   const { getToken } = useOperator();
   return useQuery({
     queryKey: queryKeys.systemWaypoints(systemSymbol),
-    queryFn: async () => navigationService.getSystemWaypoints(systemSymbol as string, await getToken()),
+    queryFn: async () => navigationService.getSystemWaypoints(requireSymbol(systemSymbol), await getToken()),
 
     // `enabled` below means the fn only runs with a symbol.
     enabled: !!systemSymbol,
@@ -113,7 +117,7 @@ export function useCooldownQuery(
 ) {
   return useGatedQuery({
     key: () => queryKeys.cooldown(shipSymbol),
-    queryFn: (authToken) => fleetService.getCooldown(shipSymbol as string, authToken),
+    queryFn: (authToken) => fleetService.getCooldown(requireSymbol(shipSymbol), authToken),
     enabled: !!shipSymbol && enabled,
     refetchInterval: COOLDOWN_POLL_MS,
   });
@@ -122,9 +126,9 @@ export function useCooldownQuery(
 export function useCargoQuery(shipSymbol: string | null | undefined) {
   return useGatedQuery({
     key: () => queryKeys.cargo(shipSymbol),
-    queryFn: (authToken) => fleetService.getCargo(shipSymbol as string, authToken),
+    queryFn: (authToken) => fleetService.getCargo(requireSymbol(shipSymbol), authToken),
     enabled: !!shipSymbol,
-    select: (res) => res?.data ?? null,
+    select: (res) => res.data ?? null,
   });
 }
 
@@ -135,7 +139,7 @@ export function useMarketQuery(
   const { getToken } = useOperator();
   return useQuery({
     queryKey: queryKeys.market(waypointSymbol),
-    queryFn: async () => navigationService.getMarket(waypointSymbol as string, await getToken()),
+    queryFn: async () => navigationService.getMarket(requireSymbol(waypointSymbol), await getToken()),
 
     enabled: !!waypointSymbol && enabled,
     refetchInterval: MARKET_POLL_MS,
@@ -160,7 +164,7 @@ export function useAutopilotStatusQuery() {
 export function useShipTaskQuery(shipSymbol: string | null | undefined) {
   return useQuery({
     queryKey: queryKeys.shipTask(shipSymbol),
-    queryFn: () => automationService.getShipTask(shipSymbol as string),
+    queryFn: () => automationService.getShipTask(requireSymbol(shipSymbol)),
     enabled: !!shipSymbol,
     retry: 1,
     refetchInterval: SHIP_TASK_POLL_MS,

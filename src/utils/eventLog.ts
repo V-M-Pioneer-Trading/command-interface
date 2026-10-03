@@ -3,7 +3,7 @@
 export function formatEventDetail(detail: Record<string, unknown> | null | undefined): string | null {
   if (!detail || Object.keys(detail).length === 0) return null;
   return Object.entries(detail)
-    .map(([key, value]) => `${key}=${typeof value === "object" ? JSON.stringify(value) : value}`)
+    .map(([key, value]) => `${key}=${typeof value === "string" ? value : JSON.stringify(value)}`)
     .join(", ");
 }
 

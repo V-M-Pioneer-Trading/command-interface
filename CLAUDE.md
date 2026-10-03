@@ -12,13 +12,14 @@ stay true, and what breaks if you change it.
 | `npm run dev` | Vite dev server on port 3000 — **pinned**, `strictPort: true`, because it is the backends' default CORS origin. `/dev-map.html` is served alongside `/`. |
 | `npm test` | vitest, single run, jsdom. |
 | `npm run typecheck` | `tsc --noEmit`. Vite compiles with esbuild, which strips types without checking them, so this is the only thing that does. |
+| `npm run lint` | `eslint . --max-warnings 0` with the shared `@v-m-pioneer-trading/eslint-config` React variant (`eslint.config.mjs`), type-aware. Never add or change a rule here: that is a release of the config package plus a version bump. An `eslint-disable` needs ` -- reason`. Bump: `npm install --save-dev <release tarball URL>`, then fix what it reports. |
 | `npx vitest` | Watch mode. |
 | `npx vitest run src/map` | One directory. |
 | `npm run build` | Static bundle to `dist/`. Only `index.html` is an entry, so `dev-map.html` never ships. |
 | `npm run preview` | Serve the built bundle. |
 
-There is no linter or formatter. CI (`.github/workflows/deploy.yml`) runs
-`npm run typecheck` and `npm test` on every pull request and on every push to
+There is no formatter. CI (`.github/workflows/deploy.yml`) runs
+`npm run typecheck`, `npm run lint` and `npm test` on every pull request and on every push to
 `main`, and the S3 deploy `needs` it, so a type error or a broken test blocks
 the deploy rather than reaching production. Both jobs run Node 24 and install with `npm ci`; jsdom 30 will not load
 below Node 22.22. `main` has no branch protection, so a red pull request can still be
@@ -36,9 +37,10 @@ merged: the gate stops the deploy, not the merge.
 | `src/api/{agent,navigation,fleet}Service.ts` | One function per backend route | `client`, `config` |
 | `src/api/automationService.ts` | automation-service routes **and its own header policy** | `client` (`readResponse`, `withQuery`), `config` |
 | `src/api/healthService.ts` | Service list, probeability filter, `checkAll` | `config` |
-| `src/context/OperatorContext.tsx` | Clerk identity, scope decode (re-read every 60 s and on focus/visibility), the anonymous default | Clerk, react |
-| `src/context/AlertContext.tsx` | Toast stack and its dismiss timers | react |
-| `src/context/SelectionContext.tsx` | Which ship is selected | react |
+| `src/context/OperatorContext.ts` | The `Operator` shape, the context, `useOperator`, scope decode, the anonymous default | react |
+| `src/context/OperatorProvider.tsx` | Clerk identity, scopes re-read every 60 s and on focus/visibility | Clerk, react |
+| `src/context/AlertContext.ts`, `AlertProvider.tsx` | Toast stack and its dismiss timers (context and `useAlerts`; provider) | react |
+| `src/context/SelectionContext.ts`, `SelectionProvider.tsx` | Which ship is selected (context and `useSelection`; provider) | react |
 | `src/hooks/queryKeys.ts` | **Every** react-query cache key | nothing |
 | `src/hooks/queries.ts` | Every query hook, poll intervals, the gated-read rule | api clients, `OperatorContext`, `queryKeys` |
 | `src/hooks/useShipSurveys.ts` | Surveys, scoped to the ship that found them | react |
@@ -48,6 +50,7 @@ merged: the gate stops the deploy, not the merge.
 | `src/hooks/useCountdown.ts` | 1s ticking remainder from an ISO expiry | react |
 | `src/map/rand.ts` | `hash32` (FNV-1a) and `mulberry32` — the map's determinism | nothing |
 | `src/map/viewport.ts` | Zoom/pan/fit/project math and the scale constants | nothing |
+| `src/map/labelVisibility.ts`, `activeRing.ts` | Which labels show at a zoom; which orbit ring a hover reveals | `map/sprites/registry`, `map/systemLayout` (type) |
 | `src/map/systemLayout.ts` | Waypoints → positioned nodes, orbit rings, clearance, ship placement | `map/rand`, `map/viewport` |
 | `src/map/sprites/pixel.ts` | Grids, palettes, grid→rect compilation, noise, shading | nothing |
 | `src/map/sprites/generators.ts` | Procedural body/structure generators | `pixel`, `rand` |
@@ -56,6 +59,7 @@ merged: the gate stops the deploy, not the merge.
 | `src/components/common/QueryState.tsx` | The four things a panel says when it has no data | nothing |
 | `src/components/map/*` | Thin SVG layers that draw what `src/map` produced | `src/map`, hooks |
 | `src/utils/togglePanelLayout.ts` | Panel order, widths, computed `right` offsets | nothing |
+| `src/utils/nonEmpty.ts` | `nonEmpty(s) ?? fallback`: `||`'s "empty string is absent" rule without `||` | nothing |
 | `src/utils/eventLog.ts` | Formatting for event/anomaly `detail` blobs | nothing |
 | `src/utils/spaceTraders.ts` | Symbol parsing, countdown formatting | nothing |
 | `src/devMap.tsx` | Dev-only harness: generated system, stubbed `fetch`, stub operator | everything below it |
@@ -71,7 +75,7 @@ These hold today. Breaking one is a design change, not a refactor.
    arrives as an injected `bodyRadius(node)` callback. Importing `registry.ts`
    here would make the layout depend on the art.
 3. **`src/api/**` imports no React and no context.** Credentials are arguments.
-4. **Only `main.tsx`, `context/OperatorContext.tsx` and
+4. **Only `main.tsx`, `context/OperatorProvider.tsx` and
    `components/operator/OperatorBadge.tsx` may import `@clerk/clerk-react`.**
    Everything else goes through `useOperator()`. This is what lets a tree with
    no Clerk provider — `dev-map.html`, or a Clerk outage — render as an
@@ -275,7 +279,8 @@ Two levels:
   `utils/togglePanelLayout`, `api/client`, `api/healthService`. No DOM needed;
   they simply run under jsdom too.
 - **Hooks and small components** — `context/OperatorContext`,
-  `hooks/useShipSurveys`, `components/common/QueryState`. `renderHook` and
+  `hooks/useShipSurveys`, `hooks/useCountdown`, `components/knobs/KnobRow`,
+  `components/common/QueryState`. `renderHook` and
   `render` from testing-library.
 
 The large panels (`ShipDetailPanel`, `SystemMap`, `Dashboard`) have no tests.

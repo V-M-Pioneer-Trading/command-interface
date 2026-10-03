@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import type { Knob } from "../../api/types";
 
 function outOfRange(value: number, knob: Knob): boolean {
@@ -23,20 +23,26 @@ export function KnobRow({
   busy: boolean;
 }) {
   const [draft, setDraft] = useState(String(knob.value));
-  const baseline = useRef(knob.value);
+  const [baseline, setBaseline] = useState(knob.value);
+  // The server value this row last reacted to; a change in `knob.value` is the
+  // one moment `baseline` and `draft` are reconciled.
+  const [seenValue, setSeenValue] = useState(knob.value);
 
   const parsed = Number(draft);
   const invalid = draft.trim() === "" || outOfRange(parsed, knob);
-  const dirty = parsed !== baseline.current;
+  const dirty = parsed !== baseline;
 
-  useEffect(() => {
-    if (knob.value === baseline.current) return;
-    if (Number(draft) === knob.value || !dirty) {
+  // Adjusting state while rendering (react.dev "You Might Not Need an Effect"):
+  // React re-renders this component at once with the new state, before any
+  // child renders or the browser paints, so there is no frame showing the old
+  // draft beside the new server value. Runs only when `knob.value` changed.
+  if (knob.value !== seenValue) {
+    setSeenValue(knob.value);
+    if (knob.value !== baseline && (parsed === knob.value || !dirty)) {
       setDraft(String(knob.value));
-      baseline.current = knob.value;
+      setBaseline(knob.value);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [knob.value]);
+  }
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -57,7 +63,7 @@ export function KnobRow({
         <input
           type="number"
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => { setDraft(e.target.value); }}
           disabled={busy}
           step="any"
           className={`lcars-knob-row__input ${invalid ? "is-invalid" : ""}`}

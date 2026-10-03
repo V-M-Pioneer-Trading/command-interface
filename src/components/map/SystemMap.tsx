@@ -13,7 +13,8 @@ import type { LayoutNode, ShipPosition } from "../../map/systemLayout";
 import { Panel } from "../common/Panel";
 import { SpriteDefs } from "./SpriteDefs";
 import { MapControls } from "./MapControls";
-import { OrbitRingLayer, activeRingSymbol } from "./layers/OrbitRingLayer";
+import { OrbitRingLayer } from "./layers/OrbitRingLayer";
+import { activeRingSymbol } from "../../map/activeRing";
 import { TransitPathLayer, type Transit } from "./layers/TransitPathLayer";
 import { WaypointLayer } from "./layers/WaypointLayer";
 import { ShipLayer } from "./layers/ShipLayer";
@@ -54,7 +55,7 @@ export function SystemMap({ systemSymbol }: { systemSymbol: string | null }) {
     height,
   });
 
-  const waypoints = waypointData?.data || NO_WAYPOINTS;
+  const waypoints = waypointData?.data ?? NO_WAYPOINTS;
 
   const layout = useMemo(() => {
     const fit = computeFit(computeBounds(waypoints), width, height, FIT_PADDING);
@@ -62,10 +63,10 @@ export function SystemMap({ systemSymbol }: { systemSymbol: string | null }) {
   }, [waypoints, width, height]);
 
   const shipsInSystem = useMemo(
-    () => (ships || []).filter((s) => s.nav?.systemSymbol === systemSymbol),
+    () => (ships ?? []).filter((s) => s.nav.systemSymbol === systemSymbol),
     [ships, systemSymbol],
   );
-  const hasTransit = shipsInSystem.some((s) => s.nav?.status === "IN_TRANSIT");
+  const hasTransit = shipsInSystem.some((s) => s.nav.status === "IN_TRANSIT");
   const now = useAnimationClock(hasTransit);
 
   const placedShips = useMemo(
@@ -77,11 +78,11 @@ export function SystemMap({ systemSymbol }: { systemSymbol: string | null }) {
   const transits = useMemo(
     () =>
       shipsInSystem
-        .filter((s) => s.nav?.status === "IN_TRANSIT")
+        .filter((s) => s.nav.status === "IN_TRANSIT")
         .map((s) => ({
           key: s.symbol,
-          from: layout.index.get(s.nav.route?.origin?.symbol),
-          to: layout.index.get(s.nav.route?.destination?.symbol),
+          from: layout.index.get(s.nav.route.origin.symbol),
+          to: layout.index.get(s.nav.route.destination.symbol),
         }))
         .filter((t): t is Transit => Boolean(t.from && t.to)),
     [shipsInSystem, layout],
@@ -96,7 +97,7 @@ export function SystemMap({ systemSymbol }: { systemSymbol: string | null }) {
     const ids = new Set<string>();
     for (const node of layout.nodes) {
       ids.add(waypointSpriteId(node.symbol, node.type));
-      for (const trait of node.waypoint.traits || []) {
+      for (const trait of node.waypoint.traits ?? []) {
         const id = traitBadgeId(trait.symbol);
         if (id) ids.add(id);
       }
@@ -106,8 +107,8 @@ export function SystemMap({ systemSymbol }: { systemSymbol: string | null }) {
       }
     }
     for (const ship of shipsInSystem) {
-      ids.add(`ship-${shipFamily(ship.frame?.symbol)}`);
-      const badge = roleBadgeId(ship.registration?.role);
+      ids.add(`ship-${shipFamily(ship.frame.symbol)}`);
+      const badge = roleBadgeId(ship.registration.role);
       if (badge) ids.add(badge);
     }
     return [...ids];
@@ -146,14 +147,14 @@ export function SystemMap({ systemSymbol }: { systemSymbol: string | null }) {
             ref={svgRef}
             width={width}
             height={height}
-            viewBox={`0 0 ${width} ${height}`}
+            viewBox={`0 0 ${String(width)} ${String(height)}`}
             className={`lcars-system-map__svg${isDragging ? " is-dragging" : ""}`}
             tabIndex={0}
-            onClick={() => setDetail(null)}
+            onClick={() => { setDetail(null); }}
             {...bind}
           >
             <SpriteDefs ids={spriteIds} />
-            <g transform={`translate(${view.tx},${view.ty}) scale(${view.scale})`}>
+            <g transform={`translate(${String(view.tx)},${String(view.ty)}) scale(${String(view.scale)})`}>
               <OrbitRingLayer
                 rings={layout.rings}
                 scale={view.scale}
@@ -192,8 +193,8 @@ export function SystemMap({ systemSymbol }: { systemSymbol: string | null }) {
           <div
             className="lcars-map__tooltip"
             style={{
-              left: `${badgeTip.x * view.scale + view.tx}px`,
-              top: `${badgeTip.y * view.scale + view.ty}px`,
+              left: `${String(badgeTip.x * view.scale + view.tx)}px`,
+              top: `${String(badgeTip.y * view.scale + view.ty)}px`,
             }}
           >
             {BADGE_LABEL[badgeTip.id]}
@@ -202,15 +203,15 @@ export function SystemMap({ systemSymbol }: { systemSymbol: string | null }) {
         {ready && (
           <MapControls
             scale={view.scale}
-            onZoomIn={() => zoomBy(ZOOM_STEP)}
-            onZoomOut={() => zoomBy(1 / ZOOM_STEP)}
+            onZoomIn={() => { zoomBy(ZOOM_STEP); }}
+            onZoomOut={() => { zoomBy(1 / ZOOM_STEP); }}
             onReset={reset}
           />
         )}
         {detail?.kind === "waypoint" && (
-          <WaypointPopover waypoint={detail.waypoint} onClose={() => setDetail(null)} />
+          <WaypointPopover waypoint={detail.waypoint} onClose={() => { setDetail(null); }} />
         )}
-        {detailShip && <ShipPopover ship={detailShip} onClose={() => setDetail(null)} />}
+        {detailShip && <ShipPopover ship={detailShip} onClose={() => { setDetail(null); }} />}
       </div>
     </Panel>
   );

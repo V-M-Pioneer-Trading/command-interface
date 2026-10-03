@@ -233,7 +233,7 @@ const registry = new Map<string, Sprite>();
 
 Object.entries(WAYPOINT_VARIANTS).forEach(([type, variants]) => {
   variants.forEach((build, i) => {
-    const id = `wp-${type}-${i}`;
+    const id = `wp-${type}-${String(i)}`;
     const { size, grid, palette } = build();
     registry.set(id, compileSprite(id, size, grid, palette));
   });
@@ -244,16 +244,16 @@ Object.entries(WAYPOINT_VARIANTS).forEach(([type, variants]) => {
 export const SPRITES = registry;
 
 export function getSprite(id: string): Sprite | null {
-  return registry.get(id) || null;
+  return registry.get(id) ?? null;
 }
 
 export function waypointSpriteId(symbol: string, type: string): string {
   const variants = WAYPOINT_VARIANTS[type] ? type : "UNKNOWN";
   const count = lookup(WAYPOINT_VARIANTS, variants).length;
   const i = count === 1 ? 0 : hash32(symbol) % count;
-  return `wp-${variants}-${i}`;
+  return `wp-${variants}-${String(i)}`;
 }
 
 export function waypointBaseSize(type: string): number {
-  return WAYPOINT_BASE_SIZE[type] || DEFAULT_BASE_SIZE;
+  return WAYPOINT_BASE_SIZE[type] ?? DEFAULT_BASE_SIZE;
 }

@@ -6,8 +6,8 @@ import "./styles/fonts.css";
 import "./styles/theme.css";
 import "./styles/global.css";
 import App from "./App";
-import { OperatorProvider } from "./context/OperatorContext";
-import { AlertProvider } from "./context/AlertContext";
+import { OperatorProvider } from "./context/OperatorProvider";
+import { AlertProvider } from "./context/AlertProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {

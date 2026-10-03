@@ -36,18 +36,18 @@ export function ShipLayer({
   return (
     <g className="lcars-map__ships">
       {ships.map(({ ship, pos }) => {
-        const family = shipFamily(ship.frame?.symbol);
+        const family = shipFamily(ship.frame.symbol);
         const size = iconLocalSize(SHIP_FAMILY_SIZE[family], scale);
         const half = size / 2;
-        const color = STATUS_COLOR[ship.nav?.status] || "var(--lcars-text-dim)";
+        const color = STATUS_COLOR[ship.nav.status] ?? "var(--lcars-text-dim)";
         const isSelected = ship.symbol === selectedSymbol;
-        const badge = showRole ? roleBadgeId(ship.registration?.role) : null;
+        const badge = showRole ? roleBadgeId(ship.registration.role) : null;
 
         return (
           <g
             key={ship.symbol}
             className="lcars-map__ship"
-            transform={`translate(${pos.x}, ${pos.y})`}
+            transform={`translate(${String(pos.x)}, ${String(pos.y)})`}
             style={{ color }}
             onClick={(e) => {
               e.stopPropagation();
@@ -66,10 +66,10 @@ export function ShipLayer({
                 fill="none"
                 stroke={color}
                 strokeWidth={screenToLocal(1.25, scale)}
-                strokeDasharray={`${screenToLocal(3, scale)} ${screenToLocal(2, scale)}`}
+                strokeDasharray={`${String(screenToLocal(3, scale))} ${String(screenToLocal(2, scale))}`}
               />
             )}
-            <g transform={`rotate(${pos.angle})`}>
+            <g transform={`rotate(${String(pos.angle)})`}>
               <use href={`#ship-${family}`} x={-half} y={-half} width={size} height={size} />
             </g>
             {badge && (
@@ -80,10 +80,10 @@ export function ShipLayer({
                 y={-half - badgeSize / 2}
                 width={badgeSize}
                 height={badgeSize}
-                onPointerEnter={() =>
-                  onBadgeHover({ id: badge, x: pos.x + half, y: pos.y - half })
-                }
-                onPointerLeave={() => onBadgeHover(null)}
+                onPointerEnter={() => {
+                  onBadgeHover({ id: badge, x: pos.x + half, y: pos.y - half });
+                }}
+                onPointerLeave={() => { onBadgeHover(null); }}
               />
             )}
           </g>

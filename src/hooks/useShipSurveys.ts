@@ -22,10 +22,11 @@ export function useShipSurveys(shipSymbol: string | null) {
 
   return {
     surveys: state.shipSymbol === shipSymbol ? state.surveys : [],
-    addSurveys: (found: Survey[]) =>
+    addSurveys: (found: Survey[]) => {
       setState((prev) => ({
         shipSymbol,
         surveys: prev.shipSymbol === shipSymbol ? [...prev.surveys, ...found] : [...found],
-      })),
+      }));
+    },
   };
 }
