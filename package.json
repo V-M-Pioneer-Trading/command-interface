@@ -22,7 +22,7 @@
     "@testing-library/react": "^16.3.3",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
-    "@v-m-pioneer-trading/eslint-config": "https://github.com/V-M-Pioneer-Trading/eslint-config/releases/download/v1.0.0/v-m-pioneer-trading-eslint-config-1.0.0.tgz",
+    "@v-m-pioneer-trading/eslint-config": "https://github.com/V-M-Pioneer-Trading/eslint-config/releases/download/v1.1.0/v-m-pioneer-trading-eslint-config-1.1.0.tgz",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^10.12.0",
     "jsdom": "^30.0.1",
