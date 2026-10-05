@@ -6,6 +6,11 @@ type AuthToken = string | null;
 
 const base = config.agentServiceUrl;
 
+// `getShips` and `getContracts` can answer a literal JSON `null`: agent-service
+// sends one when the gateway's reply carries no `data` (its contract README,
+// item 19: a missing list decodes to null, an empty one stays `[]`). The query
+// hooks turn that into `[]`; the raw calls stay honest about it.
+//
 // Reads require a signed-in Clerk session and no particular scope: they are
 // reads about the one account the fleet plays, so not anonymous (auth-design.md
 // decision 3), but they move nothing. Writes require fleet:control, same as
@@ -15,10 +20,10 @@ export const agentService = {
   getCurrentAgent: (authToken: AuthToken) =>
     request<unknown>(base, "/current-agent", { authToken }),
   getAgent: (authToken: AuthToken) => request<Agent>(base, "/agent", { authToken }),
-  getShips: (authToken: AuthToken) => request<Ship[]>(base, "/ships", { authToken }),
+  getShips: (authToken: AuthToken) => request<Ship[] | null>(base, "/ships", { authToken }),
   getShip: (shipSymbol: string, authToken: AuthToken) =>
     request<Ship>(base, `/ships/${shipSymbol}`, { authToken }),
-  getContracts: (authToken: AuthToken) => request<Contract[]>(base, "/contracts", { authToken }),
+  getContracts: (authToken: AuthToken) => request<Contract[] | null>(base, "/contracts", { authToken }),
   getContract: (contractId: string, authToken: AuthToken) =>
     request<Contract>(base, `/contracts/${contractId}`, { authToken }),
   acceptContract: (contractId: string, authToken: AuthToken) =>
