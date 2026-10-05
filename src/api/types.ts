@@ -51,7 +51,8 @@ export interface CargoItem {
 export interface ShipCargo {
   capacity: number;
   units: number;
-  inventory: CargoItem[];
+  /** agent-service sends `null` for a hold with no list, `[]` for an empty one. */
+  inventory: CargoItem[] | null;
 }
 
 export interface Ship {
