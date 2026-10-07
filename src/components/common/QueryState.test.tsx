@@ -1,15 +1,17 @@
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
 import { QueryState, type QueryStateSource } from "./QueryState";
 
 const show = (query: QueryStateSource<number[]>) =>
   render(
-    <QueryState query={query} notConfigured="Not enabled here." empty="Nothing was asked.">
+    <QueryState query={query} empty="Nothing was asked.">
       {(data) => <p>loaded {data.length}</p>}
     </QueryState>,
   );
 
 describe("QueryState", () => {
+  afterEach(cleanup);
+
   it("renders the data when there is data", () => {
     show({ data: [1, 2] });
     expect(screen.getByText("loaded 2")).toBeTruthy();
@@ -35,13 +37,9 @@ describe("QueryState", () => {
     expect(screen.getByText("Request failed")).toBeTruthy();
   });
 
-  // `null` is the api clients' "this route 404s because the feature was never
-  // enabled on this deployment" — distinct from a failure, and from undefined.
-  it("distinguishes a disabled feature from a query that never ran", () => {
-    show({ data: null });
-    expect(screen.getByText("Not enabled here.")).toBeTruthy();
-
-    show({ data: undefined });
+  // `undefined` is a query that never ran; `null` is a 204 from readResponse.
+  it.each([undefined, null])("renders the empty line for %s data", (data) => {
+    show({ data });
     expect(screen.getByText("Nothing was asked.")).toBeTruthy();
   });
 });

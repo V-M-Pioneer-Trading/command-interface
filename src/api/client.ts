@@ -28,14 +28,13 @@ async function parseErrorMessage(res: Response): Promise<string> {
   }
 }
 
-/** Response → parsed body, or a thrown `ApiError`. */
-export function readResponse<T>(res: Response): Promise<T>;
-export async function readResponse<T>(res: Response): Promise<T | null> {
-  if (res.status === 204) return null;
+/** Response → parsed body, or a thrown `ApiError`. A 204 returns `null`. */
+export async function readResponse<T>(res: Response): Promise<T> {
+  if (res.status === 204) return null as T;
   if (!res.ok) throw new ApiError(res.status, await parseErrorMessage(res));
   // Boundary: the body is not validated, `T` is the caller's claim about it.
-  // A 204 yields null above. The non-null overload is only honest for a route
-  // that never answers one; fleet-service's cooldown does (a ship with none),
+  // A 204 yields null above, which `T` only admits for a route that never
+  // answers one; fleet-service's cooldown does (a ship with none),
   // so callers of such a route type it `request<T | null>`.
   return (await res.json()) as T;
 }
@@ -65,7 +64,7 @@ export function withQuery(
 //
 // `authToken` is optional. A call without it gets whatever the server gives an
 // anonymous caller — navigation-service's cache, automation-service's public
-// observability surface — rather than this client refusing to try.
+// status/event reads — rather than this client refusing to try.
 export interface RequestOptions {
   method?: string;
   authToken?: string | null | undefined;

@@ -67,8 +67,25 @@ describe("AutopilotPanel", () => {
     await vi.waitFor(() => { expect(getStatus).toHaveBeenCalledTimes(2); });
     expect(arm.disabled).toBe(true);
 
+    // Once armed, Arm stays disabled and Pause becomes available.
+    const pause = screen.getByRole<HTMLButtonElement>("button", { name: "Pause" });
     await act(async () => { finishRefetch(armed); await Promise.resolve(); });
-    await vi.waitFor(() => { expect(arm.disabled).toBe(false); });
+    await vi.waitFor(() => { expect(pause.disabled).toBe(false); });
+    expect(arm.disabled).toBe(true);
+  });
+
+  it("shows a dash for each empty field of a disarmed row", async () => {
+    vi.spyOn(automationService, "getStatus").mockResolvedValue({
+      ...row("disarmed"),
+      asteroid: null,
+      market: null,
+      waitingUntil: null,
+    });
+    vi.spyOn(automationService, "getEvents").mockResolvedValue([]);
+    renderPanel();
+
+    expect(await screen.findByText("DISARMED")).toBeTruthy();
+    expect(screen.getAllByText("—")).toHaveLength(3);
   });
 
   it("renders any event type as type plus JSON detail", async () => {

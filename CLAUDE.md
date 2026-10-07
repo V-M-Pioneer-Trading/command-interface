@@ -56,7 +56,7 @@ merged: the gate stops the deploy, not the merge.
 | `src/map/sprites/generators.ts` | Procedural body/structure generators | `pixel`, `rand` |
 | `src/map/sprites/ships.ts` | Hand-drawn ship + badge sprites, frame→family map, badge labels | `pixel` |
 | `src/map/sprites/registry.ts` | Compiled sprite registry, id scheme, per-type base sizes | `pixel`, `rand`, `generators`, `ships` |
-| `src/components/common/QueryState.tsx` | The four things a panel says when it has no data | nothing |
+| `src/components/common/QueryState.tsx` | The three things a panel says when it has no data | nothing |
 | `src/components/map/*` | Thin SVG layers that draw what `src/map` produced | `src/map`, hooks |
 | `src/utils/togglePanelLayout.ts` | Panel order, widths, computed `right` offsets | nothing |
 | `src/utils/nonEmpty.ts` | `nonEmpty(s) ?? fallback`: `||`'s "empty string is absent" rule without `||` | nothing |
@@ -132,11 +132,10 @@ Stated so you can recognise a violation.
 
 **Data**
 
-- Three "no data" answers are distinct and must stay distinct:
-  `undefined` = the query never ran, `null` = the route 404'd because the feature
-  is not enabled on this deployment, a rejection = it failed. Rendering any of
-  them as the panel's own "none found" line states as fact something nobody
-  checked. `components/common/QueryState.tsx` is the one place that decides.
+- Two "no data" answers are distinct and must stay distinct:
+  `undefined` (or a 204's `null`) = nothing was asked or answered, a rejection
+  = it failed. Rendering either as the panel's own "none found" line states as
+  fact something nobody checked. `components/common/QueryState.tsx` is the one place that decides.
 - Cache keys carry no credential. They used to include the pasted game token so
   that changing it could not show the previous agent's ships; the Clerk session
   that replaced it rotates on its own schedule, and keying on a rotating value
@@ -208,7 +207,7 @@ stale numbers. The current sets are:
 | Refuel, sell, purchase cargo, purchase ship | the above plus `agent` |
 | Contract accept / fulfil | `contracts`, `agent` |
 | Contract deliver | `ships`, `cooldown`, `cargo`, `contracts` |
-| Autopilot arm / pause | `autopilotStatus` |
+| Autopilot arm / pause | `autopilotStatus`, `autopilotEvents` (bare prefix) |
 
 ## What is effectively public
 

@@ -9,8 +9,8 @@ import {
 } from "./OperatorContext";
 import { OperatorProvider } from "./OperatorProvider";
 
-// Any second scope will do; this one is only a token claim the tests change.
-const SCOPE_PLANNER_ADVISE = "planner:advise";
+// Any second scope will do; it is only a token claim the tests change.
+const OTHER_SCOPE = "other:scope";
 
 const clerk = {
   isLoaded: true,
@@ -104,50 +104,50 @@ describe("OperatorProvider scope refresh", () => {
   function tokenChangesAfterFirstCall() {
     clerk.getToken
       .mockResolvedValueOnce(jwtWith({ scope: "fleet:control" }))
-      .mockResolvedValue(jwtWith({ scope: "fleet:control planner:advise" }));
+      .mockResolvedValue(jwtWith({ scope: "fleet:control other:scope" }));
   }
 
   it("picks up new scopes after 60 seconds", async () => {
     tokenChangesAfterFirstCall();
     const { result } = renderHook(() => useOperator(), { wrapper });
     await flush();
-    expect(result.current.can(SCOPE_PLANNER_ADVISE)).toBe(false);
+    expect(result.current.can(OTHER_SCOPE)).toBe(false);
 
     await tick(60_000);
-    expect(result.current.can(SCOPE_PLANNER_ADVISE)).toBe(true);
+    expect(result.current.can(OTHER_SCOPE)).toBe(true);
   });
 
   it("picks up new scopes when the window regains focus", async () => {
     tokenChangesAfterFirstCall();
     const { result } = renderHook(() => useOperator(), { wrapper });
     await flush();
-    expect(result.current.can(SCOPE_PLANNER_ADVISE)).toBe(false);
+    expect(result.current.can(OTHER_SCOPE)).toBe(false);
 
     act(() => {
       window.dispatchEvent(new Event("focus"));
     });
     await flush();
-    expect(result.current.can(SCOPE_PLANNER_ADVISE)).toBe(true);
+    expect(result.current.can(OTHER_SCOPE)).toBe(true);
   });
 
   it("picks up new scopes when the document becomes visible", async () => {
     tokenChangesAfterFirstCall();
     const { result } = renderHook(() => useOperator(), { wrapper });
     await flush();
-    expect(result.current.can(SCOPE_PLANNER_ADVISE)).toBe(false);
+    expect(result.current.can(OTHER_SCOPE)).toBe(false);
 
     act(() => {
       document.dispatchEvent(new Event("visibilitychange"));
     });
     await flush();
-    expect(result.current.can(SCOPE_PLANNER_ADVISE)).toBe(true);
+    expect(result.current.can(OTHER_SCOPE)).toBe(true);
   });
 
   it("does not re-render or change the context value when scopes are unchanged", async () => {
     // Same scopes, different order, fresh token each call.
     clerk.getToken
-      .mockResolvedValueOnce(jwtWith({ scope: "fleet:control planner:advise" }))
-      .mockResolvedValue(jwtWith({ scope: "planner:advise fleet:control" }));
+      .mockResolvedValueOnce(jwtWith({ scope: "fleet:control other:scope" }))
+      .mockResolvedValue(jwtWith({ scope: "other:scope fleet:control" }));
     let renders = 0;
     const { result } = renderHook(
       () => {

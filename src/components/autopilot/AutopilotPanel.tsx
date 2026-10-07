@@ -30,7 +30,11 @@ export function AutopilotPanel({ onClose, style }: TogglePanelProps) {
 
   // Returned, not voided: react-query awaits it, so the mutation stays pending
   // until the status refetch lands and a second click cannot hit a stale state.
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.autopilotStatus() });
+  const invalidate = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.autopilotStatus() }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.autopilotEvents() }),
+    ]);
 
   const armMutation = useMutation({
     mutationFn: async () => automationService.arm(await getToken()),
@@ -45,6 +49,7 @@ export function AutopilotPanel({ onClose, style }: TogglePanelProps) {
 
   const busy = armMutation.isPending || pauseMutation.isPending;
   const currentStatus = status?.status;
+  const canArm = hasControl && currentStatus !== "armed";
   const canPause = hasControl && currentStatus === "armed";
 
   return (
@@ -74,7 +79,7 @@ export function AutopilotPanel({ onClose, style }: TogglePanelProps) {
           <dt>MARKET</dt>
           <dd>{status.market ?? "—"}</dd>
           <dt>WAITING UNTIL</dt>
-          <dd>{status.waitingUntil ? formatTime(status.waitingUntil) : "—"}</dd>
+          <dd>{status.waitingUntil ? new Date(status.waitingUntil).toLocaleString() : "—"}</dd>
           <dt>UPDATED</dt>
           <dd>{formatTime(status.updatedAt)}</dd>
         </dl>
@@ -89,7 +94,7 @@ export function AutopilotPanel({ onClose, style }: TogglePanelProps) {
       )}
 
       <div className="lcars-autopilot-panel__actions">
-        <PillButton accent="green" disabled={busy || !hasControl} onClick={() => { armMutation.mutate(); }}>
+        <PillButton accent="green" disabled={!canArm || busy} onClick={() => { armMutation.mutate(); }}>
           Arm
         </PillButton>
         <PillButton accent="yellow" disabled={!canPause || busy} onClick={() => { pauseMutation.mutate(); }}>

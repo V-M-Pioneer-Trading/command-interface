@@ -8,7 +8,7 @@ describe("computeTogglePanelOffsets", () => {
     }
   });
 
-  it("tiles open panels leftwards in PANEL_ORDER, skipping closed ones", () => {
+  it("tiles open panels leftwards in PANEL_ORDER", () => {
     const offsets = computeTogglePanelOffsets(new Set(["contracts", "autopilot"]));
     expect(offsets.contracts).toBe(1);
     // 1rem gap + contracts' own 22rem + 1rem gap.

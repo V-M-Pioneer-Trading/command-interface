@@ -31,5 +31,6 @@ export const queryKeys = {
   market: (waypointSymbol: SymbolArg) => ["market", waypointSymbol] as const,
 
   autopilotStatus: () => ["autopilotStatus"] as const,
-  autopilotEvents: (limit: number) => ["autopilotEvents", limit] as const,
+  autopilotEvents: (limit?: number) =>
+    limit === undefined ? (["autopilotEvents"] as const) : (["autopilotEvents", limit] as const),
 };

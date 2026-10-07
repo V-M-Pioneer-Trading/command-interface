@@ -33,3 +33,14 @@ describe("automationService Authorization", () => {
     expect(headers()).toBeUndefined();
   });
 });
+
+describe("automationService.getEvents", () => {
+  it("passes the limit and unwraps the { events } envelope", async () => {
+    const events = [{ id: "1", occurredAt: "2026-10-08T12:00:00.000Z", type: "sell", detail: {} }];
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(json({ events }));
+    globalThis.fetch = fetchMock;
+
+    await expect(automationService.getEvents(50)).resolves.toEqual(events);
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringMatching(/\/autopilot\/events\?limit=50$/), expect.anything());
+  });
+});

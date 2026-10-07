@@ -154,8 +154,8 @@ hardcoded offsets.
 
 Arm from `paused` resumes; arm from `disarmed` starts a new run. The panel
 polls `GET /autopilot/status` and `GET /autopilot/events` every 5s, shows the
-autopilot row (ship, phase, asteroid, market, wait), and enables Pause only
-while `armed`. The event log is rendered generically — time, type, detail as
+autopilot row (ship, phase, asteroid, market, wait), enables Arm unless
+`armed` and Pause only while `armed`. The event log is rendered generically — time, type, detail as
 JSON — so a new event type needs no UI change.
 
 ## System map

@@ -76,9 +76,9 @@ export function useAgentQuery() {
   });
 }
 
-// A null answer means "no list" (agent-service, nil slice): an empty fleet, not
-// an unconfigured feature. Normalised here so QueryState reaches the panel's own
-// empty state instead of the blank `notConfigured` paragraph.
+// A null answer means "no list" (agent-service, nil slice): an empty fleet.
+// Normalised here so QueryState hands the panel its data and the panel shows
+// its own empty state instead of QueryState's `empty` line.
 export function useShipsQuery() {
   return useGatedQuery({
     key: queryKeys.ships,
