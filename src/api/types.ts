@@ -4,8 +4,8 @@
  * Deliberately a subset: each interface lists the fields some component or
  * hook actually touches, not everything the service sends. Cross-checked
  * against agent-service/ts/openapi.json (Agent, Ship, Contract, ShipCooldown),
- * fleet-service/openapi.json (Survey) and automation-service/src (knobs,
- * autopilot state, event log, anomalies, metrics rollups). navigation-service
+ * fleet-service/openapi.json (Survey) and automation-service/POC.md (autopilot
+ * row, event log). navigation-service
  * and fleet-service document their bodies as free-form JSON, so Waypoint,
  * Market, Shipyard and the `{ data }` envelopes are the SpaceTraders shape as
  * CLAUDE.md records it. No codegen: keep these in step with the services by
@@ -161,17 +161,15 @@ export interface Shipyard {
 
 // ── automation-service ───────────────────────────────────────────────────
 
-export type AutopilotStatusName = "disarmed" | "armed" | "paused" | "aborted";
-export type AutopilotMode = "live" | "shadow";
-
+/** `GET /autopilot/status` — the single autopilot row. */
 export interface AutopilotStatus {
-  status: AutopilotStatusName;
-  mode: AutopilotMode | null;
-}
-
-export interface ShipTask {
-  taskKind: "mining" | "contract" | "scout";
+  status: "disarmed" | "armed" | "paused";
+  shipSymbol: string;
   phase: string;
+  asteroid: string | null;
+  market: string | null;
+  waitingUntil: string | null;
+  updatedAt: string;
 }
 
 export interface EventLogEntry {
@@ -181,56 +179,6 @@ export interface EventLogEntry {
   detail: Record<string, unknown>;
 }
 
-export interface MetricsRollup {
-  creditsPerHour: number;
-  windowEnd: string;
-}
-
-export interface MetricsContext {
-  rollups: MetricsRollup[];
-  events: EventLogEntry[];
-}
-
-export interface Anomaly {
-  id: string;
-  type: string;
-  detectedAt: string;
-  detail: Record<string, unknown>;
-  deliveredAt: string | null;
-  deliveryAttempts: number;
-}
-
-export interface AnomaliesDigest {
-  anomalies: Anomaly[];
-  events: EventLogEntry[];
-}
-
-export type KnobClass = "model" | "policy" | "alert";
-
-export interface Knob {
-  name: string;
-  value: number;
-  min: number;
-  max: number;
-  default: number;
-  /** Absent on an older automation-service; the UI treats that as "policy". */
-  class?: KnobClass;
-  description?: string;
-}
-
 // ── health ───────────────────────────────────────────────────────────────
 
 export type ServiceStatus = "up" | "down";
-
-// ── query parameters ─────────────────────────────────────────────────────
-
-export interface MetricsContextParams {
-  rollupLimit?: number;
-  eventLimit?: number;
-}
-
-export interface AnomaliesDigestParams {
-  windowMinutes?: number;
-  anomalyLimit?: number;
-  eventLimit?: number;
-}

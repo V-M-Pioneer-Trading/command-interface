@@ -10,8 +10,6 @@ import { SystemMap } from "../map/SystemMap";
 import { ShipDetailPanel } from "../shipDetail/ShipDetailPanel";
 import { ContractsPanel } from "../contracts/ContractsPanel";
 import { AutopilotPanel } from "../autopilot/AutopilotPanel";
-import { ObservabilityPanel } from "../observability/ObservabilityPanel";
-import { KnobEditor } from "../knobs/KnobEditor";
 import { ChatStub } from "../chat/ChatStub";
 import "./Dashboard.css";
 
@@ -41,8 +39,6 @@ export function Dashboard() {
         />
         {openPanels.contracts && <ContractsPanel {...panelProps("contracts")} />}
         {openPanels.autopilot && <AutopilotPanel {...panelProps("autopilot")} />}
-        {openPanels.observability && <ObservabilityPanel {...panelProps("observability")} />}
-        {openPanels.knobs && <KnobEditor {...panelProps("knobs")} />}
         <div className="lcars-dashboard__fleet">
           <FleetList />
         </div>

@@ -8,12 +8,11 @@ describe("computeTogglePanelOffsets", () => {
     }
   });
 
-  it("tiles open panels leftwards in PANEL_ORDER, skipping closed ones", () => {
-    const offsets = computeTogglePanelOffsets(new Set(["contracts", "knobs"]));
+  it("tiles open panels leftwards in PANEL_ORDER", () => {
+    const offsets = computeTogglePanelOffsets(new Set(["contracts", "autopilot"]));
     expect(offsets.contracts).toBe(1);
     // 1rem gap + contracts' own 22rem + 1rem gap.
-    expect(offsets.knobs).toBe(24);
-    expect(offsets.autopilot).toBeUndefined();
+    expect(offsets.autopilot).toBe(24);
   });
 
   it("gives every open panel a finite, unique offset", () => {

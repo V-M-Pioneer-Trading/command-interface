@@ -28,28 +28,13 @@ async function parseErrorMessage(res: Response): Promise<string> {
   }
 }
 
-/**
- * Response → parsed body, or a thrown `ApiError`.
- *
- * `allow404` turns a 404 into `null` for routes where "absent" is a normal
- * answer rather than a failure: a ship automation-service isn't managing, or
- * an optional feature (metrics rollups, anomaly detection) the operator never
- * enabled. Callers must distinguish that `null` from `undefined` ("still
- * loading") and from a rejection ("the service is unwell") — all three mean
- * different things on screen.
- */
-export function readResponse<T>(res: Response, options: { allow404: true }): Promise<T | null>;
-export function readResponse<T>(res: Response, options?: { allow404?: boolean }): Promise<T>;
-export async function readResponse<T>(
-  res: Response,
-  { allow404 = false }: { allow404?: boolean } = {},
-): Promise<T | null> {
-  if (allow404 && res.status === 404) return null;
-  if (res.status === 204) return null;
+/** Response → parsed body, or a thrown `ApiError`. A 204 returns `null`. */
+export async function readResponse<T>(res: Response): Promise<T> {
+  if (res.status === 204) return null as T;
   if (!res.ok) throw new ApiError(res.status, await parseErrorMessage(res));
   // Boundary: the body is not validated, `T` is the caller's claim about it.
-  // A 204 yields null above. The non-null overload is only honest for a route
-  // that never answers one; fleet-service's cooldown does (a ship with none),
+  // A 204 yields null above, which `T` only admits for a route that never
+  // answers one; fleet-service's cooldown does (a ship with none),
   // so callers of such a route type it `request<T | null>`.
   return (await res.json()) as T;
 }
@@ -79,7 +64,7 @@ export function withQuery(
 //
 // `authToken` is optional. A call without it gets whatever the server gives an
 // anonymous caller — navigation-service's cache, automation-service's public
-// observability surface — rather than this client refusing to try.
+// status/event reads — rather than this client refusing to try.
 export interface RequestOptions {
   method?: string;
   authToken?: string | null | undefined;

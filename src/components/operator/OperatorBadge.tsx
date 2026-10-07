@@ -73,7 +73,7 @@ export function OperatorBadge() {
         <span className="lcars-operator__label">OBSERVER</span>
         <PillButton
           accent="orange"
-          title="Sign in to arm, pause, abort or retune the autopilot"
+          title="Sign in to arm or pause the autopilot"
           onClick={() => {
             void signIn
               ?.authenticateWithRedirect({

@@ -33,7 +33,7 @@ flowchart LR
         agent["agent-service :8080<br/>agent · ships · contracts · trade"]
         nav["navigation-service :8081<br/>waypoints · market · shipyard"]
         fleet["fleet-service :3001<br/>ship actions"]
-        auto["automation-service :3003<br/>autopilot · knobs · metrics"]
+        auto["automation-service :3003<br/>autopilot · event log"]
     end
 
     app --> agent & nav & fleet & auto
@@ -52,7 +52,7 @@ on screen is polled and thrown away.
 | **agent-service** `:8080` | Agent stats, ship list, contracts, cargo purchase/sale, ship purchase | No — needs a Clerk session |
 | **navigation-service** `:8081` | System waypoints, market and shipyard data | Yes — serves its SQLite cache; a session upgrades it to a live fetch-on-miss |
 | **fleet-service** `:3001` | Orbit, dock, navigate, survey, extract, refuel, transfer, flight mode, contract delivery | No — needs `fleet:control` |
-| **automation-service** `:3003` | Autopilot arm/pause/abort, per-ship task state, planner knobs, metrics rollups, anomaly digest | Reads yes, autopilot writes need `fleet:control`, knob writes need `planner:advise` |
+| **automation-service** `:3003` | Autopilot status, event log, arm/pause | Reads yes, arm/pause need `fleet:control` |
 | **auth-service** `:8082` | Nothing directly — health probe only. Every authenticated request to the services above is verified through it | Health probe is public |
 | **st-gateway** `:3002` | Nothing directly — health probe only. It is the rate-limited chokepoint the four services above share | Health probe is public |
 | **ai-service** `:3004` | Nothing yet — health probe only, and only in local development | See [known limitations](#known-limitations) |
@@ -67,7 +67,7 @@ One credential, and it is not a login wall.
 | Travels as | `Authorization: Bearer …` |
 | Obtained by | Google sign-in, from the agent bar |
 | Held in | Clerk's SDK, refreshed automatically |
-| Grants | `fleet:control` → every write except knob edits; `planner:advise` → knob edits |
+| Grants | `fleet:control` → every write |
 
 The SpaceTraders game token used to travel beside it on `X-SpaceTraders-Token`,
 pasted by the operator and kept in `sessionStorage`. It is gone: st-gateway
@@ -137,73 +137,26 @@ time as workflow env, which is why a new one has to be added there as well as to
 
 The dashboard is one screen: an agent bar across the top, three columns beneath
 it — fleet list, system map, ship detail — and the command-console stub below.
-Four overlay panels toggle in from the agent bar on top of that.
+Two overlay panels toggle in from the agent bar on top of that.
 
-All four overlay panels can be open at once. `src/utils/togglePanelLayout.ts`
+Both overlay panels can be open at once. `src/utils/togglePanelLayout.ts`
 computes each open panel's `right` offset from *only the panels currently open*,
 so one open panel always sits at the base offset no matter how many panel types
-exist. Adding a fifth means adding one entry there, not re-deriving four
+exist. Adding a third means adding one entry there, not re-deriving
 hardcoded offsets.
 
 | Panel | Reads | Writes | Gated on |
 | --- | --- | --- | --- |
 | **Contracts** | `GET /contracts` | Accept, fulfill | `fleet:control` |
-| **Autopilot** | `GET /autopilot/status` | Arm, pause, abort | `fleet:control` |
-| **Observability** | `GET /metrics/context`, `GET /anomalies/digest` | — | nothing; public |
-| **Knobs** | `GET /planner/knobs` | `PUT /planner/knobs/:name` | reads public, writes `planner:advise` |
+| **Autopilot** | `GET /autopilot/status`, `GET /autopilot/events` | Arm, pause | `fleet:control` |
 
 ### Autopilot
 
-Arming is allowed from any state — that is how you switch live↔shadow or replace
-the token automation-service is holding. Only pause and abort care where you are.
-
-```mermaid
-stateDiagram-v2
-    [*] --> unknown: before the first successful status poll
-    unknown --> idle: first poll — or straight to whatever<br/>state the autopilot is already in
-    idle --> armed: Arm
-    armed --> paused: Pause
-    paused --> armed: Arm
-    armed --> aborted: Abort
-    paused --> aborted: Abort
-    aborted --> armed: Arm
-```
-
-The panel polls `GET /autopilot/status` every 5s and enables Pause only while
-`armed`, Abort while `armed` or `paused`, and Arm always. `unknown` is the
-pre-first-poll state only — once a status has arrived, a later failed poll keeps
-showing the last one rather than reverting. A ship the autopilot
-is not managing 404s on its per-ship route — that is a normal *not managed*
-state, shown as a blank badge, not an error.
-
-### Knobs
-
-Knobs are grouped by class, ordered from "safe to tune" to "think first", because
-the classes mean genuinely different things:
-
-| Class | What it is | Who may change it |
-| --- | --- | --- |
-| **policy** | Your preferences. No measurable right answer. | Operator, and the AI supervisor |
-| **alert** | What counts as something being wrong. | Operator only — the AI cannot widen its own alarms |
-| **model** | What the planner believes about the universe, measured from the fleet's own history. Pinning one by hand changes what the planner believes rather than what is true. | Operator, carefully |
-
-Bounds are checked client-side against the same inclusive `[min, max]` the server
-enforces, so an out-of-range value shows an inline error instead of a round trip.
-The list polls every 15s; a row with unsaved input keeps it even if the server
-value changes underneath, while an untouched row adopts the new value silently.
-Saving is last-write-wins.
-
-### Observability
-
-Four sections over automation-service's aggregate endpoints: a hand-rolled inline
-SVG credits/hour chart (no charting library — same convention as the map), the
-planner's event/decision feed, the anomaly log with webhook-delivery state, and
-the digest's notable events. Every value the chart shows on hover is also listed
-as plain text beneath it; nothing is hover-only.
-
-Metrics rollups and anomaly detection are both *optional* backend features. A 404
-from either means the operator never enabled it — the panel says so, which is a
-different sentence from "this failed" and from "there is nothing to show".
+Arm from `paused` resumes; arm from `disarmed` starts a new run. The panel
+polls `GET /autopilot/status` and `GET /autopilot/events` every 5s, shows the
+autopilot row (ship, phase, asteroid, market, wait), enables Arm unless
+`armed` and Pause only while `armed`. The event log is rendered generically — time, type, detail as
+JSON — so a new event type needs no UI change.
 
 ## System map
 
@@ -356,8 +309,6 @@ Things this implementation deliberately does not do, or does not do yet.
 - **The map re-renders wholesale while a ship is in transit**, at rAF rate. Fine
   at this scale — ~100 waypoints, <20 ships — and the clock stops entirely when
   nothing is moving, but it is not a budget that survives a much bigger system.
-- **Knob edits are last-write-wins.** Two operators saving the same knob race,
-  and the loser is not told.
 - **Alerts are transient.** Errors surface as auto-dismissing banners with no
   history; a failure you miss is gone.
 

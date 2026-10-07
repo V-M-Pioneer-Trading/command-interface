@@ -38,24 +38,19 @@ describe("readResponse", () => {
     });
   });
 
-  // "Absent" is a normal answer on some routes (a ship automation-service isn't
-  // managing, an optional feature nobody enabled) and a failure on the rest.
-  it("only treats 404 as null where the caller opted in", async () => {
-    await expect(readResponse(json({}, 404), { allow404: true })).resolves.toBeNull();
+  it("treats a 404 as a failure", async () => {
     await expect(readResponse(json({ error: "gone" }, 404))).rejects.toThrow("gone");
   });
 });
 
 describe("withQuery", () => {
   it("appends only the params that were supplied", () => {
-    expect(withQuery("/metrics/context", { rollupLimit: 20, eventLimit: undefined })).toBe(
-      "/metrics/context?rollupLimit=20",
-    );
+    expect(withQuery("/autopilot/events", { limit: 20, after: undefined })).toBe("/autopilot/events?limit=20");
   });
 
   it("leaves the path alone when nothing was supplied", () => {
-    expect(withQuery("/anomalies/digest", {})).toBe("/anomalies/digest");
-    expect(withQuery("/anomalies/digest")).toBe("/anomalies/digest");
+    expect(withQuery("/autopilot/events", {})).toBe("/autopilot/events");
+    expect(withQuery("/autopilot/events")).toBe("/autopilot/events");
   });
 });
 

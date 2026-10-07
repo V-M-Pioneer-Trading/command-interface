@@ -16,7 +16,6 @@
  * whole cache several times an hour. Signing out clears it explicitly instead.
 
  */
-import type { AnomaliesDigestParams, MetricsContextParams } from "../api/types";
 
 /** Signed-out or not-yet-known symbols are passed through as-is, as before. */
 type SymbolArg = string | null | undefined;
@@ -32,10 +31,6 @@ export const queryKeys = {
   market: (waypointSymbol: SymbolArg) => ["market", waypointSymbol] as const,
 
   autopilotStatus: () => ["autopilotStatus"] as const,
-  shipTask: (shipSymbol: SymbolArg) => ["shipTask", shipSymbol] as const,
-  metricsContext: (params?: MetricsContextParams) =>
-    params ? (["metricsContext", params] as const) : (["metricsContext"] as const),
-  anomaliesDigest: (params?: AnomaliesDigestParams) =>
-    params ? (["anomaliesDigest", params] as const) : (["anomaliesDigest"] as const),
-  knobs: () => ["knobs"] as const,
+  autopilotEvents: (limit?: number) =>
+    limit === undefined ? (["autopilotEvents"] as const) : (["autopilotEvents", limit] as const),
 };

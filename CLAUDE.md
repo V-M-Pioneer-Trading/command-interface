@@ -56,11 +56,10 @@ merged: the gate stops the deploy, not the merge.
 | `src/map/sprites/generators.ts` | Procedural body/structure generators | `pixel`, `rand` |
 | `src/map/sprites/ships.ts` | Hand-drawn ship + badge sprites, frame→family map, badge labels | `pixel` |
 | `src/map/sprites/registry.ts` | Compiled sprite registry, id scheme, per-type base sizes | `pixel`, `rand`, `generators`, `ships` |
-| `src/components/common/QueryState.tsx` | The four things a panel says when it has no data | nothing |
+| `src/components/common/QueryState.tsx` | The three things a panel says when it has no data | nothing |
 | `src/components/map/*` | Thin SVG layers that draw what `src/map` produced | `src/map`, hooks |
 | `src/utils/togglePanelLayout.ts` | Panel order, widths, computed `right` offsets | nothing |
 | `src/utils/nonEmpty.ts` | `nonEmpty(s) ?? fallback`: `||`'s "empty string is absent" rule without `||` | nothing |
-| `src/utils/eventLog.ts` | Formatting for event/anomaly `detail` blobs | nothing |
 | `src/utils/spaceTraders.ts` | Symbol parsing, countdown formatting | nothing |
 | `src/devMap.tsx` | Dev-only harness: generated system, stubbed `fetch`, stub operator | everything below it |
 
@@ -133,11 +132,10 @@ Stated so you can recognise a violation.
 
 **Data**
 
-- Three "no data" answers are distinct and must stay distinct:
-  `undefined` = the query never ran, `null` = the route 404'd because the feature
-  is not enabled on this deployment, a rejection = it failed. Rendering any of
-  them as the panel's own "none found" line states as fact something nobody
-  checked. `components/common/QueryState.tsx` is the one place that decides.
+- Two "no data" answers are distinct and must stay distinct:
+  `undefined` (or a 204's `null`) = nothing was asked or answered, a rejection
+  = it failed. Rendering either as the panel's own "none found" line states as
+  fact something nobody checked. `components/common/QueryState.tsx` is the one place that decides.
 - Cache keys carry no credential. They used to include the pasted game token so
   that changing it could not show the previous agent's ships; the Clerk session
   that replaced it rotates on its own schedule, and keying on a rotating value
@@ -209,8 +207,7 @@ stale numbers. The current sets are:
 | Refuel, sell, purchase cargo, purchase ship | the above plus `agent` |
 | Contract accept / fulfil | `contracts`, `agent` |
 | Contract deliver | `ships`, `cooldown`, `cargo`, `contracts` |
-| Autopilot arm / pause / abort | `autopilotStatus` |
-| Knob set | `knobs`, `metricsContext` (bare prefix — matches every parameterised key) |
+| Autopilot arm / pause | `autopilotStatus`, `autopilotEvents` (bare prefix) |
 
 ## What is effectively public
 
@@ -238,12 +235,8 @@ SpaceTraders shape passed through, except automation-service's:
 | `GET /ships/:s/cargo`, `/cooldown` | `{ data: {...} }` |
 | `POST /ships/:s/survey` | `{ data: { surveys: [...] } }` |
 | `POST /ships/:s/refuel` | `{ data: { transaction: { units } } }` |
-| `GET /autopilot/status` | `{ status, mode }` |
-| `GET /autopilot/ships/:s` | `{ task: { taskKind, phase } }`, or 404 |
-| `GET /planner/knobs` | `{ knobs: [{ name, value, min, max, default, class?, description? }] }` |
-| `PUT /planner/knobs/:name` | `{ knob }` |
-| `GET /metrics/context` | `{ rollups: [{ creditsPerHour, windowEnd }], events: [{ id, type, occurredAt, detail }] }`, or 404 |
-| `GET /anomalies/digest` | `{ anomalies: [{ id, type, detectedAt, detail, deliveredAt, deliveryAttempts }], events: [...] }`, or 404 |
+| `GET /autopilot/status` | `{ status, shipSymbol, phase, asteroid, market, waitingUntil, updatedAt }` |
+| `GET /autopilot/events?limit=` | `{ events: [{ id, occurredAt, type, detail }] }`, newest first |
 | any error | agent/nav/fleet: `{ error }` or `{ message }`. automation-service: `{ error: { message } }`. `client.ts` handles both. |
 
 ## Domain facts that are not obvious from the code
@@ -257,9 +250,6 @@ SpaceTraders shape passed through, except automation-service's:
   size. An unknown type falls back to `wp-UNKNOWN-0`.
 - There are **16** ship frames, collapsed here to 5 silhouette families. An
   unknown frame renders as `utility`.
-- A 404 from `GET /autopilot/ships/:symbol` means "automation-service is not
-  managing this ship" — a normal state, not an error. Metrics and anomaly routes
-  404 for a different normal reason: the operator never enabled that scheduler.
 - `POST /refuel` succeeds with `transaction.units === 0` when the tank is already
   full **or** the ship has no fuel tank at all. Both are reported as info, not
   errors.
@@ -279,7 +269,7 @@ Two levels:
   `utils/togglePanelLayout`, `api/client`, `api/healthService`. No DOM needed;
   they simply run under jsdom too.
 - **Hooks and small components** — `context/OperatorContext`,
-  `hooks/useShipSurveys`, `hooks/useCountdown`, `components/knobs/KnobRow`,
+  `hooks/useShipSurveys`, `hooks/useCountdown`, `components/autopilot/AutopilotPanel`,
   `components/common/QueryState`. `renderHook` and
   `render` from testing-library.
 

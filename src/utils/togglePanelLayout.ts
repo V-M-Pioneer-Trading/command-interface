@@ -1,9 +1,9 @@
-// Toggled panels (Contracts, Autopilot, Observability, Knobs, ...) can all be
+// Toggled panels (Contracts, Autopilot) can all be
 // open at once — each is `position: absolute` with a computed `right` offset
 // so they tile left-to-right instead of stacking on identical coordinates.
 // Order and width here must match the panel components' own CSS widths.
 const GAP_REM = 1;
-export const PANEL_ORDER = ["contracts", "autopilot", "observability", "knobs"] as const;
+export const PANEL_ORDER = ["contracts", "autopilot"] as const;
 export type PanelKey = (typeof PANEL_ORDER)[number];
 
 // Partial on purpose: the lookup below must cope with a key that has no width
@@ -11,8 +11,6 @@ export type PanelKey = (typeof PANEL_ORDER)[number];
 const PANEL_WIDTH_REM: Partial<Record<PanelKey, number>> = {
   contracts: 22,
   autopilot: 22,
-  observability: 28,
-  knobs: 24,
 };
 // Used if a panel key is opened without a matching PANEL_WIDTH_REM entry, so a
 // missing width degrades to an overly generous offset instead of `NaN`/`undefined`
