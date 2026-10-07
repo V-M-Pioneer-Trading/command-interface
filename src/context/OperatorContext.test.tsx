@@ -4,11 +4,13 @@ import { act, renderHook } from "@testing-library/react";
 import {
   OperatorContext,
   SCOPE_FLEET_CONTROL,
-  SCOPE_PLANNER_ADVISE,
   scopesFromToken,
   useOperator,
 } from "./OperatorContext";
 import { OperatorProvider } from "./OperatorProvider";
+
+// Any second scope will do; this one is only a token claim the tests change.
+const SCOPE_PLANNER_ADVISE = "planner:advise";
 
 const clerk = {
   isLoaded: true,

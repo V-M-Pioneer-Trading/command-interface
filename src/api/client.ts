@@ -28,23 +28,9 @@ async function parseErrorMessage(res: Response): Promise<string> {
   }
 }
 
-/**
- * Response → parsed body, or a thrown `ApiError`.
- *
- * `allow404` turns a 404 into `null` for routes where "absent" is a normal
- * answer rather than a failure: a ship automation-service isn't managing, or
- * an optional feature (metrics rollups, anomaly detection) the operator never
- * enabled. Callers must distinguish that `null` from `undefined` ("still
- * loading") and from a rejection ("the service is unwell") — all three mean
- * different things on screen.
- */
-export function readResponse<T>(res: Response, options: { allow404: true }): Promise<T | null>;
-export function readResponse<T>(res: Response, options?: { allow404?: boolean }): Promise<T>;
-export async function readResponse<T>(
-  res: Response,
-  { allow404 = false }: { allow404?: boolean } = {},
-): Promise<T | null> {
-  if (allow404 && res.status === 404) return null;
+/** Response → parsed body, or a thrown `ApiError`. */
+export function readResponse<T>(res: Response): Promise<T>;
+export async function readResponse<T>(res: Response): Promise<T | null> {
   if (res.status === 204) return null;
   if (!res.ok) throw new ApiError(res.status, await parseErrorMessage(res));
   // Boundary: the body is not validated, `T` is the caller's claim about it.

@@ -5,7 +5,7 @@ const json = (body: unknown) =>
   new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
 
 function capture() {
-  const fetchMock = vi.fn<typeof fetch>().mockImplementation(() => Promise.resolve(json({ knob: {}, status: "armed" })));
+  const fetchMock = vi.fn<typeof fetch>().mockImplementation(() => Promise.resolve(json({ status: "armed" })));
   globalThis.fetch = fetchMock;
   return () => {
     const init = fetchMock.mock.calls[0]?.[1];
@@ -16,10 +16,8 @@ function capture() {
 
 describe("automationService Authorization", () => {
   const writes: [string, (token: string) => Promise<unknown>][] = [
-    ["arm", (t) => automationService.arm("live", t)],
+    ["arm", (t) => automationService.arm(t)],
     ["pause", (t) => automationService.pause(t)],
-    ["abort", (t) => automationService.abort(t)],
-    ["setKnob", (t) => automationService.setKnob("minMargin", 3, t)],
   ];
 
   it.each(writes)("%s sends the Clerk session as a Bearer token", async (_name, run) => {

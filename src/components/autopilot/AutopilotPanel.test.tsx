@@ -15,7 +15,30 @@ const operator: Operator = {
   can: (s) => s === SCOPE_FLEET_CONTROL,
 };
 
-describe("AutopilotPanel mutations", () => {
+const row = (status: AutopilotStatus["status"]): AutopilotStatus => ({
+  status,
+  shipSymbol: "SHIP-1",
+  phase: "TRAVEL_TO_ASTEROID",
+  asteroid: "X1-A1",
+  market: "X1-M1",
+  waitingUntil: null,
+  updatedAt: "2026-10-08T12:00:00.000Z",
+});
+
+function renderPanel() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={client}>
+      <AlertProvider>
+        <OperatorContext.Provider value={operator}>
+          <AutopilotPanel onClose={() => undefined} />
+        </OperatorContext.Provider>
+      </AlertProvider>
+    </QueryClientProvider>,
+  );
+}
+
+describe("AutopilotPanel", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
@@ -25,24 +48,15 @@ describe("AutopilotPanel mutations", () => {
   // keeps the mutation pending until the status refetch lands. Settling at once
   // lets a second click through against a stale status (a 409 from the service).
   it("keeps arming pending until the status refetch resolves", async () => {
-    const armed = { status: "armed", mode: "live" } as AutopilotStatus;
+    const armed = row("armed");
     let finishRefetch: (s: AutopilotStatus) => void = () => undefined;
     const getStatus = vi
       .spyOn(automationService, "getStatus")
-      .mockResolvedValueOnce({ status: "disarmed", mode: "live" })
+      .mockResolvedValueOnce(row("disarmed"))
       .mockImplementationOnce(() => new Promise<AutopilotStatus>((r) => { finishRefetch = r; }));
+    vi.spyOn(automationService, "getEvents").mockResolvedValue([]);
     vi.spyOn(automationService, "arm").mockResolvedValue(armed);
-
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(
-      <QueryClientProvider client={client}>
-        <AlertProvider>
-          <OperatorContext.Provider value={operator}>
-            <AutopilotPanel onClose={() => undefined} />
-          </OperatorContext.Provider>
-        </AlertProvider>
-      </QueryClientProvider>,
-    );
+    renderPanel();
 
     const arm = await screen.findByRole<HTMLButtonElement>("button", { name: "Arm" });
     await vi.waitFor(() => { expect(getStatus).toHaveBeenCalledTimes(1); });
@@ -55,5 +69,16 @@ describe("AutopilotPanel mutations", () => {
 
     await act(async () => { finishRefetch(armed); await Promise.resolve(); });
     await vi.waitFor(() => { expect(arm.disabled).toBe(false); });
+  });
+
+  it("renders any event type as type plus JSON detail", async () => {
+    vi.spyOn(automationService, "getStatus").mockResolvedValue(row("armed"));
+    vi.spyOn(automationService, "getEvents").mockResolvedValue([
+      { id: "1", occurredAt: "2026-10-08T12:00:00.000Z", type: "extract", detail: { units: 7 } },
+    ]);
+    renderPanel();
+
+    expect(await screen.findByText("extract")).toBeTruthy();
+    expect(screen.getByText('{"units":7}')).toBeTruthy();
   });
 });

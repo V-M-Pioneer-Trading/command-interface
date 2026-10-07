@@ -6,6 +6,8 @@
      the two never overlap (see src/utils/togglePanelLayout.ts). */
   right: 1rem;
   width: 22rem;
+  max-height: 80vh;
+  overflow-y: auto;
   background: var(--lcars-panel-bg);
   border: 1px solid var(--lcars-orange);
   border-radius: var(--radius-panel);
@@ -63,41 +65,9 @@
   color: var(--lcars-text-on-light);
 }
 
-.lcars-autopilot-panel__status-value.status-disarmed,
-.lcars-autopilot-panel__status-value.status-aborted {
+.lcars-autopilot-panel__status-value.status-disarmed {
   background: #333;
   color: var(--lcars-text);
-}
-
-.lcars-autopilot-panel__mode-value {
-  font-size: 0.7rem;
-  padding: 0.1rem 0.5rem;
-  border-radius: var(--radius-pill);
-  color: var(--lcars-text-on-light);
-}
-
-.lcars-autopilot-panel__mode-value.mode-live {
-  background: var(--lcars-red-alert);
-}
-
-.lcars-autopilot-panel__mode-value.mode-shadow {
-  background: var(--lcars-blue);
-}
-
-.lcars-autopilot-panel__arm-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0 1rem 0.75rem;
-}
-
-.lcars-autopilot-panel__mode-select {
-  background: #1a1a1a;
-  border: 1px solid var(--lcars-text-dim);
-  border-radius: 0.3rem;
-  padding: 0.4rem 0.6rem;
-  color: var(--lcars-text);
-  font-size: 0.8rem;
 }
 
 .lcars-autopilot-panel__actions {
@@ -111,4 +81,66 @@
   font-size: 0.75rem;
   letter-spacing: 0.06em;
   color: var(--lcars-yellow);
+}
+
+.lcars-autopilot-panel__row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.75rem;
+  margin: 0;
+  padding: 0 1rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.lcars-autopilot-panel__row dt {
+  color: var(--lcars-text-dim);
+}
+
+.lcars-autopilot-panel__row dd {
+  margin: 0;
+}
+
+.lcars-autopilot-panel__events {
+  padding: 0.75rem 1rem 0;
+}
+
+.lcars-autopilot-panel__events h3 {
+  font-size: 0.8rem;
+  color: var(--lcars-orange);
+  margin-bottom: 0.4rem;
+}
+
+.lcars-autopilot-panel__events ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.lcars-autopilot-panel__events li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  background: #1a1a1a;
+  border-radius: 0.3rem;
+  padding: 0.3rem 0.5rem;
+}
+
+.lcars-autopilot-panel__event-time,
+.lcars-autopilot-panel__empty {
+  color: var(--lcars-text-dim);
+  font-size: 0.75rem;
+}
+
+.lcars-autopilot-panel__event-type {
+  color: var(--lcars-tan);
+  font-weight: 700;
+}
+
+.lcars-autopilot-panel__events code {
+  color: var(--lcars-text-dim);
+  overflow-wrap: anywhere;
 }

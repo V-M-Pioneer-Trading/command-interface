@@ -13,8 +13,6 @@ import "./AgentBar.css";
 const PANEL_BUTTONS: Record<PanelKey, { label: string; accent: Accent }> = {
   contracts: { label: "Contracts", accent: "lavender" },
   autopilot: { label: "Autopilot", accent: "orange" },
-  observability: { label: "Observability", accent: "blue" },
-  knobs: { label: "Knobs", accent: "tan" },
 };
 
 /** An unavailable stat reads as "—", never as a blank space that looks broken. */

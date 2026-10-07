@@ -1,39 +1,39 @@
 import { nonEmpty } from "../../utils/nonEmpty";
-import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAlerts } from "../../context/AlertContext";
-import { useAutopilotStatusQuery } from "../../hooks/queries";
+import { useAutopilotEventsQuery, useAutopilotStatusQuery } from "../../hooks/queries";
 import { useOperator, SCOPE_FLEET_CONTROL } from "../../context/OperatorContext";
 import { queryKeys } from "../../hooks/queryKeys";
 import { automationService } from "../../api/automationService";
-import type { AutopilotMode } from "../../api/types";
 import { PillButton } from "../common/PillButton";
+import { QueryState } from "../common/QueryState";
 import type { TogglePanelProps } from "../common/TogglePanelProps";
 import "./AutopilotPanel.css";
+
+const EVENT_LIMIT = 50;
+
+const formatTime = (iso: string) =>
+  new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
 export function AutopilotPanel({ onClose, style }: TogglePanelProps) {
   const { pushAlert } = useAlerts();
   const queryClient = useQueryClient();
   const { data: status, isLoading } = useAutopilotStatusQuery();
+  const events = useAutopilotEventsQuery(EVENT_LIMIT);
   const { isSignedIn, can, getToken } = useOperator();
 
   // Rendered disabled rather than hidden. A visitor should be able to see that
-  // an arm/abort surface exists and is gated — hiding it makes the system look
+  // an arm/pause surface exists and is gated — hiding it makes the system look
   // less capable than it is, and a disabled control is self-documenting in a
   // way an absent one is not.
   const hasControl = can(SCOPE_FLEET_CONTROL);
-
-  // Arming carries no credential (auth-design.md decision 5): st-gateway
-  // injects the game token, so the mode is the only input and the Clerk
-  // session in the header is what proves you may arm at all.
-  const [mode, setMode] = useState<AutopilotMode>("live");
 
   // Returned, not voided: react-query awaits it, so the mutation stays pending
   // until the status refetch lands and a second click cannot hit a stale state.
   const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.autopilotStatus() });
 
   const armMutation = useMutation({
-    mutationFn: async () => automationService.arm(mode, await getToken()),
+    mutationFn: async () => automationService.arm(await getToken()),
     onSuccess: invalidate,
     onError: (err: Error) => pushAlert(err.message || "Failed to arm autopilot"),
   });
@@ -42,19 +42,10 @@ export function AutopilotPanel({ onClose, style }: TogglePanelProps) {
     onSuccess: invalidate,
     onError: (err: Error) => pushAlert(err.message || "Failed to pause autopilot"),
   });
-  const abortMutation = useMutation({
-    mutationFn: async () => automationService.abort(await getToken()),
-    onSuccess: invalidate,
-    onError: (err) => pushAlert(err.message || "Failed to abort autopilot"),
-  });
 
-  const busy = armMutation.isPending || pauseMutation.isPending || abortMutation.isPending;
+  const busy = armMutation.isPending || pauseMutation.isPending;
   const currentStatus = status?.status;
-  // Arming (or re-arming, to switch live<->shadow)
-  // is allowed from any status per automation-service's AutopilotState — only
-  // pause/abort are gated by the current status.
   const canPause = hasControl && currentStatus === "armed";
-  const canAbort = hasControl && (currentStatus === "armed" || currentStatus === "paused");
 
   return (
     <div className="lcars-autopilot-panel" style={style}>
@@ -70,51 +61,62 @@ export function AutopilotPanel({ onClose, style }: TogglePanelProps) {
         <span className={`lcars-autopilot-panel__status-value status-${nonEmpty(currentStatus) ?? "unknown"}`}>
           {isLoading ? "..." : nonEmpty(currentStatus?.toUpperCase()) ?? "UNKNOWN"}
         </span>
-        {status?.mode && (
-          <span className={`lcars-autopilot-panel__mode-value mode-${status.mode}`}>
-            {status.mode.toUpperCase()}
-          </span>
-        )}
       </div>
 
-      <form
-        className="lcars-autopilot-panel__arm-form"
-        onSubmit={(e) => {
-          e.preventDefault();
-          armMutation.mutate();
-        }}
-      >
-        <select
-          value={mode}
-          // The select offers exactly these two options.
-          onChange={(e) => { setMode(e.target.value === "shadow" ? "shadow" : "live"); }}
-          disabled={busy || !hasControl}
-          className="lcars-autopilot-panel__mode-select"
-        >
-          <option value="live">Live</option>
-          <option value="shadow">Shadow</option>
-        </select>
-        <PillButton type="submit" accent="green" disabled={busy || !hasControl}>
-          Arm
-        </PillButton>
-      </form>
+      {status && (
+        <dl className="lcars-autopilot-panel__row">
+          <dt>SHIP</dt>
+          <dd>{status.shipSymbol}</dd>
+          <dt>PHASE</dt>
+          <dd>{status.phase}</dd>
+          <dt>ASTEROID</dt>
+          <dd>{status.asteroid ?? "—"}</dd>
+          <dt>MARKET</dt>
+          <dd>{status.market ?? "—"}</dd>
+          <dt>WAITING UNTIL</dt>
+          <dd>{status.waitingUntil ? formatTime(status.waitingUntil) : "—"}</dd>
+          <dt>UPDATED</dt>
+          <dd>{formatTime(status.updatedAt)}</dd>
+        </dl>
+      )}
 
       {!hasControl && (
         <p className="lcars-autopilot-panel__gated">
           {isSignedIn
             ? "This account has no fleet:control scope. Controls are read-only."
-            : "Sign in as an operator to arm, pause or abort."}
+            : "Sign in as an operator to arm or pause."}
         </p>
       )}
 
       <div className="lcars-autopilot-panel__actions">
+        <PillButton accent="green" disabled={busy || !hasControl} onClick={() => { armMutation.mutate(); }}>
+          Arm
+        </PillButton>
         <PillButton accent="yellow" disabled={!canPause || busy} onClick={() => { pauseMutation.mutate(); }}>
           Pause
         </PillButton>
-        <PillButton accent="red" disabled={!canAbort || busy} onClick={() => { abortMutation.mutate(); }}>
-          Abort
-        </PillButton>
       </div>
+
+      <section className="lcars-autopilot-panel__events">
+        <h3>Events</h3>
+        <QueryState query={events}>
+          {(list) =>
+            list.length === 0 ? (
+              <p className="lcars-autopilot-panel__empty">No events yet</p>
+            ) : (
+              <ul>
+                {list.map((e) => (
+                  <li key={e.id}>
+                    <span className="lcars-autopilot-panel__event-time">{formatTime(e.occurredAt)}</span>
+                    <span className="lcars-autopilot-panel__event-type">{e.type}</span>
+                    <code>{JSON.stringify(e.detail)}</code>
+                  </li>
+                ))}
+              </ul>
+            )
+          }
+        </QueryState>
+      </section>
     </div>
   );
 }

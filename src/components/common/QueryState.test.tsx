@@ -22,7 +22,7 @@ describe("QueryState", () => {
 
   // Regression: panels branched on `isLoading` alone. react-query reports
   // isLoading false for a *failed* query, so a backend that was down rendered
-  // an empty box — or, worse, the panel's own "No contracts" / "No knobs" line,
+  // an empty box — or, worse, the panel's own "No contracts" / "No ships" line,
   // stating as fact something nobody had successfully checked.
   it("shows the error when the request failed", () => {
     show({ isError: true, error: new Error("automation-service unreachable") });

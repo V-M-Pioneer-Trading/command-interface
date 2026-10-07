@@ -6,7 +6,6 @@ import { automationService } from "../api/automationService";
 import { healthService } from "../api/healthService";
 import { useOperator } from "../context/OperatorContext";
 import { queryKeys } from "./queryKeys";
-import type { AnomaliesDigestParams, MetricsContextParams } from "../api/types";
 
 const SYSTEM_HEALTH_POLL_MS = 10_000;
 const SHIPS_POLL_MS = 12_000;
@@ -15,10 +14,7 @@ const CONTRACTS_POLL_MS = 30_000;
 const COOLDOWN_POLL_MS = 5_000;
 const MARKET_POLL_MS = 30_000;
 const AUTOPILOT_STATUS_POLL_MS = 5_000;
-const SHIP_TASK_POLL_MS = 5_000;
-const METRICS_CONTEXT_POLL_MS = 15_000;
-const ANOMALIES_DIGEST_POLL_MS = 15_000;
-const KNOBS_POLL_MS = 15_000;
+const AUTOPILOT_EVENTS_POLL_MS = 5_000;
 
 // Where a hook below passes its symbol argument to the API through
 // `requireSymbol`: the hook also sets `enabled: !!symbol`, so the query function
@@ -157,47 +153,10 @@ export function useAutopilotStatusQuery() {
   });
 }
 
-// 404 ("no task for this ship yet") resolves to `null` rather than an error —
-// a ship automation-service isn't managing is a normal state for this query,
-// not a failure worth react-query's retry/error-boundary treatment. A real
-// error here fans out per ship in the fleet list, so retries are capped at 1
-// (rather than react-query's default 3x backoff) to avoid a struggling
-// automation-service getting hit by N ships' worth of stacked retries on top
-// of the fixed 5s poll.
-export function useShipTaskQuery(shipSymbol: string | null | undefined) {
+export function useAutopilotEventsQuery(limit: number) {
   return useQuery({
-    queryKey: queryKeys.shipTask(shipSymbol),
-    queryFn: () => automationService.getShipTask(requireSymbol(shipSymbol)),
-    enabled: !!shipSymbol,
-    retry: 1,
-    refetchInterval: SHIP_TASK_POLL_MS,
-  });
-}
-
-// `null` means metrics rollups aren't configured on this deployment (the
-// route doesn't exist), not an error — same treatment as useShipTaskQuery's 404.
-export function useMetricsContextQuery(params?: MetricsContextParams) {
-  return useQuery({
-    queryKey: queryKeys.metricsContext(params),
-    queryFn: () => automationService.getMetricsContext(params),
-    refetchInterval: METRICS_CONTEXT_POLL_MS,
-  });
-}
-
-// `null` means anomaly detection isn't configured (no webhook set) — same
-// "feature not enabled" treatment as useMetricsContextQuery.
-export function useAnomaliesDigestQuery(params?: AnomaliesDigestParams) {
-  return useQuery({
-    queryKey: queryKeys.anomaliesDigest(params),
-    queryFn: () => automationService.getAnomaliesDigest(params),
-    refetchInterval: ANOMALIES_DIGEST_POLL_MS,
-  });
-}
-
-export function useKnobsQuery() {
-  return useQuery({
-    queryKey: queryKeys.knobs(),
-    queryFn: () => automationService.getKnobs(),
-    refetchInterval: KNOBS_POLL_MS,
+    queryKey: queryKeys.autopilotEvents(limit),
+    queryFn: () => automationService.getEvents(limit),
+    refetchInterval: AUTOPILOT_EVENTS_POLL_MS,
   });
 }
