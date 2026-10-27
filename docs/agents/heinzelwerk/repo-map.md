@@ -21,3 +21,7 @@ LCARS operator dashboard. React 18, Vite 6, TS (strict, `noUncheckedIndexedAcces
 - `VITE_*` vars live in `.env.example`, `src/vite-env.d.ts` and `.github/workflows/deploy.yml`, all three.
 - CI `deploy.yml`: `test` (typecheck, lint, test), `deploy` (main: S3 sync + CloudFront invalidation).
 - No Playwright installed in the repo.
+
+## Reference docs
+
+- `README.md`: read when running locally (env vars) or touching the system map, observability panels or auth model.
