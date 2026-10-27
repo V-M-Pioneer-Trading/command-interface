@@ -16,9 +16,9 @@ LCARS operator dashboard. React 18, Vite 6, TS (strict, `noUncheckedIndexedAcces
 | `src/styles/` | `theme.css` (tokens), `global.css`, `fonts.css` |
 | `lcars-reference-files/` | LCARS source assets; lint-ignored |
 
-- Calls: agent-service, navigation-service, fleet-service, automation-service (Clerk bearer); health probes for auth-service, st-gateway.
+- Calls: agent-service, navigation-service, fleet-service, automation-service (Clerk bearer); health probes for auth-service, st-gateway, and ai-service locally.
 - Dev server: `npm run dev`, port 3000 (`strictPort`). Tests: vitest + jsdom, `src/**` only.
-- `VITE_*` vars live in `.env.example`, `src/vite-env.d.ts` and `.github/workflows/deploy.yml`, all three.
+- `VITE_*` vars live in `.env.example`, `src/vite-env.d.ts` and `.github/workflows/deploy.yml`, all three, except `VITE_AI_SERVICE_URL`, which `deploy.yml` leaves out on purpose (ai-service is not deployed).
 - CI `deploy.yml`: `test` (typecheck, lint, test), `deploy` (main: S3 sync + CloudFront invalidation).
 - No Playwright installed in the repo.
 
