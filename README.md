@@ -107,8 +107,12 @@ npm test         # vitest, 82 tests
 npm run build    # static bundle into dist/
 ```
 
+Correction (2026-10-28): the two test counts (82, 77) disagree and both are below the current suite (16 test files, ~108 it/test calls); drop the number or re-count with npm test, see src.
+
 Port 3000 is pinned in `vite.config.ts` because it is the backends' default CORS
 origin. Copy `.env.example` to `.env.local` to point at non-default URLs.
+
+Correction (2026-10-28): port 3000 (strictPort) is pinned in vite.config.js, not vite.config.ts, see vite.config.js:7.
 
 | Variable | Default | Notes |
 | --- | --- | --- |
@@ -329,6 +333,8 @@ rAF clock that stops when nothing is moving.
 viewport math, sprite compilation, panel offsets), the API response layer, and
 the hooks and small components that decide what a panel says when it has no data.
 
+Correction (2026-10-28): the two test counts (82, 77) disagree and both are below the current suite (16 test files, ~108 it/test calls); drop the number or re-count with npm test, see src.
+
 There are no tests for the large panels. The dev map harness is the manual level
 above that — every hit-testing and overlap number quoted here was measured there.
 
@@ -343,6 +349,8 @@ Things this implementation deliberately does not do, or does not do yet.
   waypoints without credentials, but agent-service holds no game credential of
   its own, so ships, contracts and agent stats need both a signed-in operator and
   a pasted token. That ends when auth-service and st-gateway injection ship.
+
+  Correction (2026-10-28): no pasted game token exists: the operator's Clerk session is the only credential and st-gateway injects the game token, so a signed-in operator sees the fleet, see src/api/client.ts:77.
 - **Surveys live in the browser only.** They are held per ship, in memory, and
   are gone on reload. Nothing prunes expired ones from the list; they render as
   `EXPIRED` with the Extract button disabled.
