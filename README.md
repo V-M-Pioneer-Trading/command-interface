@@ -107,6 +107,8 @@ npm test         # vitest, 82 tests
 npm run build    # static bundle into dist/
 ```
 
+Correction (2026-10-29): "82 tests" is stale and contradicts the 77 in Testing; src has about 108 `it`/`test` calls in `src/**/*.test.ts(x)` (grep count).
+
 Port 3000 is pinned in `vite.config.ts` because it is the backends' default CORS
 origin. Copy `.env.example` to `.env.local` to point at non-default URLs.
 
@@ -329,6 +331,8 @@ rAF clock that stops when nothing is moving.
 viewport math, sprite compilation, panel offsets), the API response layer, and
 the hooks and small components that decide what a panel says when it has no data.
 
+Correction (2026-10-29): 77 is stale and contradicts the 82 above; src has about 108 `it`/`test` calls in `src/**/*.test.ts(x)` (grep count), no single maintained number.
+
 There are no tests for the large panels. The dev map harness is the manual level
 above that — every hit-testing and overlap number quoted here was measured there.
 
@@ -343,6 +347,7 @@ Things this implementation deliberately does not do, or does not do yet.
   waypoints without credentials, but agent-service holds no game credential of
   its own, so ships, contracts and agent stats need both a signed-in operator and
   a pasted token. That ends when auth-service and st-gateway injection ship.
+  Correction (2026-10-29): injection shipped and the pasted token is gone, see README.md:72-75, src/hooks/queryKeys.ts:13 and ../st-gateway/src/authServiceClient.ts:1-5,98.
 - **Surveys live in the browser only.** They are held per ship, in memory, and
   are gone on reload. Nothing prunes expired ones from the list; they render as
   `EXPIRED` with the Extract button disabled.
