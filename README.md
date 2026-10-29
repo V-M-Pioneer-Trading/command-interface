@@ -110,6 +110,8 @@ npm run build    # static bundle into dist/
 Port 3000 is pinned in `vite.config.ts` because it is the backends' default CORS
 origin. Copy `.env.example` to `.env.local` to point at non-default URLs.
 
+Correction (2026-10-29): the file is `vite.config.js`, not `vite.config.ts`, and the "82 tests" count above is stale (16 test files, 108 test declarations at least), see vite.config.js
+
 | Variable | Default | Notes |
 | --- | --- | --- |
 | `VITE_CLERK_PUBLISHABLE_KEY` | *none* | **Required.** Public by design — it names the instance and authorizes nothing. Without it the app renders a setup message instead of the dashboard. The backends' committed dev keypair does not cover the browser: minting a session needs a real Clerk development instance. |
@@ -156,6 +158,8 @@ hardcoded offsets.
 
 Arming is allowed from any state — that is how you switch live↔shadow or replace
 the token automation-service is holding. Only pause and abort care where you are.
+
+Correction (2026-10-29): arming takes only `mode`, no token is involved; it switches live and shadow or resumes, see automation-service/src/server.ts:394-404 and automation-service/src/autopilotState.ts:26
 
 ```mermaid
 stateDiagram-v2
@@ -329,6 +333,8 @@ rAF clock that stops when nothing is moving.
 viewport math, sprite compilation, panel offsets), the API response layer, and
 the hooks and small components that decide what a panel says when it has no data.
 
+Correction (2026-10-29): the "77 tests" count is stale (16 test files, 108 test declarations at least); run `npm test` for the current number, see the `*.test.ts*` files under src/
+
 There are no tests for the large panels. The dev map harness is the manual level
 above that — every hit-testing and overlap number quoted here was measured there.
 
@@ -343,6 +349,7 @@ Things this implementation deliberately does not do, or does not do yet.
   waypoints without credentials, but agent-service holds no game credential of
   its own, so ships, contracts and agent stats need both a signed-in operator and
   a pasted token. That ends when auth-service and st-gateway injection ship.
+  Correction (2026-10-29): st-gateway injects the game token and no `X-SpaceTraders-Token` is sent; ships, contracts and agent stats need only a Clerk session, see src/api/client.ts:77
 - **Surveys live in the browser only.** They are held per ship, in memory, and
   are gone on reload. Nothing prunes expired ones from the list; they render as
   `EXPIRED` with the Extract button disabled.

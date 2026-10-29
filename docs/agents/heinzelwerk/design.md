@@ -2,7 +2,7 @@
 
 What the UI must look and behave like. Frontend builds against it. Validator reviews code (Standards axis) and screenshots against it. Facts and rules only, each with the `path:line` of the token or component it comes from; no aspirations. Verified against 562e1303 2026-10-29.
 
-LCARS look, distilled from `lcars-reference-files/` (reference kit, not built, never edited: `README.md:364-368`, `eslint.config.mjs:6`). Plain per-component `.css` files imported by their component; no Tailwind, CSS modules or UI kit (`package.json:15-33`). Global CSS loads in order fonts → theme → global (`src/main.tsx:5-7`).
+LCARS look, distilled from `lcars-reference-files/` (reference kit, not built, never edited: `README.md:371-375`, `eslint.config.mjs:6`). Plain per-component `.css` files imported by their component; no Tailwind, CSS modules or UI kit (`package.json:15-33`). Global CSS loads in order fonts → theme → global (`src/main.tsx:5-7`).
 
 ## Tokens
 - Colors, all in `:root` of `src/styles/theme.css:3-23` (source palette named at :2):

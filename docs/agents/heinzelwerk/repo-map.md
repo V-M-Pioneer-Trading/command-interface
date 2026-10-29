@@ -12,8 +12,8 @@ Verified against 562e1303 2026-10-29.
 - `src/map/` pure layout/viewport/sprite math, imports nothing outside `src/map/` (`CLAUDE.md:71-73`; holds, verified 2026-10-29 @ 562e1303: grep finds no `../` escape or package import in `src/map`).
 - `src/components/<area>/` panels + co-located CSS; shared pieces in `src/components/common/` (`src/components/common/Panel.tsx`, `src/components/common/PillButton.tsx`, `src/components/common/QueryState.tsx`, `src/components/common/StatusPill.tsx`). Design rules: `docs/agents/heinzelwerk/design.md`.
 - `src/styles/` tokens `src/styles/theme.css:1-34`, fonts `src/styles/fonts.css:1-15`, globals `src/styles/global.css:1-43`.
-- `src/devMap.tsx` + `dev-map.html`: dev-only map harness with stubbed fetch and operator, never bundled (`README.md:122-129`, `CLAUDE.md:18`).
-- `lcars-reference-files/`: vendored LCARS kit, reference only, eslint-ignored (`eslint.config.mjs:6`, `README.md:364-368`).
+- `src/devMap.tsx` + `dev-map.html`: dev-only map harness with stubbed fetch and operator, never bundled (`README.md:124-131`, `CLAUDE.md:18`).
+- `lcars-reference-files/`: vendored LCARS kit, reference only, eslint-ignored (`eslint.config.mjs:6`, `README.md:371-375`).
 
 ## Entry points and auth
 - Provider order Clerk > Operator > QueryClient > Alert > App, load-bearing (`src/main.tsx:46-62`, `CLAUDE.md:178-189`).
@@ -85,4 +85,4 @@ Verified against 562e1303 2026-10-29.
 - Refuel `units === 0` = full tank or no tank (`CLAUDE.md:263-265`, `src/components/shipDetail/ShipDetailPanel.tsx:94-98`).
 - jsdom lacks `ResizeObserver`: no `SystemMap` tests (`CLAUDE.md:291-293`).
 - A `VITE_*` missing from .github/workflows/deploy.yml ships a localhost URL to production (`CLAUDE.md:225`).
-- Stale docs: README says port pinned in `vite.config.ts`, file is `.js` (`README.md:110`); README "Known limitations" still describes a pasted token (`README.md:342-345`); README test count "82" (`README.md:106`; 112 `it(`/`test(` calls now, verified 2026-10-29 @ 562e1303: grep); `accent.ts` says `lcars-accent-*` live in src/styles/theme.css, they live in `src/components/common/Panel.css:45-59` / `src/components/common/PillButton.css:23-46` (`src/components/common/accent.ts:1`); `CLAUDE.md:25-26` "no branch protection" is stale; `types.ts` points at "agent-service/ts/openapi.json", now at agent-service repo root (`src/api/types.ts:6`).
+- Stale docs: README says port pinned in `vite.config.ts`, file is `.js` (`README.md:110`); README "Known limitations" still describes a pasted token (`README.md:348-351`); README test count "82" (`README.md:106`; 112 `it(`/`test(` calls now, verified 2026-10-29 @ 562e1303: grep); `accent.ts` says `lcars-accent-*` live in src/styles/theme.css, they live in `src/components/common/Panel.css:45-59` / `src/components/common/PillButton.css:23-46` (`src/components/common/accent.ts:1`); `CLAUDE.md:25-26` "no branch protection" is stale; `types.ts` points at "agent-service/ts/openapi.json", now at agent-service repo root (`src/api/types.ts:6`).
