@@ -25,6 +25,8 @@ the deploy rather than reaching production. Both jobs run Node 24 and install wi
 below Node 22.22. `main` has no branch protection, so a red pull request can still be
 merged: the gate stops the deploy, not the merge.
 
+Correction (2026-10-29): `main` is protected: the required status check is `test` and admins are enforced, so a red pull request cannot merge (verified 2026-10-29 @ 562e1303: `gh api repos/V-M-Pioneer-Trading/command-interface/branches/main/protection` → contexts `test`, enforce_admins true)
+
 ## Module map
 
 | Path | Owns | Depends on |
