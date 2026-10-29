@@ -11,7 +11,7 @@ How heinzelwerk agents work in this repo. Mode rules (single repo vs workspace) 
   - `npm run lint`
   - `npm test`
   - `npm run build`
-  - `npm audit --audit-level=high (red on main: V-M-Pioneer-Trading/meta#136)`
+  - `npm audit --audit-level=high (red on main: V-M-Pioneer-Trading/meta#136; not in CI)`
 - **Verified against**: 562e1303 2026-10-29 (checks and every ref in this file; retro bumps it)
 - **Coding standards**: `eslint.config.mjs:1-7` (shared `@v-m-pioneer-trading/eslint-config` `react` variant, type-aware), `package.json:13` lint with `--max-warnings 0`, config pinned by release tarball `package.json:25`; `tsconfig.json:16-20` (`strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`); plus `CLAUDE.md` "### Dependency rules" (:67) and "## Invariants" (:88); UI: `docs/agents/heinzelwerk/design.md`
 - **Risk areas** (validator reviews diffs touching these on Opus). Each entry is a path/glob or a described kind of change, plus why it is risky:
