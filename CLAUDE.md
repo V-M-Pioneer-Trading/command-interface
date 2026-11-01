@@ -350,6 +350,7 @@ because the next reader will trust it.
 - **Triage labels**: the five canonical labels, defined in meta only. See `docs/agents/heinzelwerk/triage-labels.md` before applying any label.
 - **Domain docs**: multi-context workspace, one context per repo; map in `../meta/GLOSSARY-MAP.md`. Read `docs/agents/heinzelwerk/domain.md` before exploring code or naming anything.
 - **Team rules**: read `docs/agents/heinzelwerk/team.md` before any team task.
+- **Out of scope**: see `../meta/docs/agents/heinzelwerk/out-of-scope.md` before proposing or triaging discovered work.
 - **Repo map**: see `docs/agents/heinzelwerk/repo-map.md` when locating code.
 - **Design system**: read `docs/agents/heinzelwerk/design.md` before building or reviewing any UI.
 - **Learnings**: read `../meta/docs/agents/heinzelwerk/learnings.md` before starting any task.
