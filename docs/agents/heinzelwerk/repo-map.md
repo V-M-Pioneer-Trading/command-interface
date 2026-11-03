@@ -84,5 +84,5 @@ Verified against 562e1303 2026-10-29.
 - 404 on ship task / metrics / anomalies is normal (`src/api/automationService.ts:71-87`).
 - Refuel `units === 0` = full tank or no tank (`CLAUDE.md:263-265`, `src/components/shipDetail/ShipDetailPanel.tsx:94-98`).
 - jsdom lacks `ResizeObserver`: no `SystemMap` tests (`CLAUDE.md:291-293`).
-- A `VITE_*` missing from .github/workflows/deploy.yml ships a localhost URL to production (`CLAUDE.md:225`).
+- A `VITE_*` missing from .github/workflows/deploy.yml ships a localhost URL to production (`CLAUDE.md:225`); deliberate only for `VITE_AI_SERVICE_URL`, whose localhost health probe https pages drop (`src/api/healthService.ts:67-75`).
 - Stale code comments: `accent.ts` says `lcars-accent-*` live in src/styles/theme.css, they live in `src/components/common/Panel.css:45-59` / `src/components/common/PillButton.css:23-46` (`src/components/common/accent.ts:1`); `types.ts` points at "agent-service/ts/openapi.json", now at agent-service repo root (`src/api/types.ts:6`).

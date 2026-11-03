@@ -6,7 +6,7 @@ How heinzelwerk agents work in this repo. Mode rules (single repo vs workspace) 
 - **Frontend paths**: whole repo except `lcars-reference-files/` (vendored LCARS reference kit, never edited; eslint-ignored `eslint.config.mjs:6`). Code in `src/` (React 18 + Vite 6 + TanStack Query, TypeScript; tests `src/**/*.test.{ts,tsx}`, vitest + jsdom `vite.config.js:14-18`)
 - **UI preview**: `npx vite --port $PORT --strictPort` · base URL `http://localhost:$PORT` · screenshots via `npx playwright screenshot` · publish via `ui-shots`
 - **Worktree setup** (run once in every new task worktree): `npm ci && cp "$(cd "$(git rev-parse --git-common-dir)/.." && pwd)/.env.local" .` (the app shows a setup screen without `VITE_CLERK_PUBLISHABLE_KEY`; `.env.local` is git-ignored, lives in the main checkout)
-- **Checks** (validator runs every one, in order; copied from CI, quiet flags only; a status note goes after the closing backtick, never inside the span, which must run as pasted):
+- **Checks** (validator runs every one, in order; copied from CI except where marked `not in CI`, quiet flags only; a status note goes after the closing backtick, never inside the span, which must run as pasted):
   - `npm run typecheck`
   - `npm run lint`
   - `npm test`
@@ -22,7 +22,7 @@ How heinzelwerk agents work in this repo. Mode rules (single repo vs workspace) 
   - Clerk token handling: `getToken()` per request, never cached in a module or a cache key: `src/api/automationService.ts:23-25`, `src/context/OperatorProvider.tsx:59-61`, `src/hooks/queryKeys.ts:13-16`; scopes cleared on sign-out `src/context/OperatorProvider.tsx:12-20`; only `main.tsx`, `src/context/OperatorProvider.tsx`, `OperatorBadge.tsx` import `@clerk/clerk-react` (`CLAUDE.md:78-82`)
   - The game token never enters the browser (st-gateway injects it); adding `X-SpaceTraders-Token` or `X-Priority` breaks the auth model: `src/api/client.ts:70-82`
   - automation-service GETs stay CORS-simple (no headers when unauthenticated): `src/api/automationService.ts:27-58`
-  - New `VITE_*` env var = 4 edits: `src/api/config.ts:3-13`, `src/vite-env.d.ts:6-15`, `.env.example:7-24`, `.github/workflows/deploy.yml:98-114`; missing from .github/workflows/deploy.yml ships a localhost URL to production (`CLAUDE.md:225,334-336`)
+  - New `VITE_*` env var = 4 edits: `src/api/config.ts:3-13`, `src/vite-env.d.ts:6-15`, `.env.example:7-24`, `.github/workflows/deploy.yml:98-114`; missing from .github/workflows/deploy.yml ships a localhost URL to production (`CLAUDE.md:225,334-336`); one deliberate exception: `VITE_AI_SERVICE_URL` stays out of the deploy env (ai-service has no public origin, `.github/workflows/deploy.yml:98-114`), and https pages drop its localhost health probe (`src/api/healthService.ts:67-75`)
   - Ungated reads fire for anonymous visitors (health poll, system waypoints, market, all automation reads): a new public call is a public request: `src/hooks/queries.ts:65-73,102-115,138-203`; WaypointPopover market/shipyard load with no token `src/components/map/WaypointPopover.tsx:41,53`
 - **Contracts** (see team-modes **Contract changes**; validator checks every diff touching these):
   - Provided: none (static SPA, no server: `README.md:7-8`)
