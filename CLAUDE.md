@@ -22,10 +22,8 @@ There is no formatter. CI (`.github/workflows/deploy.yml`) runs
 `npm run typecheck`, `npm run lint` and `npm test` on every pull request and on every push to
 `main`, and the S3 deploy `needs` it, so a type error or a broken test blocks
 the deploy rather than reaching production. Both jobs run Node 24 and install with `npm ci`; jsdom 30 will not load
-below Node 22.22. `main` has no branch protection, so a red pull request can still be
-merged: the gate stops the deploy, not the merge.
-
-Correction (2026-10-29): `main` is protected: the required status check is `test` and admins are enforced, so a red pull request cannot merge (verified 2026-10-29 @ 562e1303: `gh api repos/V-M-Pioneer-Trading/command-interface/branches/main/protection` → contexts `test`, enforce_admins true)
+below Node 22.22. `main` is protected with `test` as a required check and admins enforced, so a red pull request
+cannot be merged: the gate stops the merge as well as the deploy.
 
 ## Module map
 
@@ -354,3 +352,4 @@ because the next reader will trust it.
 - **Repo map**: see `docs/agents/heinzelwerk/repo-map.md` when locating code.
 - **Design system**: read `docs/agents/heinzelwerk/design.md` before building or reviewing any UI.
 - **Learnings**: read `../meta/docs/agents/heinzelwerk/learnings.md` before starting any task.
+- **Sibling paths** (workspace mode only): `../<repo>/…` above is relative to this repo's main checkout, i.e. the workspace folder. From a task worktree (`.claude/worktrees/<x>`), resolve it as `$(cd "$(git rev-parse --git-common-dir)/../.." && pwd)/<repo>/…`.
