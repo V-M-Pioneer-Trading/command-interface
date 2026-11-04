@@ -103,11 +103,11 @@ this bundle to re-enable a control earns a 403, not an armed autopilot.
 ```
 npm install
 npm run dev      # http://localhost:3000
-npm test         # vitest, 82 tests
+npm test         # vitest, 115 tests
 npm run build    # static bundle into dist/
 ```
 
-Port 3000 is pinned in `vite.config.ts` because it is the backends' default CORS
+Port 3000 is pinned in `vite.config.js` because it is the backends' default CORS
 origin. Copy `.env.example` to `.env.local` to point at non-default URLs.
 
 | Variable | Default | Notes |
@@ -154,8 +154,8 @@ hardcoded offsets.
 
 ### Autopilot
 
-Arming is allowed from any state — that is how you switch live↔shadow or replace
-the token automation-service is holding. Only pause and abort care where you are.
+Arming is allowed from any state — that is how you switch live↔shadow or resume
+a paused autopilot. Only pause and abort care where you are.
 
 ```mermaid
 stateDiagram-v2
@@ -325,7 +325,7 @@ rAF clock that stops when nothing is moving.
 
 ## Testing
 
-`npm test` runs vitest under jsdom: 77 tests across the pure map modules (layout,
+`npm test` runs vitest under jsdom: 115 tests across the pure map modules (layout,
 viewport math, sprite compilation, panel offsets), the API response layer, and
 the hooks and small components that decide what a panel says when it has no data.
 
@@ -341,8 +341,8 @@ Things this implementation deliberately does not do, or does not do yet.
   sector map can reuse it, but no such map exists.
 - **Anonymous visitors see the map, not the fleet.** navigation-service serves
   waypoints without credentials, but agent-service holds no game credential of
-  its own, so ships, contracts and agent stats need both a signed-in operator and
-  a pasted token. That ends when auth-service and st-gateway injection ship.
+  its own, so ships, contracts and agent stats need a signed-in operator, whose
+  session is the only credential sent: st-gateway injects the game token.
 - **Surveys live in the browser only.** They are held per ship, in memory, and
   are gone on reload. Nothing prunes expired ones from the list; they render as
   `EXPIRED` with the Extract button disabled.

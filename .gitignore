@@ -19,3 +19,6 @@ sketch
 dist/
 .env.local
 .env.*.local
+
+# heinzelwerk task worktrees
+.claude/worktrees/

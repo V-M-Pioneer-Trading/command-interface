@@ -22,8 +22,8 @@ There is no formatter. CI (`.github/workflows/deploy.yml`) runs
 `npm run typecheck`, `npm run lint` and `npm test` on every pull request and on every push to
 `main`, and the S3 deploy `needs` it, so a type error or a broken test blocks
 the deploy rather than reaching production. Both jobs run Node 24 and install with `npm ci`; jsdom 30 will not load
-below Node 22.22. `main` has no branch protection, so a red pull request can still be
-merged: the gate stops the deploy, not the merge.
+below Node 22.22. `main` is protected with `test` as a required check and admins enforced, so a red pull request
+cannot be merged: the gate stops the merge as well as the deploy.
 
 ## Module map
 
@@ -340,3 +340,16 @@ the `.d.ts` is a type error.
 **This file is updated in the same PR as the change it describes.** A dependency
 rule, invariant or sequence that no longer holds is worse than none at all,
 because the next reader will trust it.
+
+## Agent skills (heinzelwerk)
+
+- **Precedence**: for heinzelwerk team work, these pointers override any other agent-skills block in this file.
+- **Issue tracker**: GitHub issues, one tracker for the workspace in V-M-Pioneer-Trading/meta. See `docs/agents/heinzelwerk/issue-tracker.md` before creating, reading, or labelling issues.
+- **Triage labels**: the five canonical labels, defined in meta only. See `docs/agents/heinzelwerk/triage-labels.md` before applying any label.
+- **Domain docs**: multi-context workspace, one context per repo; map in `../meta/GLOSSARY-MAP.md`. Read `docs/agents/heinzelwerk/domain.md` before exploring code or naming anything.
+- **Team rules**: read `docs/agents/heinzelwerk/team.md` before any team task.
+- **Out of scope**: see `../meta/docs/agents/heinzelwerk/out-of-scope.md` before proposing or triaging discovered work.
+- **Repo map**: see `docs/agents/heinzelwerk/repo-map.md` when locating code.
+- **Design system**: read `docs/agents/heinzelwerk/design.md` before building or reviewing any UI.
+- **Learnings**: read `../meta/docs/agents/heinzelwerk/learnings.md` before starting any task.
+- **Sibling paths** (workspace mode only): `../<repo>/…` above is relative to this repo's main checkout, i.e. the workspace folder. From a task worktree (`.claude/worktrees/<x>`), resolve it as `$(cd "$(git rev-parse --git-common-dir)/../.." && pwd)/<repo>/…`.
