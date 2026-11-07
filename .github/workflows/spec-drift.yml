@@ -13,9 +13,9 @@ on:
   pull_request:
   push:
     branches: [main]
-  # Also dispatched on the refresh branch by openapi-refresh.yml: pushes made
-  # with GITHUB_TOKEN start no pull_request run, so without it the required
-  # context never reports on the refresh PR.
+  # Manual run. It does not start the check on a refresh PR: a run dispatched
+  # on a branch does not count toward required checks, so a person closes and
+  # reopens that PR instead (see openapi-refresh.yml).
   workflow_dispatch:
 
 permissions:

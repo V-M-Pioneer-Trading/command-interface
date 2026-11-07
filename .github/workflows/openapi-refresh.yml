@@ -79,7 +79,8 @@ jobs:
           if-no-files-found: error
 
   # Holds the write token and runs no repo or npm code: it only moves the
-  # artifact into a commit. The token sits in the push step's env alone.
+  # artifact into a commit. The token is passed to gh and git alone, never to a
+  # script or package from this repository.
   propose:
     needs: generate
     runs-on: ubuntu-latest
@@ -95,6 +96,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # Full history: the hold check below counts commits in
+          # origin/main..origin/openapi-refresh, which a depth-1 clone cuts short
+          # (it listed main's old commits as the branch's own).
+          fetch-depth: 0
 
       - name: Look up the open refresh PR and the branch
         id: state
@@ -105,10 +110,20 @@ jobs:
           # fork's branch of the same name.
           open=$(gh api "repos/$GITHUB_REPOSITORY/pulls?head=${GITHUB_REPOSITORY_OWNER}:openapi-refresh&state=open" --jq '.[0].number // empty')
           echo "open=$open" >> "$GITHUB_OUTPUT"
-          if git fetch --no-tags origin openapi-refresh:refs/remotes/origin/openapi-refresh 2>/dev/null; then
+          # ls-remote --exit-code returns 2 for "no such ref" and another
+          # non-zero for a real error. Only the first means "no branch"; an
+          # error fails the run, so it can never read as "no branch" and let
+          # the close step delete a person's work.
+          rc=0
+          git ls-remote --exit-code --heads origin openapi-refresh > /dev/null || rc=$?
+          if [ "$rc" -eq 0 ]; then
+            git fetch --no-tags origin openapi-refresh:refs/remotes/origin/openapi-refresh
             echo "branch=true" >> "$GITHUB_OUTPUT"
-          else
+          elif [ "$rc" -eq 2 ]; then
             echo "branch=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::cannot look up origin openapi-refresh (git ls-remote exit $rc)"
+            exit 1
           fi
 
       # While a refresh PR is open and its branch carries a commit by anyone
@@ -152,7 +167,7 @@ jobs:
           name: openapi-refresh
           path: .
 
-      - name: Commit, push, open the PR, dispatch the checks
+      - name: Commit, push, open or update the PR
         if: steps.hold.outputs.hold != 'true' && env.CHANGED == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -174,17 +189,20 @@ jobs:
             git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/heads/openapi-refresh
           fi
 
+          {
+            echo "Spec copies refreshed from meta main @ ${META_SHA} (https://github.com/V-M-Pioneer-Trading/meta/commit/${META_SHA})."
+            echo
+            echo "Changed: ${services}. Regenerated \`src/generated/\` and moved the pin."
+            echo
+            echo "Checks do not start on a PR pushed by GITHUB_TOKEN: close and reopen this PR to start \`test\` and \`spec-drift\`."
+            echo
+            echo "Opened by the openapi-refresh workflow. It is never auto-merged: review the generated-type diff and merge by hand. The workflow rewrites this branch while meta moves, unless a person pushes to it."
+          } > "$RUNNER_TEMP/body.md"
           if [ -z "$OPEN" ]; then
-            {
-              echo "Spec copies refreshed from meta main @ ${META_SHA} (https://github.com/V-M-Pioneer-Trading/meta/commit/${META_SHA})."
-              echo
-              echo "Changed: ${services}. Regenerated \`src/generated/\` and moved the pin."
-              echo
-              echo "Checks do not start on a PR pushed by GITHUB_TOKEN: close and reopen this PR to start \`test\` and \`spec-drift\`."
-              echo
-              echo "Opened by the openapi-refresh workflow. It is never auto-merged: review the generated-type diff and merge by hand. The workflow rewrites this branch while meta moves, unless a person pushes to it."
-            } > "$RUNNER_TEMP/body.md"
             gh pr create --base main --head openapi-refresh \
               --title "chore: refresh openapi copies from meta main" \
               --body-file "$RUNNER_TEMP/body.md"
+          else
+            # Keep the sha and the service list current after a later push.
+            gh pr edit "$OPEN" --body-file "$RUNNER_TEMP/body.md"
           fi
