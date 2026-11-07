@@ -11,6 +11,6 @@ This replaces the earlier rule "No codegen: keep these in step with the services
 1. Hand-written types checked by hand against the specs (the earlier rule). Lost because nothing notices drift until a panel breaks in production.
 2. Generated types only, with the existing request helpers kept. Lost because paths, methods and parameters stay untyped strings, so a renamed route still compiles.
 3. Download the specs from meta main during the build. Lost because the same commit could build different types on different days.
-4. **Committed spec copies, generated typed clients, drift check against meta main (chosen).** Deterministic builds, typed calls, drift visible on the next PR. Price: two dev dependencies, a refresh PR to review whenever a service changes its spec, and every service spec must type what the dashboard reads.
+4. **Committed spec copies, generated typed clients, drift check against meta main (chosen).** Deterministic builds, typed calls, drift visible on the next PR. Price: two dependencies (`openapi-typescript` at build time, `openapi-fetch` shipped in the bundle), a refresh PR to review whenever a service changes its spec, and every service spec must type what the dashboard reads.
 
 Source: V-M-Pioneer-Trading/meta#155 "Implementation Decisions"
