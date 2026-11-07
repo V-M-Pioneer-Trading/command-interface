@@ -14,7 +14,8 @@
     "lint": "eslint . --max-warnings 0",
     "openapi:generate": "openapi-typescript",
     "openapi:check": "openapi-typescript --check",
-    "openapi:refresh": "node scripts/openapi-refresh.mjs"
+    "openapi:refresh": "node scripts/openapi-refresh.mjs",
+    "openapi:drift": "node scripts/openapi-drift.mjs"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.61.9",

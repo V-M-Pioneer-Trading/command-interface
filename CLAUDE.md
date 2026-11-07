@@ -12,6 +12,7 @@ stay true, and what breaks if you change it.
 | `npm run dev` | Vite dev server on port 3000 — **pinned**, `strictPort: true`, because it is the backends' default CORS origin. `/dev-map.html` is served alongside `/`. |
 | `npm test` | vitest, single run, jsdom. `pretest` runs `openapi:check` first, so a stale or hand-edited `src/generated/` fails here and in CI. |
 | `npm run openapi:refresh -- <meta-sha> [service]` | Copies `openapi/<service>.json` from meta at that exact commit, writes `openapi/meta-commit.txt`, regenerates `src/generated/`. Refreshes every copy present, plus any service named. |
+| `npm run openapi:drift` | Compares every `openapi/*.json` with meta main (resolved to one sha) and exits 1, naming each service that differs, is missing on meta, or could not be fetched. Zero dependencies; same command locally and in CI. |
 | `npm run openapi:generate` / `openapi:check` | Regenerate from the committed specs (`redocly.yaml`), or fail if the committed output differs. |
 | `npm run typecheck` | `tsc --noEmit`. Vite compiles with esbuild, which strips types without checking them, so this is the only thing that does. |
 | `npm run lint` | `eslint . --max-warnings 0` with the shared `@v-m-pioneer-trading/eslint-config` React variant (`eslint.config.mjs`), type-aware. Never add or change a rule here: that is a release of the config package plus a version bump. An `eslint-disable` needs ` -- reason`. Bump: `npm install --save-dev <release tarball URL>`, then fix what it reports. |
@@ -26,6 +27,13 @@ There is no formatter. CI (`.github/workflows/deploy.yml`) runs
 the deploy rather than reaching production. Both jobs run Node 24 and install with `npm ci`; jsdom 30 will not load
 below Node 22.22. `main` is protected with `test` as a required check and admins enforced, so a red pull request
 cannot be merged: the gate stops the merge as well as the deploy.
+
+Two more workflows keep the spec copies current (meta#174):
+
+- `spec-drift.yml` (job `spec-drift`) runs `npm run openapi:drift` on every pull request and push to `main`. It is its own workflow, so a drift reds the PR but never stops a deploy. It becomes a required check on `main` only after the workflow is on `main` (a protection change next to `test`).
+- `openapi-refresh.yml` runs daily and on dispatch. It refreshes every copy from meta main, regenerates `src/generated/`, moves the pin, and opens or updates one PR from the branch `openapi-refresh`. It never merges it: a person does. No change means no PR, and an open PR is closed once meta main matches again. If a person pushes to the branch, the workflow holds (comments once, pushes and closes nothing). Pushes made with `GITHUB_TOKEN` start no `pull_request` runs, so the workflow dispatches `deploy.yml` and `spec-drift.yml` on the branch to report `test` and `spec-drift` on the PR; a dispatched `deploy.yml` off `main` builds and tests but deploys nothing. **Prerequisite:** the setting "Allow GitHub Actions to create and approve pull requests" (repository, and organisation if off there); without it the run goes red at `gh pr create`. Scheduled workflows are disabled after 60 days without repository activity.
+- **Escape hatch** when `spec-drift` reds every PR (meta moved and the refresh PR is not merged yet): merge the refresh PR, or run `npm run openapi:refresh -- <sha>` by hand and merge that, or have a human drop `spec-drift` from the required checks temporarily.
+- Adding a service needs no workflow change: both workflows glob `openapi/*.json`. Add the copy and its `redocly.yaml` entry.
 
 ## Module map
 

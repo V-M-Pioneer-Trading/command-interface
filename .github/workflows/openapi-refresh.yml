@@ -1,0 +1,199 @@
+name: OpenAPI refresh
+
+# Once a day (and on dispatch) copies every openapi/*.json from meta main,
+# regenerates src/generated, moves the pin, and opens or updates ONE pull
+# request from the fixed branch `openapi-refresh`. A person merges it: nothing
+# here merges, auto-merges or approves anything.
+#
+# PREREQUISITE (a setting, not code): "Allow GitHub Actions to create and
+# approve pull requests", under Settings > Actions > General of this repository
+# (and of the organisation, if it is off there). While it is off, `gh pr create`
+# fails and this run goes red with GitHub's message. Nothing else is needed: no
+# secret beyond the run's GITHUB_TOKEN, because meta is public.
+#
+# shortcut: GitHub disables scheduled workflows after 60 days without activity
+# in the repository, upgrade by a keep-alive commit or a manual dispatch if the
+# refresh ever stops arriving.
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+# One refresh at a time; a second run queues instead of cancelling a push.
+concurrency:
+  group: openapi-refresh
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # Runs repo and npm code, so it gets a read-only token and nothing to push.
+  generate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      changed: ${{ steps.refresh.outputs.changed }}
+      sha: ${{ steps.refresh.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - run: npm ci --ignore-scripts
+
+      - name: Refresh from meta main
+        id: refresh
+        run: |
+          # --exit-code and no pipe: a failed lookup fails the run. Keep the
+          # exact ref only; the pattern also matches x/refs/heads/main.
+          refs=$(git ls-remote --exit-code https://github.com/V-M-Pioneer-Trading/meta.git refs/heads/main)
+          sha=$(printf '%s\n' "$refs" | awk '$2 == "refs/heads/main" { print $1 }')
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::refs/heads/main not found on meta"; exit 1; }
+          npm run openapi:refresh -- "$sha"
+          # A pin-only change (meta moved, no spec did) is not a change.
+          if [ -n "$(git status --porcelain -- 'openapi/*.json')" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the refreshed files
+        if: steps.refresh.outputs.changed == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: openapi-refresh
+          path: |
+            openapi
+            src/generated
+          if-no-files-found: error
+
+  # Holds the write token and runs no repo or npm code: it only moves the
+  # artifact into a commit. The token sits in the push step's env alone.
+  propose:
+    needs: generate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      # gh workflow run: the two required checks are dispatched on the refresh
+      # branch, because a GITHUB_TOKEN push starts no pull_request run.
+      actions: write
+    env:
+      GH_REPO: ${{ github.repository }}
+      CHANGED: ${{ needs.generate.outputs.changed }}
+      META_SHA: ${{ needs.generate.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Look up the open refresh PR and the branch
+        id: state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Same-repository PRs only: `gh pr list --head` also matches a
+          # fork's branch of the same name.
+          open=$(gh api "repos/$GITHUB_REPOSITORY/pulls?head=${GITHUB_REPOSITORY_OWNER}:openapi-refresh&state=open" --jq '.[0].number // empty')
+          echo "open=$open" >> "$GITHUB_OUTPUT"
+          if git fetch --no-tags origin openapi-refresh:refs/remotes/origin/openapi-refresh 2>/dev/null; then
+            echo "branch=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # While a refresh PR is open and its branch carries a commit by anyone
+      # but this workflow, a person is fixing it: do not push, do not close.
+      - name: Hold when a person has pushed to the refresh branch
+        id: hold
+        if: steps.state.outputs.open != '' && steps.state.outputs.branch == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OPEN: ${{ steps.state.outputs.open }}
+        run: |
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          human=$(git log --format='%ae' origin/main..origin/openapi-refresh | grep -vxF 'github-actions[bot]@users.noreply.github.com' || true)
+          if [ -z "$human" ]; then
+            echo "hold=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "hold=true" >> "$GITHUB_OUTPUT"
+          echo "::warning::Refresh held: openapi-refresh carries a commit not made by this workflow (PR #$OPEN). Merge or close the PR; nothing was pushed or closed."
+          marker='<!-- openapi-refresh-held -->'
+          if ! gh api "repos/$GITHUB_REPOSITORY/issues/$OPEN/comments" --paginate --jq '.[].body' | grep -qF "$marker"; then
+            printf '%s\n%s\n' "$marker" "The daily refresh is held: this branch carries a commit that was not made by the refresh workflow, and the workflow will not overwrite or close it. Merge this PR, or close it and delete the branch, to hand control back." > "$RUNNER_TEMP/held.md"
+            gh pr comment "$OPEN" --body-file "$RUNNER_TEMP/held.md"
+          fi
+
+      - name: Close a stale refresh PR
+        if: steps.hold.outputs.hold != 'true' && env.CHANGED == 'false' && steps.state.outputs.open != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OPEN: ${{ steps.state.outputs.open }}
+        run: |
+          gh pr close "$OPEN" --delete-branch --comment "Superseded: meta main @ $META_SHA matches the committed spec copies."
+
+      - name: Nothing to do
+        if: steps.hold.outputs.hold != 'true' && env.CHANGED == 'false' && steps.state.outputs.open == ''
+        run: echo "The spec copies match meta main @ $META_SHA; no PR."
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        if: steps.hold.outputs.hold != 'true' && env.CHANGED == 'true'
+        with:
+          name: openapi-refresh
+          path: .
+
+      - name: Commit, push, open the PR, dispatch the checks
+        if: steps.hold.outputs.hold != 'true' && env.CHANGED == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OPEN: ${{ steps.state.outputs.open }}
+          HAS_BRANCH: ${{ steps.state.outputs.branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git switch -C openapi-refresh
+          git add openapi src/generated
+          git commit -q -m "chore: refresh openapi copies from meta @ ${META_SHA:0:7}"
+          services=$(git diff --name-only HEAD~1 HEAD -- 'openapi/*.json' | sed 's|^openapi/||; s|\.json$||' | paste -sd, - | sed 's/,/, /g')
+
+          # Same tree as the branch already has: drift persists unchanged, so
+          # no push and no new check runs.
+          pushed=false
+          if [ "$HAS_BRANCH" = true ] && [ "$(git rev-parse 'HEAD^{tree}')" = "$(git rev-parse 'origin/openapi-refresh^{tree}')" ]; then
+            echo "openapi-refresh already holds this refresh; no push."
+          else
+            git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/heads/openapi-refresh
+            pushed=true
+          fi
+
+          created=false
+          if [ -z "$OPEN" ]; then
+            {
+              echo "Spec copies refreshed from meta main @ ${META_SHA} (https://github.com/V-M-Pioneer-Trading/meta/commit/${META_SHA})."
+              echo
+              echo "Changed: ${services}. Regenerated \`src/generated/\` and moved the pin."
+              echo
+              echo "Opened by the openapi-refresh workflow. It is never auto-merged: review the generated-type diff and merge by hand. The workflow rewrites this branch while meta moves, unless a person pushes to it."
+            } > "$RUNNER_TEMP/body.md"
+            gh pr create --base main --head openapi-refresh \
+              --title "chore: refresh openapi copies from meta main" \
+              --body-file "$RUNNER_TEMP/body.md"
+            created=true
+          fi
+
+          # Pushes with GITHUB_TOKEN start no pull_request runs; dispatches are
+          # exempt. A dispatched deploy.yml on a branch other than main builds
+          # and tests, then stops at its tip-of-main check: nothing deploys.
+          if [ "$pushed" = true ] || [ "$created" = true ]; then
+            gh workflow run deploy.yml --ref openapi-refresh
+            gh workflow run spec-drift.yml --ref openapi-refresh
+          fi

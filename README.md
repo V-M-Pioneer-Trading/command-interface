@@ -128,6 +128,8 @@ transit), because that density is what surfaces the layout and hit-testing bugs
 a four-waypoint mock never will. Vite only bundles `index.html`, so it never
 ships.
 
+The spec copies in `openapi/` are checked against meta main by `spec-drift.yml` (`npm run openapi:drift` runs the same check locally) and refreshed by a daily `openapi-refresh.yml` that opens one PR to merge by hand; see `CLAUDE.md`.
+
 Deploys are `.github/workflows/deploy.yml`: every push to `main` builds and syncs
 `dist/` to S3, then invalidates CloudFront. Backend URLs are baked in at build
 time as workflow env, which is why a new one has to be added there as well as to
