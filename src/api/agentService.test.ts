@@ -82,6 +82,7 @@ describe("agentService requests", () => {
     expect(req.headers.get("Authorization")).toBe("Bearer t");
     if (body === undefined) {
       expect(await req.text()).toBe("");
+      expect(req.headers.has("Content-Type")).toBe(false);
     } else {
       expect(JSON.parse(await req.text())).toEqual(body);
       expect(req.headers.get("Content-Type")).toContain("application/json");
