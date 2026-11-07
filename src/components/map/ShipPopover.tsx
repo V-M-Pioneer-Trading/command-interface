@@ -1,6 +1,6 @@
 import { useCountdown } from "../../hooks/useCountdown";
 import { formatCountdown } from "../../utils/spaceTraders";
-import type { Ship } from "../../api/types";
+import type { Ship } from "../../api/agentService";
 import { nonEmpty } from "../../utils/nonEmpty";
 
 const STATUS_LABEL: Record<string, string> = {

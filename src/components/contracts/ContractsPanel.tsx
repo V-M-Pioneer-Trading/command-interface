@@ -4,7 +4,7 @@ import { useOperator, SCOPE_FLEET_CONTROL } from "../../context/OperatorContext"
 import { useContractsQuery } from "../../hooks/queries";
 import { queryKeys } from "../../hooks/queryKeys";
 import { agentService } from "../../api/agentService";
-import type { Contract } from "../../api/types";
+import type { Contract } from "../../api/agentService";
 import { PillButton } from "../common/PillButton";
 import type { TogglePanelProps } from "../common/TogglePanelProps";
 import { QueryState } from "../common/QueryState";

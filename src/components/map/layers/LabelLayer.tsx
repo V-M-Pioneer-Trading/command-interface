@@ -3,7 +3,7 @@ import { waypointBaseSize } from "../../../map/sprites/registry";
 import { isLabelVisible } from "../../../map/labelVisibility";
 import { SHIP_FAMILY_SIZE, shipFamily } from "../../../map/sprites/ships";
 import type { LayoutNode, ShipPosition } from "../../../map/systemLayout";
-import type { Ship } from "../../../api/types";
+import type { Ship } from "../../../api/agentService";
 
 const LABEL_FONT_PX = 10;
 const LABEL_GAP_PX = 4;

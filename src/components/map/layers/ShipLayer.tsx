@@ -1,7 +1,7 @@
 import { iconLocalSize, screenToLocal } from "../../../map/viewport";
 import { SHIP_FAMILY_SIZE, roleBadgeId, shipFamily } from "../../../map/sprites/ships";
 import type { ShipPosition } from "../../../map/systemLayout";
-import type { Ship } from "../../../api/types";
+import type { Ship } from "../../../api/agentService";
 import type { BadgeTip } from "../badgeTip";
 
 const STATUS_COLOR: Record<string, string> = {
