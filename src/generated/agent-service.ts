@@ -1535,4 +1535,3 @@ export interface operations {
         };
     };
 }
-// hand edit (red proof, reverted next commit)
