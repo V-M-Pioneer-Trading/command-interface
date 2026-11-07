@@ -5,7 +5,7 @@ import { AlertProvider } from "../context/AlertProvider";
 import { OperatorContext, type Operator } from "../context/OperatorContext";
 import { SelectionContext } from "../context/SelectionContext";
 import { agentService } from "../api/agentService";
-import type { Contract } from "../api/types";
+import type { Contract } from "../api/agentService";
 import { FleetList } from "./fleet/FleetList";
 import { ContractsPanel } from "./contracts/ContractsPanel";
 
@@ -60,10 +60,13 @@ describe("null list answers from agent-service", () => {
   it("renders a contract whose terms.deliver is null", async () => {
     const contract: Contract = {
       id: "contract-12345678",
+      factionSymbol: "COSMIC",
       type: "PROCUREMENT",
       accepted: false,
       fulfilled: false,
-      terms: { payment: { onAccepted: 1, onFulfilled: 2 }, deliver: null },
+      expiration: "2026-01-02T00:00:00Z",
+      deadlineToAccept: "2026-01-01T00:00:00Z",
+      terms: { deadline: "2026-01-03T00:00:00Z", payment: { onAccepted: 1, onFulfilled: 2 }, deliver: null },
     };
     vi.spyOn(agentService, "getContracts").mockResolvedValue([contract]);
     renderPanel(<ContractsPanel onClose={() => undefined} />);

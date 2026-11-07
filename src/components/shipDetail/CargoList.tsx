@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PillButton } from "../common/PillButton";
-import type { Contract, Ship, ShipCargo } from "../../api/types";
+import type { Contract, Ship, ShipCargo } from "../../api/agentService";
 
 type RowMode = "sell" | "deliver" | "transfer";
 

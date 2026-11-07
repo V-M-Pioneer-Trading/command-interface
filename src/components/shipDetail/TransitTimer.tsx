@@ -1,6 +1,6 @@
 import { useCountdown } from "../../hooks/useCountdown";
 import { formatCountdown } from "../../utils/spaceTraders";
-import type { ShipNav } from "../../api/types";
+import type { ShipNav } from "../../api/agentService";
 
 export function TransitTimer({ nav }: { nav: ShipNav | undefined }) {
   const arrival = nav?.status === "IN_TRANSIT" ? nav.route.arrival : null;

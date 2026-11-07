@@ -1,87 +1,19 @@
+import type { ShipCargo } from "./agentService";
+
 /**
- * Hand-written types for the backend responses this UI reads.
+ * Hand-written types for the fleet-, navigation- and automation-service
+ * responses this UI reads. agent-service types are generated: see
+ * `src/generated/agent-service.ts`, re-exported by name from `agentService.ts`.
  *
  * Deliberately a subset: each interface lists the fields some component or
  * hook actually touches, not everything the service sends. Cross-checked
- * against agent-service/ts/openapi.json (Agent, Ship, Contract, ShipCooldown),
- * fleet-service/openapi.json (Survey) and automation-service/src (knobs,
- * autopilot state, event log, anomalies, metrics rollups). navigation-service
- * and fleet-service document their bodies as free-form JSON, so Waypoint,
- * Market, Shipyard and the `{ data }` envelopes are the SpaceTraders shape as
- * CLAUDE.md records it. No codegen: keep these in step with the services by
- * hand.
+ * against fleet-service/openapi.json (Survey) and automation-service/src
+ * (knobs, autopilot state, event log, anomalies, metrics rollups).
+ * navigation-service and fleet-service document their bodies as free-form
+ * JSON, so Waypoint, Market, Shipyard and the `{ data }` envelopes are the
+ * SpaceTraders shape as CLAUDE.md records it. No codegen for these yet: keep
+ * them in step with the services by hand until their slices land.
  */
-
-// ── agent-service ────────────────────────────────────────────────────────
-
-/** `GET /agent` — flat, not wrapped in `{ data }`. */
-export interface Agent {
-  symbol: string;
-  credits: number;
-  startingFaction: string;
-  shipCount: number;
-  headquarters: string;
-}
-
-export interface ShipRouteWaypoint {
-  symbol: string;
-}
-
-export interface ShipRoute {
-  origin: ShipRouteWaypoint;
-  destination: ShipRouteWaypoint;
-  departureTime: string;
-  arrival: string;
-}
-
-export interface ShipNav {
-  systemSymbol: string;
-  waypointSymbol: string;
-  /** DOCKED | IN_ORBIT | IN_TRANSIT upstream; the spec types it as a string. */
-  status: string;
-  flightMode: string;
-  route: ShipRoute;
-}
-
-export interface CargoItem {
-  symbol: string;
-  units: number;
-}
-
-export interface ShipCargo {
-  capacity: number;
-  units: number;
-  /** agent-service sends `null` for a hold with no list, `[]` for an empty one. */
-  inventory: CargoItem[] | null;
-}
-
-export interface Ship {
-  symbol: string;
-  registration: { role: string };
-  nav: ShipNav;
-  frame: { symbol: string; name: string };
-  fuel: { current: number; capacity: number };
-  cargo: ShipCargo;
-}
-
-export interface ContractDeliverGood {
-  tradeSymbol: string;
-  destinationSymbol: string;
-  unitsRequired: number;
-  unitsFulfilled: number;
-}
-
-export interface Contract {
-  id: string;
-  type: string;
-  accepted: boolean;
-  fulfilled: boolean;
-  terms: {
-    payment: { onAccepted: number; onFulfilled: number };
-    /** SpaceTraders marks it optional, and agent-service sends `null` for a contract with nothing to deliver. */
-    deliver: ContractDeliverGood[] | null;
-  };
-}
 
 // ── fleet-service ────────────────────────────────────────────────────────
 // Upstream SpaceTraders bodies, passed through inside `{ data }`.

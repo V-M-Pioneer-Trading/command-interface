@@ -1,10 +1,19 @@
 import { config } from "./config";
-import { request } from "./client";
-import type { Agent, Contract, Ship, ShipActionResponse } from "./types";
+import { bearer, serviceClient, unwrap } from "./serviceClient";
+import type { components, paths } from "../generated/agent-service";
 
 type AuthToken = string | null;
 
-const base = config.agentServiceUrl;
+// Types keep the spec's schema names. Call sites import them from here.
+type Schemas = components["schemas"];
+export type Agent = Schemas["Agent"];
+export type Ship = Schemas["Ship"];
+export type ShipCargo = Schemas["ShipCargo"];
+export type ShipNav = Schemas["ShipNav"];
+export type CargoItem = Schemas["CargoItem"];
+export type Contract = Schemas["Contract"];
+
+const client = serviceClient<paths>(config.agentServiceUrl);
 
 // `getShips` and `getContracts` can answer a literal JSON `null`: agent-service
 // sends one when the gateway's reply carries no `data` (its contract README,
@@ -17,35 +26,46 @@ const base = config.agentServiceUrl;
 // fleet-service. No game credential travels — st-gateway injects it upstream
 // (decision 5).
 export const agentService = {
-  getCurrentAgent: (authToken: AuthToken) =>
-    request<unknown>(base, "/current-agent", { authToken }),
-  getAgent: (authToken: AuthToken) => request<Agent>(base, "/agent", { authToken }),
-  getShips: (authToken: AuthToken) => request<Ship[] | null>(base, "/ships", { authToken }),
+  getCurrentAgent: (authToken: AuthToken) => unwrap(client.GET(`/api/agent/v1/current-agent`, bearer(authToken))),
+  getAgent: (authToken: AuthToken) => unwrap(client.GET(`/api/agent/v1/agent`, bearer(authToken))),
+  getShips: (authToken: AuthToken) => unwrap(client.GET(`/api/agent/v1/ships`, bearer(authToken))),
   getShip: (shipSymbol: string, authToken: AuthToken) =>
-    request<Ship>(base, `/ships/${shipSymbol}`, { authToken }),
-  getContracts: (authToken: AuthToken) => request<Contract[] | null>(base, "/contracts", { authToken }),
+    unwrap(client.GET(`/api/agent/v1/ships/{shipSymbol}`, { params: { path: { shipSymbol } }, ...bearer(authToken) })),
+  getContracts: (authToken: AuthToken) => unwrap(client.GET(`/api/agent/v1/contracts`, bearer(authToken))),
   getContract: (contractId: string, authToken: AuthToken) =>
-    request<Contract>(base, `/contracts/${contractId}`, { authToken }),
+    unwrap(
+      client.GET(`/api/agent/v1/contracts/{contractId}`, { params: { path: { contractId } }, ...bearer(authToken) }),
+    ),
   acceptContract: (contractId: string, authToken: AuthToken) =>
-    request<ShipActionResponse>(base, `/contracts/${contractId}/accept`, { method: "POST", authToken }),
+    unwrap(
+      client.POST(`/api/agent/v1/contracts/{contractId}/accept`, {
+        params: { path: { contractId } },
+        ...bearer(authToken),
+      }),
+    ),
   fulfillContract: (contractId: string, authToken: AuthToken) =>
-    request<ShipActionResponse>(base, `/contracts/${contractId}/fulfill`, { method: "POST", authToken }),
+    unwrap(
+      client.POST(`/api/agent/v1/contracts/{contractId}/fulfill`, {
+        params: { path: { contractId } },
+        ...bearer(authToken),
+      }),
+    ),
   purchaseCargo: (shipSymbol: string, symbol: string, units: number, authToken: AuthToken) =>
-    request<ShipActionResponse>(base, `/ships/${shipSymbol}/purchase`, {
-      method: "POST",
-      authToken,
-      body: { symbol, units },
-    }),
+    unwrap(
+      client.POST(`/api/agent/v1/ships/{shipSymbol}/purchase`, {
+        params: { path: { shipSymbol } },
+        body: { symbol, units },
+        ...bearer(authToken),
+      }),
+    ),
   sell: (shipSymbol: string, symbol: string, units: number, authToken: AuthToken) =>
-    request<ShipActionResponse>(base, `/ships/${shipSymbol}/sell`, {
-      method: "POST",
-      authToken,
-      body: { symbol, units },
-    }),
+    unwrap(
+      client.POST(`/api/agent/v1/ships/{shipSymbol}/sell`, {
+        params: { path: { shipSymbol } },
+        body: { symbol, units },
+        ...bearer(authToken),
+      }),
+    ),
   purchaseShip: (shipType: string, waypointSymbol: string, authToken: AuthToken) =>
-    request<ShipActionResponse>(base, "/ships/purchase", {
-      method: "POST",
-      authToken,
-      body: { shipType, waypointSymbol },
-    }),
+    unwrap(client.POST(`/api/agent/v1/ships/purchase`, { body: { shipType, waypointSymbol }, ...bearer(authToken) })),
 };

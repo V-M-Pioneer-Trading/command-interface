@@ -1,0 +1,5 @@
+# Byte identity with the copy in meta, and a stable generated file, on any
+# platform: no autocrlf rewriting.
+openapi/*.json -text
+openapi/meta-commit.txt text eol=lf
+src/generated/** text eol=lf
