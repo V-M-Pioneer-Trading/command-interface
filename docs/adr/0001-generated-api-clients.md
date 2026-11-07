@@ -1,5 +1,7 @@
 # API clients are generated from the synced specs
 
+Status: accepted, not yet implemented. The spec copies, the pin, the generated clients and the drift check land in the slices meta#167 to meta#174; until then `src/api/types.ts` is still hand-written.
+
 command-interface reaches agent-, automation-, fleet- and navigation-service through clients generated from each service's spec in `meta/openapi/`. The spec copies are committed here with a pin to the meta commit they came from; `openapi-typescript` turns them into types and `openapi-fetch` into one typed client per service. CI fails when a copy differs from meta main, and a scheduled workflow opens the refresh PR. No hand-written request or response type remains for those four services.
 
 This replaces the earlier rule "No codegen: keep these in step with the services by hand". Under that rule a service's shape change reached the dashboard unannounced, at runtime.
