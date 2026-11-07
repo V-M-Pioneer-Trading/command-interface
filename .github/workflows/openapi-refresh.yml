@@ -11,6 +11,10 @@ name: OpenAPI refresh
 # fails and this run goes red with GitHub's message. Nothing else is needed: no
 # secret beyond the run's GITHUB_TOKEN, because meta is public.
 #
+# Checks do not start on a PR pushed or opened with GITHUB_TOKEN, and a workflow_dispatch
+# run does not count toward the required checks either (meta#174, PR #53 proof).
+# A person closes and reopens the PR to start `test` and `spec-drift`.
+#
 # shortcut: GitHub disables scheduled workflows after 60 days without activity
 # in the repository, upgrade by a keep-alive commit or a manual dispatch if the
 # refresh ever stops arriving.
@@ -83,9 +87,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      # gh workflow run: the two required checks are dispatched on the refresh
-      # branch, because a GITHUB_TOKEN push starts no pull_request run.
-      actions: write
     env:
       GH_REPO: ${{ github.repository }}
       CHANGED: ${{ needs.generate.outputs.changed }}
@@ -167,33 +168,23 @@ jobs:
 
           # Same tree as the branch already has: drift persists unchanged, so
           # no push and no new check runs.
-          pushed=false
           if [ "$HAS_BRANCH" = true ] && [ "$(git rev-parse 'HEAD^{tree}')" = "$(git rev-parse 'origin/openapi-refresh^{tree}')" ]; then
             echo "openapi-refresh already holds this refresh; no push."
           else
             git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/heads/openapi-refresh
-            pushed=true
           fi
 
-          created=false
           if [ -z "$OPEN" ]; then
             {
               echo "Spec copies refreshed from meta main @ ${META_SHA} (https://github.com/V-M-Pioneer-Trading/meta/commit/${META_SHA})."
               echo
               echo "Changed: ${services}. Regenerated \`src/generated/\` and moved the pin."
               echo
+              echo "Checks do not start on a PR pushed by GITHUB_TOKEN: close and reopen this PR to start \`test\` and \`spec-drift\`."
+              echo
               echo "Opened by the openapi-refresh workflow. It is never auto-merged: review the generated-type diff and merge by hand. The workflow rewrites this branch while meta moves, unless a person pushes to it."
             } > "$RUNNER_TEMP/body.md"
             gh pr create --base main --head openapi-refresh \
               --title "chore: refresh openapi copies from meta main" \
               --body-file "$RUNNER_TEMP/body.md"
-            created=true
-          fi
-
-          # Pushes with GITHUB_TOKEN start no pull_request runs; dispatches are
-          # exempt. A dispatched deploy.yml on a branch other than main builds
-          # and tests, then stops at its tip-of-main check: nothing deploys.
-          if [ "$pushed" = true ] || [ "$created" = true ]; then
-            gh workflow run deploy.yml --ref openapi-refresh
-            gh workflow run spec-drift.yml --ref openapi-refresh
           fi
