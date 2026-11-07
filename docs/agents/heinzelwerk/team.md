@@ -11,7 +11,6 @@ How heinzelwerk agents work in this repo. Mode rules (single repo vs workspace) 
   - `npm run lint`
   - `npm test`
   - `npm run build`
-  - `npm run openapi:drift` (CI job `spec-drift`, `.github/workflows/spec-drift.yml:25-39`; compares every `openapi/*.json` with live meta main, so red can mean meta moved, which the refresh PR fixes, not that this diff is wrong)
   - `npm audit --audit-level=high` (not in CI)
 - **Verified against**: 562e1303 2026-10-29 (checks and every ref in this file; retro bumps it)
 - **Coding standards**: `eslint.config.mjs:1-7` (shared `@v-m-pioneer-trading/eslint-config` `react` variant, type-aware), `package.json:13` lint with `--max-warnings 0`, config pinned by release tarball `package.json:25`; `tsconfig.json:16-20` (`strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`); plus `CLAUDE.md` "### Dependency rules" (:67) and "## Invariants" (:88); UI: `docs/agents/heinzelwerk/design.md`
