@@ -1,0 +1,39 @@
+name: Spec drift
+
+# Fails when a committed openapi/*.json differs from the same file on meta main,
+# naming the service. Its own workflow, not a job in deploy.yml: a drift must
+# signal on the PR, never stop a deploy. The job id `spec-drift` is the status
+# context to require on main (after this workflow has landed on main).
+#
+# A red check here is fixed by merging the refresh PR (openapi-refresh.yml), or
+# by `npm run openapi:refresh -- <sha>` by hand. Nothing here needs a secret:
+# meta is public.
+on:
+  # No branch filter, like deploy.yml: a stacked PR needs the same check.
+  pull_request:
+  push:
+    branches: [main]
+  # Manual run. It does not start the check on a refresh PR: a run dispatched
+  # on a branch does not count toward required checks, so a person closes and
+  # reopens that PR instead (see openapi-refresh.yml).
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  spec-drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      # Zero dependencies: no npm ci. Same command as `npm run openapi:drift`.
+      - name: Compare the spec copies with meta main
+        run: node scripts/openapi-drift.mjs
