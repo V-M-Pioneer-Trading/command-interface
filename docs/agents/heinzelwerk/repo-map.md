@@ -56,13 +56,15 @@ Verified against 562e1303 2026-10-29.
 - Node 24 in CI; jsdom 30 needs Node >= 22.22 (`.github/workflows/deploy.yml:41-44,59`).
 
 ## CI / deploy
-- One workflow "Deploy Website": push main, pull_request (no branch filter), workflow_dispatch (`.github/workflows/deploy.yml:1-11`).
+- Workflow "Deploy Website": push main, pull_request (no branch filter), workflow_dispatch (`.github/workflows/deploy.yml:1-11`).
+- Workflow `spec-drift.yml`, job `spec-drift`: pull_request, push main, workflow_dispatch; runs `node scripts/openapi-drift.mjs`, no `npm ci` (`.github/workflows/spec-drift.yml:11-39`). Never in `deploy`'s `needs`: a drift signals, it does not stop a deploy.
+- Workflow `openapi-refresh.yml`: daily cron + dispatch, main only; `generate` (read token, `npm run openapi:refresh -- <meta sha>`) → `propose` (write token, fixed branch `openapi-refresh`, one PR, never merged by the workflow). A PR pushed with `GITHUB_TOKEN` starts no checks: a human closes and reopens it (`.github/workflows/openapi-refresh.yml:8,22-23,36-37,84-90,197`). Prerequisite: the Actions setting "Allow GitHub Actions to create and approve pull requests".
 - Job `test`: `npm ci` → typecheck → lint (`if: always()`) → test (`if: always()`) (`.github/workflows/deploy.yml:45-82`). Build is not in `test`; it runs in `deploy` (`.github/workflows/deploy.yml:157-158`).
 - Job `deploy` (not on PRs, `needs: test`): tip-of-main check → build → assume `command-interface-deploy` → `aws s3 sync ./dist s3://spacetraders-radomskyi-com --delete` → CloudFront invalidation `/*` (`.github/workflows/deploy.yml:84-175`).
 - Deploy env: agent/navigation/fleet/automation = `https://spacetraders.radomskyi.com/api/<svc>/v1`; auth/st-gateway bare origin; Clerk key from repo var; `VITE_AI_SERVICE_URL` deliberately absent (`.github/workflows/deploy.yml:98-114`).
 - Main-run concurrency group, `cancel-in-progress: false` (`.github/workflows/deploy.yml:32-34`).
 - Deploy role trusts `repo:V-M-Pioneer-Trading/command-interface:ref:refs/heads/main` (`mradomsky/infrastructure projects/spacetraders/main.tf`, lines 381-387; verified 2026-10-29 @ 9fae0a1: `gh api repos/mradomsky/infrastructure/contents/projects/spacetraders/main.tf` → line 381 is that trust value).
-- `main` protected, required check `test`, enforce_admins on (verified 2026-10-29 @ 562e1303: `gh api .../branches/main/protection`).
+- `main` protected, required check `test` (plus `spec-drift` after meta#174's post-merge step), enforce_admins on (verified 2026-10-29 @ 562e1303: `gh api .../branches/main/protection`).
 
 ## Patterns
 - Backend call = one function in `src/api/*Service.ts`; no `fetch` outside `src/api/` (`CLAUDE.md:304-306`; holds, verified 2026-10-29 @ 562e1303: grep `fetch(` hits only `src/api/client.ts:98`, `src/api/automationService.ts:48`, `src/api/healthService.ts:96`, plus `devMap.tsx` stub).
