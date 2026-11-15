@@ -5,11 +5,11 @@ Verified against 562e1303 2026-10-29.
 - LCARS-styled React/Vite SPA: one-system live map plus operator controls; no server of its own; static files on S3 behind CloudFront (`README.md:1-8`, `package.json:5`).
 
 ## Layout
-- `src/main.tsx` root render, provider nesting, missing-Clerk-key screen; `src/App.tsx` renders `Dashboard` only (`src/App.tsx:8-10`). Module table: `CLAUDE.md:28-65`.
-- `src/api/` one function per backend route (`agentService.ts`, `navigationService.ts`, `fleetService.ts`, `src/api/automationService.ts`, `src/api/healthService.ts`); shared `request`/`readResponse`/`ApiError` in `src/api/client.ts:2-107`; env → URLs `src/api/config.ts:3-13`; hand-written types `src/api/types.ts:1-12`.
+- `src/main.tsx` root render, provider nesting, missing-Clerk-key screen; `src/App.tsx` renders `Dashboard` only (`src/App.tsx:8-10`). Module table: `CLAUDE.md:28-64`.
+- `src/api/` one function per backend route (`agentService.ts`, `navigationService.ts`, `fleetService.ts`, `src/api/automationService.ts`, `src/api/healthService.ts`); shared `ApiError`/`errorMessage` in `src/api/client.ts:2-35`, `serviceClient`/`bearer`/`unwrap`/`unwrapOrNull` in `src/api/serviceClient.ts:16-81`; env → URLs `src/api/config.ts:3-13`; types generated into `src/generated/*.ts`, none hand-written.
 - `src/context/` Operator (Clerk identity + scopes), Alert (toasts), Selection (selected ship) (`src/context/OperatorContext.ts:26-47`, `src/context/AlertProvider.tsx:20-24`).
 - `src/hooks/` every query hook and poll interval `src/hooks/queries.ts:11-21`; every cache key `src/hooks/queryKeys.ts:24-41`; map viewport binding `src/hooks/useMapViewport.ts`.
-- `src/map/` pure layout/viewport/sprite math, non-test code imports nothing outside `src/map/` (`CLAUDE.md:71-73`; holds, verified 2026-10-29 @ 562e1303: `grep -rhoE 'from "[^"]+"' src/map` finds only relative imports inside `src/map`, plus `vitest` in the three `*.test.ts`).
+- `src/map/` pure layout/viewport/sprite math, non-test code imports nothing outside `src/map/` (`CLAUDE.md:70-72`; holds, verified 2026-10-29 @ 562e1303: `grep -rhoE 'from "[^"]+"' src/map` finds only relative imports inside `src/map`, plus `vitest` in the three `*.test.ts`).
 - `src/components/<area>/` panels + co-located CSS; shared pieces in `src/components/common/` (`src/components/common/Panel.tsx`, `src/components/common/PillButton.tsx`, `src/components/common/QueryState.tsx`, `src/components/common/StatusPill.tsx`). Design rules: `docs/agents/heinzelwerk/design.md`.
 - `src/styles/` tokens `src/styles/theme.css:1-34`, fonts `src/styles/fonts.css:1-15`, globals `src/styles/global.css:1-43`.
 - `src/devMap.tsx` + `dev-map.html`: dev-only map harness with stubbed fetch and operator, never bundled (`README.md:122-129`, `CLAUDE.md:18`).
@@ -20,7 +20,7 @@ Verified against 562e1303 2026-10-29.
 - Empty `VITE_CLERK_PUBLISHABLE_KEY` renders a setup screen instead of the app (`src/main.tsx:29-44`).
 - No login wall: the whole dashboard renders signed out (`src/App.tsx:3-7`).
 - Sign-in: Clerk Google OAuth redirect (`src/components/operator/OperatorBadge.tsx:77-84`).
-- One credential: `Authorization: Bearer <Clerk getToken()>`, sent only when a token exists (`src/api/client.ts:94-97`, `src/api/automationService.ts:44-46`). Game token never in the browser; st-gateway injects it (`src/api/client.ts:70-78`).
+- One credential: `Authorization: Bearer <Clerk getToken()>`, sent only when a token exists (`src/api/serviceClient.ts:39-41`, `src/api/automationService.ts:42-44`). Game token never in the browser; st-gateway injects it (`src/api/serviceClient.ts:31-37`).
 - Scopes decoded client-side from the session token without a signature check, re-read every 60 s and on focus/visibility (`src/context/OperatorContext.ts:7-11,49-64`, `src/context/OperatorProvider.tsx:6,39-45`). `fleet:control`, `planner:advise` (`src/context/OperatorContext.ts:26-27`).
 
 ## Reads without sign-in
@@ -37,15 +37,15 @@ Verified against 562e1303 2026-10-29.
 - Controls render disabled, not hidden (`src/components/autopilot/AutopilotPanel.tsx:20-24`).
 
 ## Calls (all from `src/api/`)
-- agent-service: GET `/current-agent`, `/agent`, `/ships`, `/ships/:s`, `/contracts`, `/contracts/:id`; POST `/contracts/:id/{accept,fulfill}`, `/ships/:s/{purchase,sell}`, `/ships/purchase` (`src/api/agentService.ts:19-51`).
-- navigation-service: GET `/waypoints/:sym`, `/systems/:id/waypoints`, `/waypoints/:sym/{market,shipyard}`; token optional (`src/api/navigationService.ts:7,19-28`).
-- fleet-service: POST `/ships/:s/{orbit,dock,navigate,extract,extract/survey,survey,refuel,transfer}`, `/contracts/:id/deliver`; PATCH `/ships/:s/nav`; GET `/ships/:s/{cooldown,cargo}` (`src/api/fleetService.ts:23-80`).
-- automation-service: GET `/autopilot/status`, `/autopilot/ships/:s` (404 = unmanaged), `/metrics/context`, `/anomalies/digest` (404 = not enabled), `/planner/knobs`; POST `/autopilot/{arm,pause,abort}`; PUT `/planner/knobs/:name` (`src/api/automationService.ts:60-94`).
-- Health only: `<origin>/api/{agent,navigation,fleet,automation,auth,st-gateway}/health`, ai-service bare `/health`; 5 s timeout; on an https page non-https targets are dropped (`src/api/healthService.ts:31-52,67-75,88-97`).
+- agent-service: GET `/current-agent`, `/agent`, `/ships`, `/ships/:s`, `/contracts`, `/contracts/:id`; POST `/contracts/:id/{accept,fulfill}`, `/ships/:s/{purchase,sell}`, `/ships/purchase` (`src/api/agentService.ts:17-49`).
+- navigation-service: GET `/waypoints/:sym`, `/systems/:id/waypoints`, `/waypoints/:sym/{market,shipyard}`; generated client since meta#173; token optional, an anonymous call sends no headers (`src/api/navigationService.ts:22-24,30-54`).
+- fleet-service: POST `/ships/:s/{orbit,dock,navigate,extract,extract/survey,survey,refuel,transfer}`, `/contracts/:id/deliver`; PATCH `/ships/:s/nav`; GET `/ships/:s/{cooldown,cargo}` (`src/api/fleetService.ts:21-78`).
+- automation-service: GET `/autopilot/status`, `/autopilot/ships/:s` (404 = unmanaged), `/metrics/context`, `/anomalies/digest` (404 = not enabled), `/planner/knobs`; POST `/autopilot/{arm,pause,abort}`; PUT `/planner/knobs/:name` (`src/api/automationService.ts:58-92`).
+- Health only: `<origin>/api/{agent,navigation,fleet,automation,auth,st-gateway}/health`, ai-service bare `/health`; 5 s timeout; on an https page non-https targets are dropped (`src/api/healthService.ts:33-54,69-77,90-99`).
 - Called by: nothing, it is a static SPA with no server (`README.md:7-8`). Port 3000 is the backends' default CORS origin (`vite.config.js:6-9`; e.g. `../automation-service/src/config.ts:193`).
 
 ## Persistence
-- None: no localStorage / sessionStorage / indexedDB / cookie in `src` (verified 2026-10-29 @ 562e1303: grep 0). Surveys memory-only, lost on reload (`CLAUDE.md:266-267`).
+- None: no localStorage / sessionStorage / indexedDB / cookie in `src` (verified 2026-10-29 @ 562e1303: grep 0). Surveys memory-only, lost on reload (`CLAUDE.md:265-266`).
 - React Query in memory, `retry: 1`, `refetchOnWindowFocus: false` (`src/main.tsx:12-19`).
 
 ## Build / run
@@ -67,24 +67,24 @@ Verified against 562e1303 2026-10-29.
 - `main` protected, required check `test` (plus `spec-drift` after meta#174's post-merge step), enforce_admins on (verified 2026-10-29 @ 562e1303: `gh api .../branches/main/protection`).
 
 ## Patterns
-- Backend call = one function in `src/api/*Service.ts`; no `fetch` outside `src/api/` (`CLAUDE.md:304-306`; holds, verified 2026-10-29 @ 562e1303: grep `fetch(` hits only `src/api/client.ts:98`, `src/api/automationService.ts:48`, `src/api/healthService.ts:96`, plus `devMap.tsx` stub).
-- Cache keys only from `src/hooks/queryKeys.ts`, no array literals (`CLAUDE.md:85-86`).
+- Backend call = one function in `src/api/*Service.ts`; no `fetch` outside `src/api/` (`CLAUDE.md:303-305`; holds, verified 2026-11-15 @ 583f2008: grep `fetch(` outside tests hits only `src/api/serviceClient.ts:19`, `src/api/healthService.ts:98`, plus the `devMap.tsx` stub).
+- Cache keys only from `src/hooks/queryKeys.ts`, no array literals (`CLAUDE.md:84-85`).
 - Signed-in reads via `useGatedQuery`, intervals as named `*_POLL_MS` (`src/hooks/queries.ts:11-21,49-62`).
-- Mutation: call with `await getToken()` → invalidate keys (table `CLAUDE.md:206-213`) → `pushAlert` on error (`src/components/autopilot/AutopilotPanel.tsx:33-39`).
-- `@clerk/clerk-react` imported only by `main.tsx`, `src/context/OperatorProvider.tsx`, `OperatorBadge.tsx` (+1 test) (`CLAUDE.md:78-82`).
-- `undefined` / `null` / rejection stay distinct through `QueryState` (`src/components/common/QueryState.tsx:16-61`, `CLAUDE.md:136-140`).
+- Mutation: call with `await getToken()` → invalidate keys (table `CLAUDE.md:205-212`) → `pushAlert` on error (`src/components/autopilot/AutopilotPanel.tsx:33-39`).
+- `@clerk/clerk-react` imported only by `main.tsx`, `src/context/OperatorProvider.tsx`, `OperatorBadge.tsx` (+1 test) (`CLAUDE.md:77-81`).
+- `undefined` / `null` / rejection stay distinct through `QueryState` (`src/components/common/QueryState.tsx:16-61`, `CLAUDE.md:135-139`).
 - Toggle panel = 4 edits: `PANEL_ORDER` `src/utils/togglePanelLayout.ts:6`, `PANEL_WIDTH_REM` `:11-16`, `PANEL_BUTTONS` `src/components/layout/AgentBar.tsx:13-18`, branch `src/components/layout/Dashboard.tsx:42-45`; CSS width = rem entry (4/4 match, e.g. `src/components/knobs/KnobEditor.css:5`).
-- New `VITE_*` = 4 edits: `config.ts`, `vite-env.d.ts`, `.env.example`, `.github/workflows/deploy.yml` (`CLAUDE.md:334-336`).
+- New `VITE_*` = 4 edits: `config.ts`, `vite-env.d.ts`, `.env.example`, `.github/workflows/deploy.yml` (`CLAUDE.md:333-335`).
 - Shared lint config from release tarball eslint-config v1.1.0 (`package.json:25`, `eslint.config.mjs:1-7`).
 
 ## Traps
-- Map positions resolve by symbol through the layout index, never route x/y (`CLAUDE.md:107-110`).
-- Never `setPointerCapture` in `pointerdown` (`CLAUDE.md:123-127`).
-- Sprite grid writes need integer indices (`CLAUDE.md:94-97`).
-- automation-service GETs stay CORS-simple: no headers at all when unauthenticated (`src/api/automationService.ts:27-58`).
-- `getToken()` per request, never cached (`src/api/automationService.ts:23-25`).
-- 404 on ship task / metrics / anomalies is normal (`src/api/automationService.ts:71-87`).
-- Refuel `units === 0` = full tank or no tank (`CLAUDE.md:263-265`, `src/components/shipDetail/ShipDetailPanel.tsx:94-98`).
-- jsdom lacks `ResizeObserver`: no `SystemMap` tests (`CLAUDE.md:291-293`).
-- A `VITE_*` missing from .github/workflows/deploy.yml ships a localhost URL to production (`CLAUDE.md:225`); deliberate only for `VITE_AI_SERVICE_URL`, whose localhost health probe https pages drop (`src/api/healthService.ts:67-75`).
-- Stale code comments: `accent.ts` says `lcars-accent-*` live in src/styles/theme.css, they live in `src/components/common/Panel.css:45-59` / `src/components/common/PillButton.css:23-46` (`src/components/common/accent.ts:1`); `types.ts` points at "agent-service/ts/openapi.json", now at agent-service repo root (`src/api/types.ts:6`).
+- Map positions resolve by symbol through the layout index, never route x/y (`CLAUDE.md:106-109`).
+- Never `setPointerCapture` in `pointerdown` (`CLAUDE.md:122-126`).
+- Sprite grid writes need integer indices (`CLAUDE.md:93-96`).
+- automation-service GETs stay CORS-simple: no headers at all when unauthenticated (`src/api/automationService.ts:25-56`).
+- `getToken()` per request, never cached (`src/api/automationService.ts:21-23`).
+- 404 on ship task / metrics / anomalies is normal (`src/api/automationService.ts:69-85`).
+- Refuel `units === 0` = full tank or no tank (`CLAUDE.md:262-264`, `src/components/shipDetail/ShipDetailPanel.tsx:94-98`).
+- jsdom lacks `ResizeObserver`: no `SystemMap` tests (`CLAUDE.md:290-292`).
+- A `VITE_*` missing from .github/workflows/deploy.yml ships a localhost URL to production (`CLAUDE.md:224`); deliberate only for `VITE_AI_SERVICE_URL`, whose localhost health probe https pages drop (`src/api/healthService.ts:69-77`).
+- Stale code comments: `accent.ts` says `lcars-accent-*` live in src/styles/theme.css, they live in `src/components/common/Panel.css:45-59` / `src/components/common/PillButton.css:23-46` (`src/components/common/accent.ts:1`); the `unwrap` Boundary comment is circular (`src/api/serviceClient.ts:58-59`); fleet's header comment says "not through `bearer`" though `authHeader` is built from it (`src/api/fleetService.ts:21-22`); `errorMessage`'s comment says "Both are handled" after naming three shapes, ProblemDetail not read (`src/api/client.ts:16`).
