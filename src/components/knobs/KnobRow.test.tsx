@@ -1,9 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import type { Knob } from "../../api/types";
+import type { Knob } from "../../api/automationService";
 import { KnobRow } from "./KnobRow";
 
-const knob = (value: number): Knob => ({ name: "minMargin", value, min: 0, max: 10, default: 3 });
+const knob = (value: number): Knob => ({
+  name: "minMargin",
+  class: "policy",
+  description: "",
+  value,
+  min: 0,
+  max: 10,
+  default: 3,
+});
 
 function show(value: number) {
   const ui = (k: Knob) => <KnobRow knob={k} onSave={vi.fn()} busy={false} />;

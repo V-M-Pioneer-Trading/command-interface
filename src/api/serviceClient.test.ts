@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "./client";
-import { bearer, serviceClient, unwrap } from "./serviceClient";
+import { bearer, serviceClient, unwrap, unwrapOrNull } from "./serviceClient";
 import type { paths } from "../generated/agent-service";
 
 const PROD_URL = "https://spacetraders.radomskyi.com/api/agent/v1";
@@ -94,5 +94,28 @@ describe("unwrap", () => {
   it("falls back to statusText for an empty error body", async () => {
     stubFetch(() => new Response(null, { status: 503, statusText: "Service Unavailable" }));
     await expect(unwrap(call())).rejects.toMatchObject({ status: 503, message: "Service Unavailable" });
+  });
+});
+
+describe("unwrapOrNull", () => {
+  const call = () => serviceClient<paths>(PROD_URL).GET("/api/agent/v1/ships");
+
+  it("returns the body on 2xx", async () => {
+    stubFetch(() => jsonResponse([{ symbol: "S-1" }]));
+    await expect(unwrapOrNull(call(), 404)).resolves.toEqual([{ symbol: "S-1" }]);
+  });
+
+  it("returns null on 404, whatever the body", async () => {
+    stubFetch(() => jsonResponse({ error: { message: "gone" } }, 404));
+    await expect(unwrapOrNull(call(), 404)).resolves.toBeNull();
+    stubFetch(() => new Response("404 page not found\n", { status: 404 }));
+    await expect(unwrapOrNull(call(), 404)).resolves.toBeNull();
+  });
+
+  it("throws ApiError for another non-2xx, in both error body shapes", async () => {
+    stubFetch(() => jsonResponse({ error: { message: "nested" } }, 500));
+    await expect(unwrapOrNull(call(), 404)).rejects.toMatchObject({ status: 500, message: "nested" });
+    stubFetch(() => jsonResponse({ error: "flat" }, 401));
+    await expect(unwrapOrNull(call(), 404)).rejects.toMatchObject({ status: 401, message: "flat" });
   });
 });

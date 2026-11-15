@@ -6,7 +6,7 @@ import { useAutopilotStatusQuery } from "../../hooks/queries";
 import { useOperator, SCOPE_FLEET_CONTROL } from "../../context/OperatorContext";
 import { queryKeys } from "../../hooks/queryKeys";
 import { automationService } from "../../api/automationService";
-import type { AutopilotMode } from "../../api/types";
+import type { AutopilotMode } from "../../api/automationService";
 import { PillButton } from "../common/PillButton";
 import type { TogglePanelProps } from "../common/TogglePanelProps";
 import "./AutopilotPanel.css";

@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AlertProvider } from "../../context/AlertProvider";
 import { OperatorContext, SCOPE_FLEET_CONTROL, type Operator } from "../../context/OperatorContext";
 import { automationService } from "../../api/automationService";
-import type { AutopilotStatus } from "../../api/types";
+import type { AutopilotSnapshot } from "../../api/automationService";
 import { AutopilotPanel } from "./AutopilotPanel";
 
 const operator: Operator = {
@@ -25,12 +25,12 @@ describe("AutopilotPanel mutations", () => {
   // keeps the mutation pending until the status refetch lands. Settling at once
   // lets a second click through against a stale status (a 409 from the service).
   it("keeps arming pending until the status refetch resolves", async () => {
-    const armed = { status: "armed", mode: "live" } as AutopilotStatus;
-    let finishRefetch: (s: AutopilotStatus) => void = () => undefined;
+    const armed = { status: "armed", mode: "live" } as AutopilotSnapshot;
+    let finishRefetch: (s: AutopilotSnapshot) => void = () => undefined;
     const getStatus = vi
       .spyOn(automationService, "getStatus")
       .mockResolvedValueOnce({ status: "disarmed", mode: "live" })
-      .mockImplementationOnce(() => new Promise<AutopilotStatus>((r) => { finishRefetch = r; }));
+      .mockImplementationOnce(() => new Promise<AutopilotSnapshot>((r) => { finishRefetch = r; }));
     vi.spyOn(automationService, "arm").mockResolvedValue(armed);
 
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });

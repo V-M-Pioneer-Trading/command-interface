@@ -1,8 +1,14 @@
-# Input to `openapi-typescript` (see `npm run openapi:generate` / `openapi:check`).
-# One entry per backend service. A later slice adds an entry here and runs
+# Input to `openapi-typescript` when run bare. `npm run openapi:generate` / `openapi:check`
+# run it once per openapi/*.json instead (scripts/openapi-check.mjs): the CLI exits on
+# whichever entry here finishes first, so a stale later entry would pass.
+# One entry per backend service. A later slice adds an entry and runs
 # `npm run openapi:refresh <sha> <service>`; no code changes.
 apis:
   agent-service:
     root: ./openapi/agent-service.json
     x-openapi-ts:
       output: ./src/generated/agent-service.ts
+  automation-service:
+    root: ./openapi/automation-service.json
+    x-openapi-ts:
+      output: ./src/generated/automation-service.ts

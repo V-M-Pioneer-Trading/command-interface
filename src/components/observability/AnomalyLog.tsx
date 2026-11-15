@@ -1,4 +1,4 @@
-import type { Anomaly } from "../../api/types";
+import type { Anomaly } from "../../api/automationService";
 import { formatEventDetail, formatEventTime } from "../../utils/eventLog";
 import "./AnomalyLog.css";
 

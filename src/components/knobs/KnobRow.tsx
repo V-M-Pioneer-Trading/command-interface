@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import type { Knob } from "../../api/types";
+import type { Knob } from "../../api/automationService";
 
 function outOfRange(value: number, knob: Knob): boolean {
   return !Number.isFinite(value) || value < knob.min || value > knob.max;

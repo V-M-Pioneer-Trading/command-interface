@@ -6,7 +6,7 @@ import { automationService } from "../api/automationService";
 import { healthService } from "../api/healthService";
 import { useOperator } from "../context/OperatorContext";
 import { queryKeys } from "./queryKeys";
-import type { AnomaliesDigestParams, MetricsContextParams } from "../api/types";
+import type { AnomaliesDigestParams, MetricsContextParams } from "../api/automationService";
 
 const SYSTEM_HEALTH_POLL_MS = 10_000;
 const SHIPS_POLL_MS = 12_000;

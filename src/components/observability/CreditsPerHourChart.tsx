@@ -1,5 +1,5 @@
 import { useMemo, useState, type MouseEvent } from "react";
-import type { MetricsRollup } from "../../api/types";
+import type { MetricsRollup } from "../../api/automationService";
 import "./CreditsPerHourChart.css";
 
 const VIEW_WIDTH = 480;

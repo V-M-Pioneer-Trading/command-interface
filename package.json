@@ -12,8 +12,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
-    "openapi:generate": "openapi-typescript",
-    "openapi:check": "openapi-typescript --check",
+    "openapi:generate": "node scripts/openapi-check.mjs --write",
+    "openapi:check": "node scripts/openapi-check.mjs",
     "openapi:refresh": "node scripts/openapi-refresh.mjs",
     "openapi:drift": "node scripts/openapi-drift.mjs"
   },
