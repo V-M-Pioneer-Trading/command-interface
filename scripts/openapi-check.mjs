@@ -3,12 +3,12 @@
 // One openapi-typescript run per openapi/<service>.json: without --write it
 // checks src/generated/<service>.ts is current, with --write it regenerates it.
 //
-// Why not `openapi-typescript --check` with the `apis` in redocly.yaml: the CLI
-// loads ./redocly.yaml, then ignores its input argument, and runs the `apis`
-// entries in parallel, calling process.exit as soon as one finishes. Whichever
+// Why not a bare `openapi-typescript` (generate or --check), which is not a usable
+// way to run this repo: with a redocly.yaml present the CLI loads it, ignores its input
+// argument, and runs the `apis` entries in parallel, calling process.exit as soon as one finishes. Whichever
 // entry is first done decides the exit code and the others never report (a
 // stale automation-service file passed while agent-service was current). So the
-// CLI runs here once per service, from a temp cwd that has no redocly.yaml, with
+// CLI runs here once per service, from a temp cwd with no config file in it, with
 // absolute paths.
 //
 // Fails closed: no copy at all, a copy without a generated file, or a generated

@@ -20,11 +20,23 @@ export function serviceClient<P extends object>(serviceUrl: string) {
   });
 }
 
+/** The operator's Clerk session token; null when signed out. */
+export type AuthToken = string | null;
+
 /**
  * Per-call options carrying the Clerk session token, spread into a call. The
- * token is never stored in the client, a closure or a cache key.
+ * token is never stored in the client, a closure or a cache key. The one place
+ * the Bearer string is built.
+ *
+ * One credential: the operator's Clerk session. The backends verify it and
+ * forward it to st-gateway, which injects the game token and derives queue
+ * priority from the session (auth-design.md decisions 2 and 5). So no
+ * `X-Priority` (the gateway ignores what a caller declares) and no
+ * `X-SpaceTraders-Token` (the game credential never enters the browser). With
+ * no token this adds nothing: an anonymous call gets what the server gives an
+ * anonymous caller.
  */
-export function bearer(authToken: string | null | undefined) {
+export function bearer(authToken: AuthToken | undefined) {
   return authToken ? { headers: { Authorization: `Bearer ${authToken}` } } : {};
 }
 
@@ -37,14 +49,14 @@ interface FetchResult<T> {
 
 /**
  * Result → the success body, or a thrown `ApiError(status, message)` with the
- * message read the same way `readResponse` does. Only routes the spec marks
+ * message read by `errorMessage`. Only routes the spec marks
  * nullable (`/ships`, `/contracts`) can return `null`.
  */
 export async function unwrap<T>(result: Promise<FetchResult<T>>): Promise<T> {
   const { data, error, response } = await result;
   if (!response.ok) throw new ApiError(response.status, errorMessage(error, response.statusText));
   // Boundary: the body is not validated at runtime; the generated type is the
-  // spec's claim about it, as `readResponse` does for the hand-written ones.
+  // spec's claim about it, as the claim the generated type makes.
   return data as T;
 }
 

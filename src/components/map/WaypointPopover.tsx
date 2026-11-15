@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { navigationService } from "../../api/navigationService";
-import type { Market, Shipyard, Waypoint } from "../../api/types";
+import type { Market, Shipyard, Waypoint } from "../../api/navigationService";
 import { agentService } from "../../api/agentService";
 import { PillButton } from "../common/PillButton";
 import { useAlerts } from "../../context/AlertContext";
@@ -31,7 +31,7 @@ export function WaypointPopover({ waypoint, onClose }: { waypoint: Waypoint; onC
     onError: (err: Error) => pushAlert(err.message || "Purchase failed"),
   });
 
-  const traitSymbols = (waypoint.traits ?? []).map((t) => t.symbol);
+  const traitSymbols = waypoint.traits.map((t) => t.symbol);
   const hasMarket = traitSymbols.includes("MARKETPLACE");
   const hasShipyard = traitSymbols.includes("SHIPYARD");
 

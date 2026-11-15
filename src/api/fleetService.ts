@@ -1,8 +1,6 @@
 import { config } from "./config";
-import { serviceClient, unwrap, unwrapOrNull } from "./serviceClient";
+import { bearer, serviceClient, unwrap, unwrapOrNull, type AuthToken } from "./serviceClient";
 import type { components, paths } from "../generated/fleet-service";
-
-type AuthToken = string | null;
 
 // Types keep the spec's schema names. Call sites import them from here.
 type Schemas = components["schemas"];
@@ -27,7 +25,7 @@ function authHeader(authToken: AuthToken) {
   // Boundary: with no Clerk session the spec's "required" does not hold: send
   // no Authorization header at all (never `""`, never `Bearer null`) and let
   // fleet-service answer 401, as it did before the generated client.
-  return (authToken ? { Authorization: `Bearer ${authToken}` } : {}) as { Authorization: string };
+  return (bearer(authToken).headers ?? {}) as { Authorization: string };
 }
 
 const shipParams = (shipSymbol: string, authToken: AuthToken) => ({

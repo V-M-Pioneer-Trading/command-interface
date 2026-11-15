@@ -1,5 +1,7 @@
 import { config } from "./config";
-import type { ServiceStatus } from "./types";
+
+/** UI-side health result, not an API shape. */
+export type ServiceStatus = "up" | "down";
 
 export interface ServiceDefinition {
   key: string;
@@ -16,7 +18,7 @@ export interface HealthResult {
 
 // Every service here exposes an unauthenticated GET health check. It must work
 // with no SpaceTraders token and no Clerk session — the dashboard renders for
-// anonymous visitors — so it never routes through client.ts's `request()` and
+// anonymous visitors — so it never goes through a generated client and
 // never forwards Authorization.
 //
 // healthPath is explicit per service rather than derived from `url`: in

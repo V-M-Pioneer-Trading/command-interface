@@ -1,8 +1,8 @@
 # API clients are generated from the synced specs
 
-Status: accepted. The spec copies, the pin, the generated clients and the drift check land in the slices meta#167 to meta#174 (the drift check and refresh workflow landed with meta#174; agent-service meta#167, automation-service meta#169, fleet-service meta#171); `src/api/types.ts` is still hand-written for navigation-service until its slice lands.
+Status: accepted. The spec copies, the pin, the generated clients and the drift check landed in the slices meta#167 to meta#174: the drift check and refresh workflow (meta#174), then one client per service (agent-service meta#167, automation-service meta#169, fleet-service meta#171, navigation-service meta#173).
 
-command-interface reaches agent-, automation-, fleet- and navigation-service through clients generated from each service's spec in `meta/openapi/`. The spec copies are committed here with a pin to the meta commit they came from; `openapi-typescript` turns them into types and `openapi-fetch` into one typed client per service. CI fails when a copy differs from meta main, and a scheduled workflow opens the refresh PR. No hand-written request or response type remains for those four services.
+command-interface reaches agent-, automation-, fleet- and navigation-service through clients generated from each service's spec in the `openapi/` directory of the meta repo. The spec copies are committed here with a pin to the meta commit they came from; `openapi-typescript` turns them into types and `openapi-fetch` into one typed client per service. CI fails when a copy differs from meta main, and a scheduled workflow opens the refresh PR. No hand-written request or response type remains for those four services. One exception: a call-site parameter type may be UI-side when the spec types a number as a string (automation-service's `MetricsContextParams`); the wire shape still comes from the spec.
 
 This replaces the earlier rule "No codegen: keep these in step with the services by hand". Under that rule a service's shape change reached the dashboard unannounced, at runtime.
 

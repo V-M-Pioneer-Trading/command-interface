@@ -11,7 +11,7 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AlertProvider } from "./context/AlertProvider";
 import { OperatorContext, type Operator } from "./context/OperatorContext";
-import type { Waypoint } from "./api/types";
+import type { Waypoint } from "./api/navigationService";
 import { SelectionProvider } from "./context/SelectionProvider";
 import { mulberry32 } from "./map/rand";
 import { SystemMap } from "./components/map/SystemMap";
@@ -26,7 +26,7 @@ function buildSystem(): Waypoint[] {
   const rand = mulberry32(20260809);
   const wps: Waypoint[] = [];
   const push = (w: Waypoint) => {
-    wps.push({ traits: [], ...w });
+    wps.push(w);
     return w.symbol;
   };
 

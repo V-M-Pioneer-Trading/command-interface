@@ -42,8 +42,8 @@ export function ShipDetailPanel() {
 
   const status = ship?.nav.status;
   const isDocked = status === "DOCKED";
-  const currentWaypoint = waypointData?.data?.find((w) => w.symbol === ship?.nav.waypointSymbol);
-  const hasMarketplace = !!currentWaypoint?.traits?.some((t) => t.symbol === "MARKETPLACE");
+  const currentWaypoint = waypointData?.data.find((w) => w.symbol === ship?.nav.waypointSymbol);
+  const hasMarketplace = !!currentWaypoint?.traits.some((t) => t.symbol === "MARKETPLACE");
   const { data: market } = useMarketQuery(ship?.nav.waypointSymbol, {
     enabled: isDocked && hasMarketplace,
   });
