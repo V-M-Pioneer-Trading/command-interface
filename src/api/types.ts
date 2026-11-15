@@ -1,14 +1,14 @@
 import type { ShipCargo } from "./agentService";
 
 /**
- * Hand-written types for the fleet-, navigation- and automation-service
- * responses this UI reads. agent-service types are generated: see
- * `src/generated/agent-service.ts`, re-exported by name from `agentService.ts`.
+ * Hand-written types for the fleet- and navigation-service responses this UI
+ * reads. agent-service and automation-service types are generated
+ * (`src/generated/<service>.ts`), re-exported by name from `agentService.ts`
+ * and `automationService.ts`.
  *
  * Deliberately a subset: each interface lists the fields some component or
  * hook actually touches, not everything the service sends. Cross-checked
- * against fleet-service/openapi.json (Survey) and automation-service/src
- * (knobs, autopilot state, event log, anomalies, metrics rollups).
+ * against fleet-service/openapi.json (Survey).
  * navigation-service and fleet-service document their bodies as free-form
  * JSON, so Waypoint, Market, Shipyard and the `{ data }` envelopes are the
  * SpaceTraders shape as CLAUDE.md records it. No codegen for these yet: keep
@@ -91,78 +91,6 @@ export interface Shipyard {
   ships?: { type: string; purchasePrice: number }[];
 }
 
-// ── automation-service ───────────────────────────────────────────────────
-
-export type AutopilotStatusName = "disarmed" | "armed" | "paused" | "aborted";
-export type AutopilotMode = "live" | "shadow";
-
-export interface AutopilotStatus {
-  status: AutopilotStatusName;
-  mode: AutopilotMode | null;
-}
-
-export interface ShipTask {
-  taskKind: "mining" | "contract" | "scout";
-  phase: string;
-}
-
-export interface EventLogEntry {
-  id: string;
-  occurredAt: string;
-  type: string;
-  detail: Record<string, unknown>;
-}
-
-export interface MetricsRollup {
-  creditsPerHour: number;
-  windowEnd: string;
-}
-
-export interface MetricsContext {
-  rollups: MetricsRollup[];
-  events: EventLogEntry[];
-}
-
-export interface Anomaly {
-  id: string;
-  type: string;
-  detectedAt: string;
-  detail: Record<string, unknown>;
-  deliveredAt: string | null;
-  deliveryAttempts: number;
-}
-
-export interface AnomaliesDigest {
-  anomalies: Anomaly[];
-  events: EventLogEntry[];
-}
-
-export type KnobClass = "model" | "policy" | "alert";
-
-export interface Knob {
-  name: string;
-  value: number;
-  min: number;
-  max: number;
-  default: number;
-  /** Absent on an older automation-service; the UI treats that as "policy". */
-  class?: KnobClass;
-  description?: string;
-}
-
 // ── health ───────────────────────────────────────────────────────────────
 
 export type ServiceStatus = "up" | "down";
-
-// ── query parameters ─────────────────────────────────────────────────────
-
-export interface MetricsContextParams {
-  rollupLimit?: number;
-  eventLimit?: number;
-}
-
-export interface AnomaliesDigestParams {
-  windowMinutes?: number;
-  anomalyLimit?: number;
-  eventLimit?: number;
-}

@@ -47,3 +47,16 @@ export async function unwrap<T>(result: Promise<FetchResult<T>>): Promise<T> {
   // spec's claim about it, as `readResponse` does for the hand-written ones.
   return data as T;
 }
+
+/**
+ * `unwrap` for a route where `absent` (404) is a normal answer, not a failure:
+ * a ship the autopilot isn't managing, or an optional feature the operator
+ * never enabled. Callers must tell that `null` from `undefined` ("still
+ * loading") and from a rejection ("the service is unwell"). The status is
+ * explicit at the call site, never derived from the spec; every other non-2xx
+ * throws exactly as `unwrap` does.
+ */
+export async function unwrapOrNull<T>(result: Promise<FetchResult<T>>, absent: 404): Promise<T | null> {
+  const settled = await result;
+  return settled.response.status === absent ? null : unwrap(Promise.resolve(settled));
+}

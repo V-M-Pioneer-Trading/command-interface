@@ -1,4 +1,4 @@
-import type { EventLogEntry } from "../../api/types";
+import type { EventLogEntry } from "../../api/automationService";
 import { formatEventDetail, formatEventTime } from "../../utils/eventLog";
 import "./EventFeed.css";
 

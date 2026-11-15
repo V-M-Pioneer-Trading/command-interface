@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AlertProvider } from "../../context/AlertProvider";
 import { OperatorContext, type Operator } from "../../context/OperatorContext";
 import { automationService } from "../../api/automationService";
-import type { Knob } from "../../api/types";
+import type { Knob } from "../../api/automationService";
 import { KnobEditor } from "./KnobEditor";
 
 const knob: Knob = { name: "minMargin", value: 3, min: 0, max: 10, default: 3, class: "policy", description: "d" };

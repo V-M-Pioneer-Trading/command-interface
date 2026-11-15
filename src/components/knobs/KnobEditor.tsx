@@ -4,7 +4,7 @@ import { useKnobsQuery } from "../../hooks/queries";
 import { useOperator, SCOPE_PLANNER_ADVISE } from "../../context/OperatorContext";
 import { queryKeys } from "../../hooks/queryKeys";
 import { automationService } from "../../api/automationService";
-import type { KnobClass } from "../../api/types";
+import type { KnobClass } from "../../api/automationService";
 import { QueryState } from "../common/QueryState";
 import type { TogglePanelProps } from "../common/TogglePanelProps";
 import { KnobRow } from "./KnobRow";
@@ -78,14 +78,9 @@ export function KnobEditor({ onClose, style }: TogglePanelProps) {
           knobs.length === 0 ? (
             <div className="lcars-knob-editor__empty">No knobs</div>
           ) : (
-            // A knob with no class (an older automation-service) falls into
-            // Policy, matching the server's own default, rather than vanishing
-            // from the UI.
             CLASS_SECTIONS.map((section) => {
               const inSection = knobs.filter((knob) =>
-                section.key === "policy"
-                  ? (knob.class ?? "policy") === "policy"
-                  : knob.class === section.key
+                knob.class === section.key
               );
               if (inSection.length === 0) return null;
               return (

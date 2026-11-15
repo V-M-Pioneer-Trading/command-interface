@@ -16,7 +16,7 @@
  * whole cache several times an hour. Signing out clears it explicitly instead.
 
  */
-import type { AnomaliesDigestParams, MetricsContextParams } from "../api/types";
+import type { AnomaliesDigestParams, MetricsContextParams } from "../api/automationService";
 
 /** Signed-out or not-yet-known symbols are passed through as-is, as before. */
 type SymbolArg = string | null | undefined;
