@@ -1,6 +1,6 @@
 # API clients are generated from the synced specs
 
-Status: accepted. The spec copies, the pin, the generated clients and the drift check land in the slices meta#167 to meta#174 (the drift check and refresh workflow landed with meta#174; agent-service meta#167, automation-service meta#169); `src/api/types.ts` is still hand-written for fleet-service and navigation-service until their slices land.
+Status: accepted. The spec copies, the pin, the generated clients and the drift check land in the slices meta#167 to meta#174 (the drift check and refresh workflow landed with meta#174; agent-service meta#167, automation-service meta#169, fleet-service meta#171); `src/api/types.ts` is still hand-written for navigation-service until its slice lands.
 
 command-interface reaches agent-, automation-, fleet- and navigation-service through clients generated from each service's spec in `meta/openapi/`. The spec copies are committed here with a pin to the meta commit they came from; `openapi-typescript` turns them into types and `openapi-fetch` into one typed client per service. CI fails when a copy differs from meta main, and a scheduled workflow opens the refresh PR. No hand-written request or response type remains for those four services.
 
