@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PillButton } from "../common/PillButton";
-import type { Market } from "../../api/types";
+import type { Market } from "../../api/navigationService";
 
 export function MarketList({
   market,

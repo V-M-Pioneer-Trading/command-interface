@@ -1,8 +1,6 @@
 import { config } from "./config";
-import { bearer, serviceClient, unwrap } from "./serviceClient";
+import { bearer, serviceClient, unwrap, type AuthToken } from "./serviceClient";
 import type { components, paths } from "../generated/agent-service";
-
-type AuthToken = string | null;
 
 // Types keep the spec's schema names. Call sites import them from here.
 type Schemas = components["schemas"];

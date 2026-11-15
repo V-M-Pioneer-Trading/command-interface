@@ -1,8 +1,6 @@
 import { config } from "./config";
-import { bearer, serviceClient, unwrap, unwrapOrNull } from "./serviceClient";
+import { bearer, serviceClient, unwrap, unwrapOrNull, type AuthToken } from "./serviceClient";
 import type { components, paths } from "../generated/automation-service";
-
-type AuthToken = string | null;
 
 // Types keep the spec's schema names. Call sites import them from here.
 type Schemas = components["schemas"];
@@ -52,7 +50,7 @@ const client = serviceClient<paths>(config.automationServiceUrl);
 // tokens are short-lived and refreshed by the SDK; caching one in this module
 // would mean sending a stale token the moment it expires.
 //
-// Unlike client.ts's `request`, an unauthenticated GET here sends **no headers
+// An unauthenticated GET here sends **no headers
 // at all**: no `bearer`, and serviceClient has no default headers (openapi-fetch
 // adds Content-Type only when there is a body, and never Accept). That keeps it
 // a CORS-simple request with no preflight, which is what the public read

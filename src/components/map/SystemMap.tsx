@@ -8,7 +8,7 @@ import { ZOOM_STEP, computeBounds, computeFit } from "../../map/viewport";
 import { buildSystemLayout, placeShips } from "../../map/systemLayout";
 import { waypointBaseSize, waypointSpriteId } from "../../map/sprites/registry";
 import { BADGE_LABEL, roleBadgeId, shipFamily, traitBadgeId } from "../../map/sprites/ships";
-import type { Waypoint } from "../../api/types";
+import type { Waypoint } from "../../api/navigationService";
 import type { LayoutNode, ShipPosition } from "../../map/systemLayout";
 import { Panel } from "../common/Panel";
 import { SpriteDefs } from "./SpriteDefs";
@@ -79,12 +79,11 @@ export function SystemMap({ systemSymbol }: { systemSymbol: string | null }) {
     () =>
       shipsInSystem
         .filter((s) => s.nav.status === "IN_TRANSIT")
-        .map((s) => ({
-          key: s.symbol,
-          from: layout.index.get(s.nav.route.origin.symbol),
-          to: layout.index.get(s.nav.route.destination.symbol),
-        }))
-        .filter((t): t is Transit => Boolean(t.from && t.to)),
+        .flatMap((s): Transit[] => {
+          const from = layout.index.get(s.nav.route.origin.symbol);
+          const to = layout.index.get(s.nav.route.destination.symbol);
+          return from && to ? [{ key: s.symbol, from, to }] : [];
+        }),
     [shipsInSystem, layout],
   );
 
@@ -97,7 +96,7 @@ export function SystemMap({ systemSymbol }: { systemSymbol: string | null }) {
     const ids = new Set<string>();
     for (const node of layout.nodes) {
       ids.add(waypointSpriteId(node.symbol, node.type));
-      for (const trait of node.waypoint.traits ?? []) {
+      for (const trait of node.waypoint.traits) {
         const id = traitBadgeId(trait.symbol);
         if (id) ids.add(id);
       }

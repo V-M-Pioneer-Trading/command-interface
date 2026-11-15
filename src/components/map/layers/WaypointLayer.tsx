@@ -2,7 +2,7 @@ import { iconLocalSize, screenToLocal } from "../../../map/viewport";
 import { waypointBaseSize, waypointSpriteId } from "../../../map/sprites/registry";
 import { traitBadgeId } from "../../../map/sprites/ships";
 import type { LayoutNode } from "../../../map/systemLayout";
-import type { Waypoint } from "../../../api/types";
+import type { Waypoint } from "../../../api/navigationService";
 import type { BadgeTip } from "../badgeTip";
 
 const BADGE_SCREEN_SIZE = 7;
@@ -21,7 +21,7 @@ const HIT_PAD_SCREEN = 5;
 
 /** Trait/status badges, corner-mounted, only once there's room to read them. */
 function badgesFor(waypoint: Waypoint) {
-  const traits = (waypoint.traits ?? []).map((t) => t.symbol);
+  const traits = waypoint.traits.map((t) => t.symbol);
   const out: { id: string | null; corner: [number, number] }[] = [];
   if (traits.includes("MARKETPLACE")) out.push({ id: traitBadgeId("MARKETPLACE"), corner: [-1, 1] });
   if (traits.includes("SHIPYARD")) out.push({ id: traitBadgeId("SHIPYARD"), corner: [1, 1] });
