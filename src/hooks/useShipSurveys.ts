@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Survey } from "../api/types";
+import type { ShipSurvey } from "../api/fleetService";
 
 /**
  * Surveys found by one ship, scoped to that ship.
@@ -15,14 +15,14 @@ import type { Survey } from "../api/types";
  * resurrect them (the tag is overwritten on the next survey, not merged).
  */
 export function useShipSurveys(shipSymbol: string | null) {
-  const [state, setState] = useState<{ shipSymbol: string | null; surveys: Survey[] }>({
+  const [state, setState] = useState<{ shipSymbol: string | null; surveys: ShipSurvey[] }>({
     shipSymbol: null,
     surveys: [],
   });
 
   return {
     surveys: state.shipSymbol === shipSymbol ? state.surveys : [],
-    addSurveys: (found: Survey[]) => {
+    addSurveys: (found: ShipSurvey[]) => {
       setState((prev) => ({
         shipSymbol,
         surveys: prev.shipSymbol === shipSymbol ? [...prev.surveys, ...found] : [...found],

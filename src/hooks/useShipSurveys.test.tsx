@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { act, renderHook } from "@testing-library/react";
-import type { Survey } from "../api/types";
+import type { ShipSurvey } from "../api/fleetService";
 import { useShipSurveys } from "./useShipSurveys";
 
-const survey = (signature: string): Survey => ({
+const survey = (signature: string): ShipSurvey => ({
   signature,
   symbol: "X1-AA-A1",
   size: "SMALL",

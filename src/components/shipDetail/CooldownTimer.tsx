@@ -1,8 +1,8 @@
 import { useCountdown } from "../../hooks/useCountdown";
 import { formatCountdown } from "../../utils/spaceTraders";
-import type { CooldownResponse } from "../../api/types";
+import type { Cooldown } from "../../api/fleetService";
 
-export function CooldownTimer({ cooldown }: { cooldown: CooldownResponse["data"] | undefined }) {
+export function CooldownTimer({ cooldown }: { cooldown: Cooldown | undefined }) {
   const remaining = useCountdown(cooldown?.expiration);
   if (!cooldown || remaining <= 0) return null;
 

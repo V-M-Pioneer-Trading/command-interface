@@ -1,14 +1,14 @@
 import { useCountdown } from "../../hooks/useCountdown";
 import { formatCountdown } from "../../utils/spaceTraders";
 import { PillButton } from "../common/PillButton";
-import type { Survey } from "../../api/types";
+import type { ShipSurvey } from "../../api/fleetService";
 
 interface SurveyActions {
   disabled: boolean;
-  onExtract: (survey: Survey) => void;
+  onExtract: (survey: ShipSurvey) => void;
 }
 
-function SurveyCard({ survey, disabled, onExtract }: SurveyActions & { survey: Survey }) {
+function SurveyCard({ survey, disabled, onExtract }: SurveyActions & { survey: ShipSurvey }) {
   const remaining = useCountdown(survey.expiration);
   const expired = remaining <= 0;
 
@@ -36,7 +36,7 @@ export function SurveyList({
   surveys,
   disabled,
   onExtract,
-}: SurveyActions & { surveys: Survey[] | undefined }) {
+}: SurveyActions & { surveys: ShipSurvey[] | undefined }) {
   if (!surveys || surveys.length === 0) return null;
 
   return (
