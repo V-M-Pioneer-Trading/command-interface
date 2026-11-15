@@ -12,3 +12,7 @@ apis:
     root: ./openapi/automation-service.json
     x-openapi-ts:
       output: ./src/generated/automation-service.ts
+  fleet-service:
+    root: ./openapi/fleet-service.json
+    x-openapi-ts:
+      output: ./src/generated/fleet-service.ts

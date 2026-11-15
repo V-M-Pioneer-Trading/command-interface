@@ -13,9 +13,8 @@ import {
 } from "../../hooks/queries";
 import { queryKeys } from "../../hooks/queryKeys";
 import { useShipSurveys } from "../../hooks/useShipSurveys";
-import { fleetService } from "../../api/fleetService";
+import { FLIGHT_MODES, fleetService, type FlightMode, type ShipSurvey } from "../../api/fleetService";
 import { agentService } from "../../api/agentService";
-import type { Survey } from "../../api/types";
 import { Panel } from "../common/Panel";
 import { PillButton } from "../common/PillButton";
 import { StatusPill } from "../common/StatusPill";
@@ -26,8 +25,6 @@ import { MarketList } from "./MarketList";
 import { SurveyList } from "./SurveyList";
 import { NavigatePicker } from "./NavigatePicker";
 import "./ShipDetailPanel.css";
-
-const FLIGHT_MODES = ["CRUISE", "BURN", "DRIFT", "STEALTH"];
 
 export function ShipDetailPanel() {
   const { can, getToken } = useOperator();
@@ -91,7 +88,7 @@ export function ShipDetailPanel() {
   const refuelMutation = useMutation({
     mutationFn: async () => fleetService.refuel(selectedSymbol(), await getToken()),
     onSuccess: (res) => {
-      const units = res?.data?.transaction?.units;
+      const units = res.data?.transaction?.units;
       if (units === 0) {
         pushAlert("Tank already full (or ship has no fuel tank) — nothing to refuel", {
           severity: "info",
@@ -110,7 +107,7 @@ export function ShipDetailPanel() {
     onError: onActionError,
   });
   const extractSurveyMutation = useMutation({
-    mutationFn: async (survey: Survey) =>
+    mutationFn: async (survey: ShipSurvey) =>
       fleetService.extractWithSurvey(selectedSymbol(), survey, await getToken()),
     onSuccess: invalidateShip,
     onError: onActionError,
@@ -144,13 +141,13 @@ export function ShipDetailPanel() {
   const surveyMutation = useMutation({
     mutationFn: async () => fleetService.survey(selectedSymbol(), await getToken()),
     onSuccess: (data) => {
-      addSurveys(data?.data?.surveys ?? []);
+      addSurveys(data.data?.surveys ?? []);
       invalidateShip();
     },
     onError: (err: Error) => pushAlert(err.message || "Survey failed"),
   });
   const flightModeMutation = useMutation({
-    mutationFn: async (flightMode: string) =>
+    mutationFn: async (flightMode: FlightMode) =>
       fleetService.setFlightMode(selectedSymbol(), flightMode, await getToken()),
     onSuccess: invalidateShip,
     onError: onActionError,
@@ -217,7 +214,10 @@ export function ShipDetailPanel() {
         <select
           value={ship.nav.flightMode || "CRUISE"}
           disabled={anyMutating || !hasControl}
-          onChange={(e) => { flightModeMutation.mutate(e.target.value); }}
+          onChange={(e) => {
+            const mode = FLIGHT_MODES.find((m) => m === e.target.value);
+            if (mode) flightModeMutation.mutate(mode);
+          }}
         >
           {FLIGHT_MODES.map((mode) => (
             <option key={mode} value={mode}>

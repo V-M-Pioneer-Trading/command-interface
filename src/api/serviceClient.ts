@@ -49,14 +49,21 @@ export async function unwrap<T>(result: Promise<FetchResult<T>>): Promise<T> {
 }
 
 /**
- * `unwrap` for a route where `absent` (404) is a normal answer, not a failure:
- * a ship the autopilot isn't managing, or an optional feature the operator
- * never enabled. Callers must tell that `null` from `undefined` ("still
- * loading") and from a rejection ("the service is unwell"). The status is
- * explicit at the call site, never derived from the spec; every other non-2xx
- * throws exactly as `unwrap` does.
+ * `unwrap` for a route where `absent` is a normal answer, not a failure: a 404
+ * for a ship the autopilot isn't managing or an optional feature the operator
+ * never enabled, a 204 for a ship with no cooldown. Callers must tell that
+ * `null` from `undefined` ("still loading") and from a rejection ("the service
+ * is unwell"). The status is explicit at the call site, never derived from the
+ * spec; every other non-2xx throws exactly as `unwrap` does. openapi-fetch adds
+ * `undefined` to the data of an operation that declares a 204; that is the
+ * absent case, so it is excluded from the result.
  */
-export async function unwrapOrNull<T>(result: Promise<FetchResult<T>>, absent: 404): Promise<T | null> {
+export async function unwrapOrNull<T>(
+  result: Promise<FetchResult<T>>,
+  absent: 204 | 404,
+): Promise<Exclude<T, undefined> | null> {
   const settled = await result;
-  return settled.response.status === absent ? null : unwrap(Promise.resolve(settled));
+  if (settled.response.status === absent) return null;
+  // Boundary: a 2xx other than the declared 204 carries a body.
+  return (await unwrap(Promise.resolve(settled))) as Exclude<T, undefined>;
 }

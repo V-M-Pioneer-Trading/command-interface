@@ -112,6 +112,11 @@ describe("unwrapOrNull", () => {
     await expect(unwrapOrNull(call(), 404)).resolves.toBeNull();
   });
 
+  it("returns null on 204 when the call names 204 as absent", async () => {
+    stubFetch(() => new Response(null, { status: 204 }));
+    await expect(unwrapOrNull(call(), 204)).resolves.toBeNull();
+  });
+
   it("throws ApiError for another non-2xx, in both error body shapes", async () => {
     stubFetch(() => jsonResponse({ error: { message: "nested" } }, 500));
     await expect(unwrapOrNull(call(), 404)).rejects.toMatchObject({ status: 500, message: "nested" });
