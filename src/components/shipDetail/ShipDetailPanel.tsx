@@ -13,9 +13,8 @@ import {
 } from "../../hooks/queries";
 import { queryKeys } from "../../hooks/queryKeys";
 import { useShipSurveys } from "../../hooks/useShipSurveys";
-import { FLIGHT_MODES, fleetService, type FlightMode } from "../../api/fleetService";
+import { FLIGHT_MODES, fleetService, type FlightMode, type ShipSurvey } from "../../api/fleetService";
 import { agentService } from "../../api/agentService";
-import type { ShipSurvey } from "../../api/fleetService";
 import { Panel } from "../common/Panel";
 import { PillButton } from "../common/PillButton";
 import { StatusPill } from "../common/StatusPill";
@@ -26,7 +25,6 @@ import { MarketList } from "./MarketList";
 import { SurveyList } from "./SurveyList";
 import { NavigatePicker } from "./NavigatePicker";
 import "./ShipDetailPanel.css";
-
 
 export function ShipDetailPanel() {
   const { can, getToken } = useOperator();
